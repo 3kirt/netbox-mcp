@@ -61,14 +61,22 @@ func TestRegister_allToolsPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("server connect: %v", err)
 	}
-	t.Cleanup(func() { ss.Close() })
+	t.Cleanup(func() {
+		if err := ss.Close(); err != nil {
+			t.Errorf("closing server session: %v", err)
+		}
+	})
 
 	c := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "0.0.0"}, nil)
 	cs, err := c.Connect(ctx, ct, nil)
 	if err != nil {
 		t.Fatalf("client connect: %v", err)
 	}
-	t.Cleanup(func() { cs.Close() })
+	t.Cleanup(func() {
+		if err := cs.Close(); err != nil {
+			t.Errorf("closing client session: %v", err)
+		}
+	})
 
 	// Collect all tool names via the paginated iterator.
 	var got []string

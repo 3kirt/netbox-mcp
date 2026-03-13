@@ -12,12 +12,8 @@ The server communicates over stdio using the MCP protocol and is intended to be 
 
 | Library | Version | Purpose |
 |---|---|---|
-| `github.com/modelcontextprotocol/go-sdk` | latest | MCP server framework |
-| `github.com/netbox-community/go-netbox/v4` | latest | NetBox REST API client (generated from OpenAPI) |
-
-Source checkouts:
-- go-sdk: `/Users/kirtis/source/repos/go-sdk`
-- go-netbox: `/Users/kirtis/source/repos/go-netbox`
+| `github.com/modelcontextprotocol/go-sdk` | v1.4.0 | MCP server framework |
+| `github.com/netbox-community/go-netbox/v4` | v4.3.0 | NetBox REST API client (generated from OpenAPI) |
 
 ---
 
@@ -46,10 +42,16 @@ netbox-mcp/
 │   └── tools/
 │       ├── circuits.go      # Circuits tools
 │       ├── dcim.go          # DCIM tools
+│       ├── helpers.go       # Shared helpers: jsonResult, toolError, ptrOf
 │       ├── ipam.go          # IPAM tools
 │       ├── tenancy.go       # Tenancy tools
 │       └── virtualization.go # Virtualization tools
-├── investigation.md
+├── docs/
+│   ├── circuits.md
+│   ├── dcim.md
+│   ├── ipam.md
+│   ├── tenancy.md
+│   └── virtualization.md
 ├── spec.md
 ├── style.md
 ├── Makefile
@@ -106,13 +108,13 @@ func main() {
 
     s := mcp.NewServer(&mcp.Implementation{
         Name:    "netbox-mcp",
-        Version: "0.1.0",
+        Version: version,
     }, nil)
 
     server.Register(s, client)
 
-    if err := s.Run(context.Background(), mcp.NewStdioTransport()); err != nil {
-        log.Fatal(err)
+    if err := s.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+        log.Printf("server error: %v", err)
     }
 }
 ```
@@ -217,6 +219,7 @@ mcp.AddTool(s, &mcp.Tool{
 | `netbox_circuits_circuits_list` | List circuits | provider, status, type, site, tenant, limit, offset |
 | `netbox_circuits_circuits_get` | Get a circuit by ID | id |
 | `netbox_circuits_providers_list` | List circuit providers | name, limit, offset |
+| `netbox_circuits_providers_get` | Get a provider by ID | id |
 
 ### Tenancy (`internal/tools/tenancy.go`)
 
@@ -232,6 +235,7 @@ mcp.AddTool(s, &mcp.Tool{
 | `netbox_virtualization_vms_list` | List virtual machines | cluster, site, status, role, tenant, limit, offset |
 | `netbox_virtualization_vms_get` | Get a VM by ID | id |
 | `netbox_virtualization_clusters_list` | List clusters | name, type, site, limit, offset |
+| `netbox_virtualization_clusters_get` | Get a cluster by ID | id |
 
 ---
 
@@ -278,13 +282,15 @@ install:
 
 ### Phase 3 — Additional Tools
 
-- [ ] Implement Circuits tools (`internal/tools/circuits.go`)
-- [ ] Implement Tenancy tools (`internal/tools/tenancy.go`)
-- [ ] Implement Virtualization tools (`internal/tools/virtualization.go`)
+- [x] Implement Circuits tools (`internal/tools/circuits.go`)
+- [x] Implement Tenancy tools (`internal/tools/tenancy.go`)
+- [x] Implement Virtualization tools (`internal/tools/virtualization.go`)
 
 ### Phase 4 — Polish
 
-- [ ] Add linter config (`.golangci.yml`)
+- [x] Add linter config (`.golangci.yml`)
+- [x] Write README with installation and Claude Desktop/Code configuration example
+- [x] Write per-section tool reference docs (`docs/`)
+- [x] Switch to published library versions (go-sdk v1.4.0, go-netbox v4.3.0)
 - [ ] Write tests for config loading
-- [ ] Write README with installation and Claude Desktop configuration example
 - [ ] Test against a live NetBox instance

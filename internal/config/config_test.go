@@ -1,13 +1,15 @@
-package config
+package config_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/3kirt/netbox-mcp/internal/config"
 )
 
 func TestLoad_missingFileReturnsEmpty(t *testing.T) {
-	cfg, err := Load(filepath.Join(t.TempDir(), "does-not-exist.json"))
+	cfg, err := config.Load(filepath.Join(t.TempDir(), "does-not-exist.json"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -18,7 +20,7 @@ func TestLoad_missingFileReturnsEmpty(t *testing.T) {
 
 func TestLoad_validFile(t *testing.T) {
 	f := writeFile(t, `{"url":"https://netbox.example.com","token":"abc123"}`)
-	cfg, err := Load(f)
+	cfg, err := config.Load(f)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -32,14 +34,14 @@ func TestLoad_validFile(t *testing.T) {
 
 func TestLoad_malformedJSON(t *testing.T) {
 	f := writeFile(t, `{not valid json}`)
-	_, err := Load(f)
+	_, err := config.Load(f)
 	if err == nil {
 		t.Fatal("expected error for malformed JSON, got nil")
 	}
 }
 
 func TestResolveURL_fromFile(t *testing.T) {
-	cfg := &Config{URL: "https://netbox.example.com"}
+	cfg := &config.Config{URL: "https://netbox.example.com"}
 	got, err := cfg.ResolveURL()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -51,7 +53,7 @@ func TestResolveURL_fromFile(t *testing.T) {
 
 func TestResolveURL_envOverridesFile(t *testing.T) {
 	t.Setenv("NETBOX_URL", "https://override.example.com")
-	cfg := &Config{URL: "https://netbox.example.com"}
+	cfg := &config.Config{URL: "https://netbox.example.com"}
 	got, err := cfg.ResolveURL()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -63,7 +65,7 @@ func TestResolveURL_envOverridesFile(t *testing.T) {
 
 func TestResolveURL_missingReturnsError(t *testing.T) {
 	t.Setenv("NETBOX_URL", "")
-	cfg := &Config{}
+	cfg := &config.Config{}
 	_, err := cfg.ResolveURL()
 	if err == nil {
 		t.Fatal("expected error when URL is absent, got nil")
@@ -71,7 +73,7 @@ func TestResolveURL_missingReturnsError(t *testing.T) {
 }
 
 func TestResolveToken_fromFile(t *testing.T) {
-	cfg := &Config{Token: "file-token"}
+	cfg := &config.Config{Token: "file-token"}
 	got, err := cfg.ResolveToken()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -83,7 +85,7 @@ func TestResolveToken_fromFile(t *testing.T) {
 
 func TestResolveToken_envOverridesFile(t *testing.T) {
 	t.Setenv("NETBOX_TOKEN", "env-token")
-	cfg := &Config{Token: "file-token"}
+	cfg := &config.Config{Token: "file-token"}
 	got, err := cfg.ResolveToken()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -95,7 +97,7 @@ func TestResolveToken_envOverridesFile(t *testing.T) {
 
 func TestResolveToken_missingReturnsError(t *testing.T) {
 	t.Setenv("NETBOX_TOKEN", "")
-	cfg := &Config{}
+	cfg := &config.Config{}
 	_, err := cfg.ResolveToken()
 	if err == nil {
 		t.Fatal("expected error when token is absent, got nil")
