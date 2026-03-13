@@ -1,0 +1,14 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose    # HTTP response body must be closed
+    - dupword      # duplicate words in comments/strings
+    - errorlint    # correct use of Go 1.13 error wrapping
+    - fatcontext   # context not stored in loops/closures
+    - gocritic     # broad set of style and correctness checks
+    - godot        # comments must end with a period
+    - gosec        # common security issues
+    - misspell     # spelling in comments and strings
+    - revive       # idiomatic Go (replaces golint)
