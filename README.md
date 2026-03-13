@@ -160,4 +160,4 @@ make clean   # remove compiled binary
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)
