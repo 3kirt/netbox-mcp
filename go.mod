@@ -3,8 +3,8 @@ module github.com/3kirt/netbox-mcp
 go 1.24.0
 
 require (
-	github.com/modelcontextprotocol/go-sdk v0.0.0
-	github.com/netbox-community/go-netbox/v4 v4.0.0
+	github.com/modelcontextprotocol/go-sdk v1.4.0
+	github.com/netbox-community/go-netbox/v4 v4.3.0
 )
 
 require (
@@ -15,9 +15,4 @@ require (
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect
-)
-
-replace (
-	github.com/modelcontextprotocol/go-sdk => /Users/kirtis/source/repos/go-sdk
-	github.com/netbox-community/go-netbox/v4 => /Users/kirtis/source/repos/go-netbox
 )
