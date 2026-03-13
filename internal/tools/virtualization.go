@@ -7,5 +7,4 @@ import (
 
 // RegisterVirtualization adds virtualization tools to s.
 func RegisterVirtualization(s *mcp.Server, client *netbox.APIClient) {
-	_ = client
 }

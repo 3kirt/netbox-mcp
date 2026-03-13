@@ -10,17 +10,17 @@ import (
 
 // RegisterIPAM adds IPAM tools to s.
 func RegisterIPAM(s *mcp.Server, client *netbox.APIClient) {
-	addIpamIPAddressesList(s, client)
-	addIpamIPAddressesGet(s, client)
-	addIpamPrefixesList(s, client)
-	addIpamPrefixesGet(s, client)
-	addIpamVRFsList(s, client)
-	addIpamVRFsGet(s, client)
-	addIpamVLANsList(s, client)
-	addIpamVLANsGet(s, client)
+	addIPAMIPAddressesList(s, client)
+	addIPAMIPAddressesGet(s, client)
+	addIPAMPrefixesList(s, client)
+	addIPAMPrefixesGet(s, client)
+	addIPAMVRFsList(s, client)
+	addIPAMVRFsGet(s, client)
+	addIPAMVLANsList(s, client)
+	addIPAMVLANsGet(s, client)
 }
 
-func addIpamIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Address string `json:"address,omitempty" jsonschema:"IP address to filter by (e.g. 192.0.2.1/24)"`
 		VRF     string `json:"vrf,omitempty" jsonschema:"VRF name to filter by"`
@@ -62,7 +62,7 @@ func addIpamIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamIPAddressesGet(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMIPAddressesGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the IP address to retrieve"`
 	}
@@ -78,7 +78,7 @@ func addIpamIPAddressesGet(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamPrefixesList(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMPrefixesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Prefix string `json:"prefix,omitempty" jsonschema:"Prefix to filter by (e.g. 192.0.2.0/24)"`
 		VRF    string `json:"vrf,omitempty" jsonschema:"VRF name to filter by"`
@@ -120,7 +120,7 @@ func addIpamPrefixesList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamPrefixesGet(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMPrefixesGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the prefix to retrieve"`
 	}
@@ -136,7 +136,7 @@ func addIpamPrefixesGet(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamVRFsList(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMVRFsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Name   string `json:"name,omitempty" jsonschema:"VRF name to filter by"`
 		RD     string `json:"rd,omitempty" jsonschema:"Route distinguisher to filter by"`
@@ -170,7 +170,7 @@ func addIpamVRFsList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamVRFsGet(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMVRFsGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the VRF to retrieve"`
 	}
@@ -186,7 +186,7 @@ func addIpamVRFsGet(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamVLANsList(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMVLANsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		VID    int32  `json:"vid,omitempty" jsonschema:"VLAN ID number to filter by (1-4094)"`
 		Name   string `json:"name,omitempty" jsonschema:"VLAN name to filter by"`
@@ -228,7 +228,7 @@ func addIpamVLANsList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addIpamVLANsGet(s *mcp.Server, client *netbox.APIClient) {
+func addIPAMVLANsGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the VLAN to retrieve"`
 	}

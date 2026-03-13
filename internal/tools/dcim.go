@@ -11,17 +11,17 @@ import (
 
 // RegisterDCIM adds DCIM tools to s.
 func RegisterDCIM(s *mcp.Server, client *netbox.APIClient) {
-	addDcimDevicesList(s, client)
-	addDcimDevicesGet(s, client)
-	addDcimSitesList(s, client)
-	addDcimSitesGet(s, client)
-	addDcimRacksList(s, client)
-	addDcimRacksGet(s, client)
-	addDcimInterfacesList(s, client)
-	addDcimCablesList(s, client)
+	addDCIMDevicesList(s, client)
+	addDCIMDevicesGet(s, client)
+	addDCIMSitesList(s, client)
+	addDCIMSitesGet(s, client)
+	addDCIMRacksList(s, client)
+	addDCIMRacksGet(s, client)
+	addDCIMInterfacesList(s, client)
+	addDCIMCablesList(s, client)
 }
 
-func addDcimDevicesList(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMDevicesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Site   string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
 		Role   string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
@@ -59,7 +59,7 @@ func addDcimDevicesList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimDevicesGet(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMDevicesGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the device to retrieve"`
 	}
@@ -75,7 +75,7 @@ func addDcimDevicesGet(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimSitesList(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMSitesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Name   string `json:"name,omitempty" jsonschema:"Site name to filter by"`
 		Status string `json:"status,omitempty" jsonschema:"Site status (active, planned, retired, staging)"`
@@ -109,7 +109,7 @@ func addDcimSitesList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimSitesGet(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMSitesGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the site to retrieve"`
 	}
@@ -125,7 +125,7 @@ func addDcimSitesGet(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimRacksList(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMRacksList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
 		Location string `json:"location,omitempty" jsonschema:"Location name or slug to filter by"`
@@ -159,7 +159,7 @@ func addDcimRacksList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimRacksGet(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMRacksGet(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		ID int32 `json:"id" jsonschema:"NetBox ID of the rack to retrieve"`
 	}
@@ -175,7 +175,7 @@ func addDcimRacksGet(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimInterfacesList(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		DeviceID int32  `json:"device_id,omitempty" jsonschema:"Device ID to filter by"`
 		Name     string `json:"name,omitempty" jsonschema:"Interface name to filter by"`
@@ -209,7 +209,7 @@ func addDcimInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
-func addDcimCablesList(s *mcp.Server, client *netbox.APIClient) {
+func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Site   string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
 		Status string `json:"status,omitempty" jsonschema:"Cable status (connected, planned, decommissioning)"`

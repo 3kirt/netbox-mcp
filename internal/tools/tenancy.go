@@ -7,5 +7,4 @@ import (
 
 // RegisterTenancy adds tenancy tools to s.
 func RegisterTenancy(s *mcp.Server, client *netbox.APIClient) {
-	_ = client
 }

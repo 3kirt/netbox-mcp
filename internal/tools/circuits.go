@@ -1,4 +1,3 @@
-// Package tools implements the NetBox MCP tool handlers.
 package tools
 
 import (
@@ -8,5 +7,4 @@ import (
 
 // RegisterCircuits adds circuit-related tools to s.
 func RegisterCircuits(s *mcp.Server, client *netbox.APIClient) {
-	_ = client
 }
