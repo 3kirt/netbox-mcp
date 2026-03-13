@@ -68,3 +68,25 @@ func TestPtrOf(t *testing.T) {
 		t.Errorf("got %q, want %q", *p, s)
 	}
 }
+
+func TestClampLimit(t *testing.T) {
+	tests := []struct {
+		in   int32
+		want int32
+	}{
+		{0, 50},
+		{-1, 50},
+		{-100, 50},
+		{1, 1},
+		{50, 50},
+		{999, 999},
+		{1000, 1000},
+		{1001, 1000},
+		{1 << 30, 1000},
+	}
+	for _, tc := range tests {
+		if got := clampLimit(tc.in); got != tc.want {
+			t.Errorf("clampLimit(%d) = %d, want %d", tc.in, got, tc.want)
+		}
+	}
+}

@@ -46,10 +46,7 @@ func addVirtualizationVMsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Tenant != "" {
 			r = r.Tenant([]string{in.Tenant})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing virtual machines: %v", err))
@@ -96,10 +93,7 @@ func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Site != "" {
 			r = r.Site([]string{in.Site})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing clusters: %v", err))

@@ -9,8 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 const defaultConfigFile = ".netbox_mcp.json"
@@ -33,6 +35,16 @@ func Load(path string) (*Config, error) {
 		path = filepath.Join(home, defaultConfigFile)
 	}
 
+	// Reject world-readable config files before loading credentials from them.
+	if runtime.GOOS != "windows" {
+		if info, err := os.Stat(path); err == nil && info.Mode().Perm()&0o004 != 0 {
+			return nil, fmt.Errorf(
+				"config file %s is world-readable (mode %04o): run 'chmod 600 %s' to protect your API token",
+				path, info.Mode().Perm(), path,
+			)
+		}
+	}
+
 	data, err := os.ReadFile(path) //nolint:gosec // path is user-supplied config file location
 	if errors.Is(err, os.ErrNotExist) {
 		return &Config{}, nil
@@ -51,18 +63,30 @@ func Load(path string) (*Config, error) {
 
 // ResolveURL returns the NetBox base URL, preferring the NETBOX_URL
 // environment variable over the url field in the config file. An error is
-// returned if no URL is found in either location.
+// returned if no URL is found in either location, or if the URL does not use
+// HTTPS (which would send the API token in plaintext).
 func (c *Config) ResolveURL() (string, error) {
-	if url := os.Getenv("NETBOX_URL"); url != "" {
-		return url, nil
+	rawURL := os.Getenv("NETBOX_URL")
+	if rawURL == "" {
+		rawURL = c.URL
 	}
-	if c.URL != "" {
-		return c.URL, nil
+	if rawURL == "" {
+		return "", errors.New(
+			"no NetBox URL found: set the NETBOX_URL environment variable " +
+				"or add a \"url\" key to your config file",
+		)
 	}
-	return "", errors.New(
-		"no NetBox URL found: set the NETBOX_URL environment variable " +
-			"or add a \"url\" key to your config file",
-	)
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid NetBox URL %q: %w", rawURL, err)
+	}
+	if u.Scheme != "https" {
+		return "", fmt.Errorf(
+			"NetBox URL must use HTTPS (got scheme %q): the API token would be sent in plaintext",
+			u.Scheme,
+		)
+	}
+	return rawURL, nil
 }
 
 // ResolveToken returns the API token, preferring the NETBOX_TOKEN environment

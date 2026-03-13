@@ -47,10 +47,7 @@ func addDCIMDevicesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.RackID != 0 {
 			r = r.RackId([]int32{in.RackID})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing devices: %v", err))
@@ -97,10 +94,7 @@ func addDCIMSitesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Region != "" {
 			r = r.Region([]string{in.Region})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing sites: %v", err))
@@ -147,10 +141,7 @@ func addDCIMRacksList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Status != "" {
 			r = r.Status([]string{in.Status})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing racks: %v", err))
@@ -197,10 +188,7 @@ func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Type != "" {
 			r = r.Type_([]string{in.Type})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing interfaces: %v", err))
@@ -227,10 +215,7 @@ func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Status != "" {
 			r = r.Status([]string{in.Status})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing cables: %v", err))

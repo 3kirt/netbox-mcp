@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/3kirt/netbox-mcp/internal/config"
@@ -40,6 +41,20 @@ func TestLoad_malformedJSON(t *testing.T) {
 	}
 }
 
+func TestLoad_worldReadableFileReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("file permission checks not enforced on Windows")
+	}
+	f := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(f, []byte(`{"url":"https://netbox.example.com","token":"abc"}`), 0o644); err != nil {
+		t.Fatalf("writing temp file: %v", err)
+	}
+	_, err := config.Load(f)
+	if err == nil {
+		t.Fatal("expected error for world-readable config file, got nil")
+	}
+}
+
 func TestResolveURL_fromFile(t *testing.T) {
 	cfg := &config.Config{URL: "https://netbox.example.com"}
 	got, err := cfg.ResolveURL()
@@ -69,6 +84,15 @@ func TestResolveURL_missingReturnsError(t *testing.T) {
 	_, err := cfg.ResolveURL()
 	if err == nil {
 		t.Fatal("expected error when URL is absent, got nil")
+	}
+}
+
+func TestResolveURL_httpReturnsError(t *testing.T) {
+	t.Setenv("NETBOX_URL", "")
+	cfg := &config.Config{URL: "http://netbox.example.com"}
+	_, err := cfg.ResolveURL()
+	if err == nil {
+		t.Fatal("expected error for HTTP URL, got nil")
 	}
 }
 

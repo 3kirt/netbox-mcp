@@ -46,10 +46,7 @@ func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Tenant != "" {
 			r = r.Tenant([]string{in.Tenant})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing circuits: %v", err))
@@ -88,10 +85,7 @@ func addCircuitsProvidersList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Name != "" {
 			r = r.Name([]string{in.Name})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing providers: %v", err))

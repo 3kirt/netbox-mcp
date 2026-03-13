@@ -50,10 +50,7 @@ func addIPAMIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Device != "" {
 			r = r.Device([]string{in.Device})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing IP addresses: %v", err))
@@ -108,10 +105,7 @@ func addIPAMPrefixesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Tenant != "" {
 			r = r.Tenant([]string{in.Tenant})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing prefixes: %v", err))
@@ -158,10 +152,7 @@ func addIPAMVRFsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Tenant != "" {
 			r = r.Tenant([]string{in.Tenant})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing VRFs: %v", err))
@@ -216,10 +207,7 @@ func addIPAMVLANsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Status != "" {
 			r = r.Status([]string{in.Status})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing VLANs: %v", err))

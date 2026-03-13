@@ -32,10 +32,7 @@ func addTenancyTenantsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Group != "" {
 			r = r.Group([]string{in.Group})
 		}
-		limit := in.Limit
-		if limit == 0 {
-			limit = 50
-		}
+		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing tenants: %v", err))
