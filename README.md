@@ -96,9 +96,9 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 
 ## Available tools
 
-16 tools are currently implemented across two NetBox API areas. Full parameter documentation is in [docs/tools.md](docs/tools.md).
+26 tools are currently implemented across five NetBox API areas.
 
-### DCIM
+### DCIM — [docs/dcim.md](docs/dcim.md)
 
 | Tool | Description |
 |---|---|
@@ -111,7 +111,7 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 | `netbox_dcim_interfaces_list` | List device interfaces (filter: device, name, type) |
 | `netbox_dcim_cables_list` | List cables (filter: site, status) |
 
-### IPAM
+### IPAM — [docs/ipam.md](docs/ipam.md)
 
 | Tool | Description |
 |---|---|
@@ -123,6 +123,31 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 | `netbox_ipam_vrfs_get` | Get a VRF by ID |
 | `netbox_ipam_vlans_list` | List VLANs (filter: VID, name, site, group, status) |
 | `netbox_ipam_vlans_get` | Get a VLAN by ID |
+
+### Circuits — [docs/circuits.md](docs/circuits.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_circuits_circuits_list` | List circuits (filter: provider, status, type, site, tenant) |
+| `netbox_circuits_circuits_get` | Get a circuit by ID |
+| `netbox_circuits_providers_list` | List circuit providers (filter: name) |
+| `netbox_circuits_providers_get` | Get a provider by ID |
+
+### Tenancy — [docs/tenancy.md](docs/tenancy.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_tenancy_tenants_list` | List tenants (filter: name, group) |
+| `netbox_tenancy_tenants_get` | Get a tenant by ID |
+
+### Virtualization — [docs/virtualization.md](docs/virtualization.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_virtualization_vms_list` | List virtual machines (filter: cluster, site, status, role, tenant) |
+| `netbox_virtualization_vms_get` | Get a virtual machine by ID |
+| `netbox_virtualization_clusters_list` | List clusters (filter: name, type, site) |
+| `netbox_virtualization_clusters_get` | Get a cluster by ID |
 
 ## Development
 

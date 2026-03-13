@@ -273,8 +273,8 @@ install:
 
 ### Phase 2 — Core Tools
 
-- [ ] Implement DCIM tools (`internal/tools/dcim.go`)
-- [ ] Implement IPAM tools (`internal/tools/ipam.go`)
+- [x] Implement DCIM tools (`internal/tools/dcim.go`)
+- [x] Implement IPAM tools (`internal/tools/ipam.go`)
 
 ### Phase 3 — Additional Tools
 
