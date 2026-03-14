@@ -190,52 +190,110 @@ mcp.AddTool(s, &mcp.Tool{
 
 | Tool name | Description | Key filters |
 |---|---|---|
-| `netbox_dcim_devices_list` | List devices | site, rack, role, status, limit, offset |
+| `netbox_dcim_devices_list` | List devices | q, site, rack, role, status, ordering, limit, offset |
 | `netbox_dcim_devices_get` | Get a device by ID | id |
-| `netbox_dcim_sites_list` | List sites | name, status, region, limit, offset |
+| `netbox_dcim_sites_list` | List sites | q, name, status, region, ordering, limit, offset |
 | `netbox_dcim_sites_get` | Get a site by ID | id |
-| `netbox_dcim_racks_list` | List racks | site, location, status, limit, offset |
+| `netbox_dcim_racks_list` | List racks | q, site, location, status, ordering, limit, offset |
 | `netbox_dcim_racks_get` | Get a rack by ID | id |
-| `netbox_dcim_interfaces_list` | List device interfaces | device_id, name, type, limit, offset |
-| `netbox_dcim_cables_list` | List cables | site, status, limit, offset |
+| `netbox_dcim_interfaces_list` | List device interfaces | q, device_id, name, type, ordering, limit, offset |
+| `netbox_dcim_interfaces_get` | Get a device interface by ID | id |
+| `netbox_dcim_cables_list` | List cables | q, site, status, ordering, limit, offset |
+| `netbox_dcim_cables_get` | Get a cable by ID | id |
+| `netbox_dcim_regions_list` | List regions | q, name, slug, parent, ordering, limit, offset |
+| `netbox_dcim_regions_get` | Get a region by ID | id |
+| `netbox_dcim_locations_list` | List locations | q, site, parent, status, tenant, ordering, limit, offset |
+| `netbox_dcim_locations_get` | Get a location by ID | id |
+| `netbox_dcim_manufacturers_list` | List manufacturers | q, name, slug, ordering, limit, offset |
+| `netbox_dcim_manufacturers_get` | Get a manufacturer by ID | id |
+| `netbox_dcim_device_types_list` | List device types | q, manufacturer, model, ordering, limit, offset |
+| `netbox_dcim_device_types_get` | Get a device type by ID | id |
+| `netbox_dcim_device_roles_list` | List device roles | q, name, slug, vm_role, ordering, limit, offset |
+| `netbox_dcim_device_roles_get` | Get a device role by ID | id |
+| `netbox_dcim_platforms_list` | List platforms | q, name, manufacturer, ordering, limit, offset |
+| `netbox_dcim_platforms_get` | Get a platform by ID | id |
+| `netbox_dcim_power_panels_list` | List power panels | q, site, ordering, limit, offset |
+| `netbox_dcim_power_panels_get` | Get a power panel by ID | id |
+| `netbox_dcim_power_feeds_list` | List power feeds | q, site, status, type, ordering, limit, offset |
+| `netbox_dcim_power_feeds_get` | Get a power feed by ID | id |
+| `netbox_dcim_virtual_chassis_list` | List virtual chassis | q, site, tenant, ordering, limit, offset |
+| `netbox_dcim_virtual_chassis_get` | Get a virtual chassis by ID | id |
+| `netbox_dcim_inventory_items_list` | List inventory items | q, device_id, manufacturer, discovered, ordering, limit, offset |
+| `netbox_dcim_inventory_items_get` | Get an inventory item by ID | id |
 
 ### IPAM (`internal/tools/ipam.go`)
 
 | Tool name | Description | Key filters |
 |---|---|---|
-| `netbox_ipam_ip_addresses_list` | List IP addresses | address, vrf, status, tenant, device, limit, offset |
+| `netbox_ipam_ip_addresses_list` | List IP addresses | q, address, vrf, status, tenant, device, ordering, limit, offset |
 | `netbox_ipam_ip_addresses_get` | Get an IP address by ID | id |
-| `netbox_ipam_prefixes_list` | List prefixes | prefix, vrf, status, site, tenant, limit, offset |
+| `netbox_ipam_prefixes_list` | List prefixes | q, prefix, vrf, status, site, tenant, ordering, limit, offset |
 | `netbox_ipam_prefixes_get` | Get a prefix by ID | id |
-| `netbox_ipam_vrfs_list` | List VRFs | name, rd, tenant, limit, offset |
+| `netbox_ipam_vrfs_list` | List VRFs | q, name, rd, tenant, ordering, limit, offset |
 | `netbox_ipam_vrfs_get` | Get a VRF by ID | id |
-| `netbox_ipam_vlans_list` | List VLANs | vid, name, site, group, status, limit, offset |
+| `netbox_ipam_vlans_list` | List VLANs | q, vid, name, site, group, status, ordering, limit, offset |
 | `netbox_ipam_vlans_get` | Get a VLAN by ID | id |
+| `netbox_ipam_aggregates_list` | List aggregates | q, family, rir, tenant, ordering, limit, offset |
+| `netbox_ipam_aggregates_get` | Get an aggregate by ID | id |
+| `netbox_ipam_ip_ranges_list` | List IP ranges | q, vrf, status, tenant, ordering, limit, offset |
+| `netbox_ipam_ip_ranges_get` | Get an IP range by ID | id |
+| `netbox_ipam_route_targets_list` | List route targets | q, name, tenant, ordering, limit, offset |
+| `netbox_ipam_route_targets_get` | Get a route target by ID | id |
+| `netbox_ipam_rirs_list` | List RIRs | q, name, slug, ordering, limit, offset |
+| `netbox_ipam_rirs_get` | Get a RIR by ID | id |
+| `netbox_ipam_vlan_groups_list` | List VLAN groups | q, name, ordering, limit, offset |
+| `netbox_ipam_vlan_groups_get` | Get a VLAN group by ID | id |
+| `netbox_ipam_services_list` | List services | q, device_id, virtual_machine_id, protocol, ordering, limit, offset |
+| `netbox_ipam_services_get` | Get a service by ID | id |
 
 ### Circuits (`internal/tools/circuits.go`)
 
 | Tool name | Description | Key filters |
 |---|---|---|
-| `netbox_circuits_circuits_list` | List circuits | provider, status, type, site, tenant, limit, offset |
+| `netbox_circuits_circuits_list` | List circuits | q, provider, status, type, site, tenant, ordering, limit, offset |
 | `netbox_circuits_circuits_get` | Get a circuit by ID | id |
-| `netbox_circuits_providers_list` | List circuit providers | name, limit, offset |
+| `netbox_circuits_providers_list` | List circuit providers | q, name, ordering, limit, offset |
 | `netbox_circuits_providers_get` | Get a provider by ID | id |
+| `netbox_circuits_circuit_types_list` | List circuit types | q, name, slug, ordering, limit, offset |
+| `netbox_circuits_circuit_types_get` | Get a circuit type by ID | id |
+| `netbox_circuits_circuit_terminations_list` | List circuit terminations | q, circuit_id, site, ordering, limit, offset |
+| `netbox_circuits_circuit_terminations_get` | Get a circuit termination by ID | id |
+| `netbox_circuits_provider_accounts_list` | List provider accounts | q, provider, ordering, limit, offset |
+| `netbox_circuits_provider_accounts_get` | Get a provider account by ID | id |
+| `netbox_circuits_provider_networks_list` | List provider networks | q, provider, ordering, limit, offset |
+| `netbox_circuits_provider_networks_get` | Get a provider network by ID | id |
 
 ### Tenancy (`internal/tools/tenancy.go`)
 
 | Tool name | Description | Key filters |
 |---|---|---|
-| `netbox_tenancy_tenants_list` | List tenants | name, group, limit, offset |
+| `netbox_tenancy_tenants_list` | List tenants | q, name, group, ordering, limit, offset |
 | `netbox_tenancy_tenants_get` | Get a tenant by ID | id |
+| `netbox_tenancy_tenant_groups_list` | List tenant groups | q, name, parent, ordering, limit, offset |
+| `netbox_tenancy_tenant_groups_get` | Get a tenant group by ID | id |
+| `netbox_tenancy_contacts_list` | List contacts | q, name, group, ordering, limit, offset |
+| `netbox_tenancy_contacts_get` | Get a contact by ID | id |
+| `netbox_tenancy_contact_groups_list` | List contact groups | q, name, parent, ordering, limit, offset |
+| `netbox_tenancy_contact_groups_get` | Get a contact group by ID | id |
+| `netbox_tenancy_contact_roles_list` | List contact roles | q, name, slug, ordering, limit, offset |
+| `netbox_tenancy_contact_roles_get` | Get a contact role by ID | id |
 
 ### Virtualization (`internal/tools/virtualization.go`)
 
 | Tool name | Description | Key filters |
 |---|---|---|
-| `netbox_virtualization_vms_list` | List virtual machines | cluster, site, status, role, tenant, limit, offset |
+| `netbox_virtualization_vms_list` | List virtual machines | q, cluster, site, status, role, tenant, ordering, limit, offset |
 | `netbox_virtualization_vms_get` | Get a VM by ID | id |
-| `netbox_virtualization_clusters_list` | List clusters | name, type, site, limit, offset |
+| `netbox_virtualization_clusters_list` | List clusters | q, name, type, site, ordering, limit, offset |
 | `netbox_virtualization_clusters_get` | Get a cluster by ID | id |
+| `netbox_virtualization_cluster_groups_list` | List cluster groups | q, name, ordering, limit, offset |
+| `netbox_virtualization_cluster_groups_get` | Get a cluster group by ID | id |
+| `netbox_virtualization_cluster_types_list` | List cluster types | q, name, ordering, limit, offset |
+| `netbox_virtualization_cluster_types_get` | Get a cluster type by ID | id |
+| `netbox_virtualization_interfaces_list` | List VM interfaces | q, virtual_machine_id, name, enabled, ordering, limit, offset |
+| `netbox_virtualization_interfaces_get` | Get a VM interface by ID | id |
+| `netbox_virtualization_virtual_disks_list` | List virtual disks | q, virtual_machine_id, name, ordering, limit, offset |
+| `netbox_virtualization_virtual_disks_get` | Get a virtual disk by ID | id |
 
 ---
 
@@ -292,5 +350,11 @@ install:
 - [x] Write README with installation and Claude Desktop/Code configuration example
 - [x] Write per-section tool reference docs (`docs/`)
 - [x] Switch to published library versions (go-sdk v1.4.0, go-netbox v4.3.0)
-- [ ] Write tests for config loading
+- [x] Write tests for config loading
 - [ ] Test against a live NetBox instance
+
+### Phase 5 — Gap closure
+
+- [x] Phase A: add `q` and `ordering` to all list tools
+- [x] Phase B: add missing `_get` tools (interfaces, cables)
+- [x] Phase C: add missing resources in existing modules (44 new tool pairs)

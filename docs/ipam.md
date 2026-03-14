@@ -10,12 +10,14 @@ List IP addresses, with optional filtering.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `address` | string | no | IP address with prefix length (e.g. `192.0.2.1/24`) |
 | `vrf` | string | no | VRF name |
 | `status` | string | no | `active`, `reserved`, `deprecated`, `dhcp`, or `slaac` |
 | `tenant` | string | no | Tenant name or slug |
 | `device` | string | no | Device name |
-| `limit` | integer | no | Maximum results (default 50) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
 Returns a paginated list of `IPAddress` objects.
@@ -40,12 +42,14 @@ List IP prefixes, with optional filtering.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `prefix` | string | no | Prefix in CIDR notation (e.g. `192.0.2.0/24`) |
 | `vrf` | string | no | VRF name |
 | `status` | string | no | `active`, `container`, `reserved`, or `deprecated` |
 | `site` | string | no | Site name or slug |
 | `tenant` | string | no | Tenant name or slug |
-| `limit` | integer | no | Maximum results (default 50) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
 Returns a paginated list of `Prefix` objects.
@@ -70,10 +74,12 @@ List VRFs, with optional filtering.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string | no | VRF name |
 | `rd` | string | no | Route distinguisher |
 | `tenant` | string | no | Tenant name or slug |
-| `limit` | integer | no | Maximum results (default 50) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
 Returns a paginated list of `VRF` objects.
@@ -98,12 +104,14 @@ List VLANs, with optional filtering.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `vid` | integer | no | VLAN ID number (1–4094) |
 | `name` | string | no | VLAN name |
 | `site` | string | no | Site name or slug |
 | `group` | string | no | VLAN group name or slug |
 | `status` | string | no | `active`, `reserved`, or `deprecated` |
-| `limit` | integer | no | Maximum results (default 50) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
 Returns a paginated list of `VLAN` objects.
@@ -119,3 +127,179 @@ Get a single VLAN by ID.
 | `id` | integer | yes | NetBox VLAN ID |
 
 Returns a single `VLAN` object.
+
+---
+
+### `netbox_ipam_aggregates_list`
+
+List IP aggregates, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `family` | integer | no | Address family: `4` (IPv4) or `6` (IPv6) |
+| `rir` | string | no | RIR name or slug |
+| `tenant` | string | no | Tenant name or slug |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `Aggregate` objects.
+
+---
+
+### `netbox_ipam_aggregates_get`
+
+Get a single aggregate by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox aggregate ID |
+
+Returns a single `Aggregate` object.
+
+---
+
+### `netbox_ipam_ip_ranges_list`
+
+List IP ranges, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `vrf` | string | no | VRF name |
+| `status` | string | no | `active`, `reserved`, or `deprecated` |
+| `tenant` | string | no | Tenant name or slug |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `IPRange` objects.
+
+---
+
+### `netbox_ipam_ip_ranges_get`
+
+Get a single IP range by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox IP range ID |
+
+Returns a single `IPRange` object.
+
+---
+
+### `netbox_ipam_route_targets_list`
+
+List route targets, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string | no | Route target name |
+| `tenant` | string | no | Tenant name or slug |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `RouteTarget` objects.
+
+---
+
+### `netbox_ipam_route_targets_get`
+
+Get a single route target by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox route target ID |
+
+Returns a single `RouteTarget` object.
+
+---
+
+### `netbox_ipam_rirs_list`
+
+List RIRs (Regional Internet Registries), with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string | no | RIR name |
+| `slug` | string | no | RIR slug |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `RIR` objects.
+
+---
+
+### `netbox_ipam_rirs_get`
+
+Get a single RIR by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox RIR ID |
+
+Returns a single `RIR` object.
+
+---
+
+### `netbox_ipam_vlan_groups_list`
+
+List VLAN groups, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string | no | VLAN group name |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `VLANGroup` objects.
+
+---
+
+### `netbox_ipam_vlan_groups_get`
+
+Get a single VLAN group by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox VLAN group ID |
+
+Returns a single `VLANGroup` object.
+
+---
+
+### `netbox_ipam_services_list`
+
+List services, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `device_id` | integer | no | Device ID |
+| `virtual_machine_id` | integer | no | Virtual machine ID |
+| `protocol` | string | no | Protocol (e.g. `tcp`, `udp`) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `Service` objects.
+
+---
+
+### `netbox_ipam_services_get`
+
+Get a single service by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox service ID |
+
+Returns a single `Service` object.
