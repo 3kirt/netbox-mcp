@@ -18,6 +18,8 @@ func RegisterCircuits(s *mcp.Server, client *netbox.APIClient) {
 
 func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
+		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
 		Provider string `json:"provider,omitempty" jsonschema:"Provider name or slug to filter by"`
 		Status   string `json:"status,omitempty" jsonschema:"Circuit status (active, planned, provisioning, offline, deprovisioning, decommissioned)"`
 		Type     string `json:"type,omitempty" jsonschema:"Circuit type name or slug to filter by"`
@@ -31,6 +33,9 @@ func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 		Description: "List circuits in NetBox, optionally filtered by provider, status, type, site, or tenant.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
 		r := client.CircuitsAPI.CircuitsCircuitsList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
 		if in.Provider != "" {
 			r = r.Provider([]string{in.Provider})
 		}
@@ -45,6 +50,9 @@ func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 		}
 		if in.Tenant != "" {
 			r = r.Tenant([]string{in.Tenant})
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
 		}
 		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
@@ -73,17 +81,25 @@ func addCircuitsCircuitsGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addCircuitsProvidersList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Name   string `json:"name,omitempty" jsonschema:"Provider name to filter by"`
-		Limit  int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     string `json:"name,omitempty" jsonschema:"Provider name to filter by"`
+		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_circuits_providers_list",
 		Description: "List circuit providers in NetBox, optionally filtered by name.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
 		r := client.CircuitsAPI.CircuitsProvidersList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
 		if in.Name != "" {
 			r = r.Name([]string{in.Name})
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
 		}
 		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()

@@ -18,19 +18,24 @@ func RegisterVirtualization(s *mcp.Server, client *netbox.APIClient) {
 
 func addVirtualizationVMsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Cluster string `json:"cluster,omitempty" jsonschema:"Cluster name to filter by"`
-		Site    string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Status  string `json:"status,omitempty" jsonschema:"VM status (active, offline, staged, failed, decommissioning)"`
-		Role    string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
-		Tenant  string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
-		Limit   int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset  int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Cluster  string `json:"cluster,omitempty" jsonschema:"Cluster name to filter by"`
+		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Status   string `json:"status,omitempty" jsonschema:"VM status (active, offline, staged, failed, decommissioning)"`
+		Role     string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
+		Tenant   string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
+		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_virtualization_vms_list",
 		Description: "List virtual machines in NetBox, optionally filtered by cluster, site, status, role, or tenant.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
 		r := client.VirtualizationAPI.VirtualizationVirtualMachinesList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
 		if in.Cluster != "" {
 			r = r.Cluster([]string{in.Cluster})
 		}
@@ -45,6 +50,9 @@ func addVirtualizationVMsList(s *mcp.Server, client *netbox.APIClient) {
 		}
 		if in.Tenant != "" {
 			r = r.Tenant([]string{in.Tenant})
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
 		}
 		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
@@ -73,17 +81,22 @@ func addVirtualizationVMsGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Name   string `json:"name,omitempty" jsonschema:"Cluster name to filter by"`
-		Type   string `json:"type,omitempty" jsonschema:"Cluster type name or slug to filter by"`
-		Site   string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Limit  int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     string `json:"name,omitempty" jsonschema:"Cluster name to filter by"`
+		Type     string `json:"type,omitempty" jsonschema:"Cluster type name or slug to filter by"`
+		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_virtualization_clusters_list",
 		Description: "List virtualization clusters in NetBox, optionally filtered by name, type, or site.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
 		r := client.VirtualizationAPI.VirtualizationClustersList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
 		if in.Name != "" {
 			r = r.Name([]string{in.Name})
 		}
@@ -92,6 +105,9 @@ func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
 		}
 		if in.Site != "" {
 			r = r.Site([]string{in.Site})
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
 		}
 		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()

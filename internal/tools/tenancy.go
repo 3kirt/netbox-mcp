@@ -16,21 +16,29 @@ func RegisterTenancy(s *mcp.Server, client *netbox.APIClient) {
 
 func addTenancyTenantsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Name   string `json:"name,omitempty" jsonschema:"Tenant name to filter by"`
-		Group  string `json:"group,omitempty" jsonschema:"Tenant group name or slug to filter by"`
-		Limit  int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     string `json:"name,omitempty" jsonschema:"Tenant name to filter by"`
+		Group    string `json:"group,omitempty" jsonschema:"Tenant group name or slug to filter by"`
+		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_tenancy_tenants_list",
 		Description: "List tenants in NetBox, optionally filtered by name or group.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
 		r := client.TenancyAPI.TenancyTenantsList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
 		if in.Name != "" {
 			r = r.Name([]string{in.Name})
 		}
 		if in.Group != "" {
 			r = r.Group([]string{in.Group})
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
 		}
 		limit := clampLimit(in.Limit)
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
