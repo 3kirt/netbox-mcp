@@ -18,7 +18,9 @@ func RegisterDCIM(s *mcp.Server, client *netbox.APIClient) {
 	addDCIMRacksList(s, client)
 	addDCIMRacksGet(s, client)
 	addDCIMInterfacesList(s, client)
+	addDCIMInterfacesGet(s, client)
 	addDCIMCablesList(s, client)
+	addDCIMCablesGet(s, client)
 }
 
 func addDCIMDevicesList(s *mcp.Server, client *netbox.APIClient) {
@@ -229,6 +231,22 @@ func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 	})
 }
 
+func addDCIMInterfacesGet(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		ID int32 `json:"id" jsonschema:"NetBox ID of the interface to retrieve"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_dcim_interfaces_get",
+		Description: "Get a single device interface by its NetBox ID.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		resp, _, err := client.DcimAPI.DcimInterfacesRetrieve(ctx, in.ID).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("getting interface %d: %v", in.ID, err))
+		}
+		return jsonResult(resp)
+	})
+}
+
 func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
@@ -259,6 +277,22 @@ func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("listing cables: %v", err))
+		}
+		return jsonResult(resp)
+	})
+}
+
+func addDCIMCablesGet(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		ID int32 `json:"id" jsonschema:"NetBox ID of the cable to retrieve"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_dcim_cables_get",
+		Description: "Get a single cable by its NetBox ID.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		resp, _, err := client.DcimAPI.DcimCablesRetrieve(ctx, in.ID).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("getting cable %d: %v", in.ID, err))
 		}
 		return jsonResult(resp)
 	})

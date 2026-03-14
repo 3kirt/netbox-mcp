@@ -26,7 +26,9 @@ var wantTools = []string{
 	"netbox_dcim_racks_list",
 	"netbox_dcim_racks_get",
 	"netbox_dcim_interfaces_list",
+	"netbox_dcim_interfaces_get",
 	"netbox_dcim_cables_list",
+	"netbox_dcim_cables_get",
 	// IPAM
 	"netbox_ipam_ip_addresses_list",
 	"netbox_ipam_ip_addresses_get",
