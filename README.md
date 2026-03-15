@@ -2,7 +2,7 @@
 
 A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that exposes [NetBox](https://netbox.dev) infrastructure data as tools for Claude and other MCP-compatible clients.
 
-The server runs as a local subprocess and communicates over stdio. It is read-only: all tools query NetBox but make no changes.
+The server communicates over stdio (local subprocess) or HTTP (remote MCP). It is read-only: all tools query NetBox but make no changes.
 
 ## Requirements
 
@@ -130,13 +130,52 @@ Alternatively, add the following directly to your project's `.mcp.json` or to `~
 }
 ```
 
-## Remote MCP (Claude.ai web and mobile)
+## Remote MCP (HTTP transport)
 
-Remote MCP allows netbox-mcp to be used from Claude.ai on the web, iOS, and Android without a locally installed binary. This requires an HTTP transport and an OAuth authentication flow, which netbox-mcp does not currently implement.
+netbox-mcp can run as a remote MCP server over the Streamable HTTP transport.
+Each session authenticates with its own NetBox API token via an
+`Authorization: Bearer` header — no server-side token is required.
 
-NetBox does not ship a built-in OAuth server. A remote transport would likely use the `/api/users/tokens/provision/` endpoint to exchange a user's credentials for a NetBox token during the OAuth callback, or rely on a third-party NetBox OAuth plugin.
+### Running with Docker
 
-Remote HTTP transport is planned for a future release. Until then, use the local stdio integration described above.
+```sh
+docker build -t netbox-mcp .
+docker run --rm -p 8080:8080 \
+  -e NETBOX_URL=https://netbox.example.com \
+  netbox-mcp
+```
+
+Or with `make`:
+
+```sh
+NETBOX_URL=https://netbox.example.com make docker-build docker-run
+```
+
+### Running from the binary
+
+```sh
+NETBOX_URL=https://netbox.example.com netbox-mcp --listen :8080
+```
+
+### Registering with Claude Code
+
+```sh
+claude mcp add --transport http \
+  --header "Authorization: Bearer your-netbox-token" \
+  netbox http://your-host:8080/mcp
+```
+
+> **TLS note:** The HTTP listener does not terminate TLS. In production, place
+> it behind a reverse proxy (nginx, Caddy) or a platform like Fly.io or Railway
+> that provides HTTPS. Never expose the listener without TLS — the bearer token
+> would be sent in plaintext.
+
+### Remote MCP for Claude.ai web and mobile
+
+Appearing in Claude.ai Settings → Connectors requires a full OAuth 2.0
+Authorization Code flow. NetBox does not provide this natively; a future phase
+will add a token-provisioning proxy or support for a NetBox OAuth plugin. Until
+then, use the HTTP transport with Claude Code as described above.
 
 ## Available tools
 
@@ -363,10 +402,12 @@ Remote HTTP transport is planned for a future release. Until then, use the local
 ## Development
 
 ```sh
-make build   # compile
-make test    # run tests
-make lint    # run golangci-lint
-make clean   # remove compiled binary
+make build         # compile
+make test          # run tests
+make lint          # run golangci-lint
+make clean         # remove compiled binary
+make docker-build  # build Docker image
+make docker-run    # run HTTP server on :8080 (requires NETBOX_URL=...)
 ```
 
 ## License
