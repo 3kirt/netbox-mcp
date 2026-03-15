@@ -8,8 +8,9 @@ import (
 	"github.com/3kirt/netbox-mcp/internal/tools"
 )
 
-// Register adds all NetBox tools to s.
+// Register adds all NetBox tools and prompts to s.
 func Register(s *mcp.Server, client *netbox.APIClient) {
+	tools.RegisterPrompts(s)
 	tools.RegisterCircuits(s, client)
 	tools.RegisterCore(s, client)
 	tools.RegisterDCIM(s, client)
