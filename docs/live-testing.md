@@ -58,10 +58,56 @@ For each tool area below, follow the sequence: list with no filters → list wit
 - Call `netbox_dcim_sites_list` with `status` set to `active`.
 - Call `netbox_dcim_sites_get` with the noted `id`.
 
+**Regions**
+- Call `netbox_dcim_regions_list` with no arguments.
+- If results exist, note a region name and `id`.
+- Call `netbox_dcim_regions_list` with `name` set to that name.
+- Call `netbox_dcim_regions_get` with the noted `id`.
+
+**Site Groups**
+- Call `netbox_dcim_site_groups_list` with no arguments.
+- If results exist, call `netbox_dcim_site_groups_get` with a result `id`.
+
+**Locations**
+- Call `netbox_dcim_locations_list` with no arguments.
+- If results exist, call `netbox_dcim_locations_list` with `site` set to a known site slug.
+- Call `netbox_dcim_locations_get` with a result `id`.
+
 **Racks**
 - Call `netbox_dcim_racks_list` with no arguments.
 - If results exist, call `netbox_dcim_racks_list` with `site` set to a known site slug.
 - Call `netbox_dcim_racks_get` with a rack `id` from the results.
+
+**Rack Roles**
+- Call `netbox_dcim_rack_roles_list` with no arguments.
+- If results exist, call `netbox_dcim_rack_roles_get` with a result `id`.
+
+**Rack Types**
+- Call `netbox_dcim_rack_types_list` with no arguments.
+- If results exist, call `netbox_dcim_rack_types_get` with a result `id`.
+
+**Rack Reservations**
+- Call `netbox_dcim_rack_reservations_list` with no arguments.
+- If results exist, call `netbox_dcim_rack_reservations_list` with `site` set to a known site slug.
+- Call `netbox_dcim_rack_reservations_get` with a result `id`.
+
+**Manufacturers**
+- Call `netbox_dcim_manufacturers_list` with no arguments.
+- If results exist, note a manufacturer name and `id`.
+- Call `netbox_dcim_manufacturers_get` with the noted `id`.
+
+**Device Types**
+- Call `netbox_dcim_device_types_list` with no arguments.
+- If results exist, call `netbox_dcim_device_types_list` with `manufacturer` set to a known manufacturer slug.
+- Call `netbox_dcim_device_types_get` with a result `id`.
+
+**Device Roles**
+- Call `netbox_dcim_device_roles_list` with no arguments.
+- If results exist, call `netbox_dcim_device_roles_get` with a result `id`.
+
+**Platforms**
+- Call `netbox_dcim_platforms_list` with no arguments.
+- If results exist, call `netbox_dcim_platforms_get` with a result `id`.
 
 **Interfaces**
 - Call `netbox_dcim_interfaces_list` with `device_id` set to the device ID noted above.
@@ -70,6 +116,79 @@ For each tool area below, follow the sequence: list with no filters → list wit
 **Cables**
 - Call `netbox_dcim_cables_list` with no arguments.
 - If results exist, call with `status` set to `connected`.
+
+**Cable Terminations**
+- Call `netbox_dcim_cable_terminations_list` with no arguments.
+- If results exist, call `netbox_dcim_cable_terminations_get` with a result `id`.
+
+**Console Ports**
+- Call `netbox_dcim_console_ports_list` with no arguments.
+- If results exist, call `netbox_dcim_console_ports_list` with `device_id` from the noted device.
+- Call `netbox_dcim_console_ports_get` with a result `id`.
+
+**Console Server Ports**
+- Call `netbox_dcim_console_server_ports_list` with no arguments.
+- If results exist, call `netbox_dcim_console_server_ports_get` with a result `id`.
+
+**Power Panels**
+- Call `netbox_dcim_power_panels_list` with no arguments.
+- If results exist, call `netbox_dcim_power_panels_list` with `site` set to a known site slug.
+- Call `netbox_dcim_power_panels_get` with a result `id`.
+
+**Power Feeds**
+- Call `netbox_dcim_power_feeds_list` with no arguments.
+- If results exist, call `netbox_dcim_power_feeds_list` with `status` set to `active`.
+- Call `netbox_dcim_power_feeds_get` with a result `id`.
+
+**Power Outlets**
+- Call `netbox_dcim_power_outlets_list` with no arguments.
+- If results exist, call `netbox_dcim_power_outlets_get` with a result `id`.
+
+**Power Ports**
+- Call `netbox_dcim_power_ports_list` with no arguments.
+- If results exist, call `netbox_dcim_power_ports_get` with a result `id`.
+
+**Front Ports**
+- Call `netbox_dcim_front_ports_list` with no arguments.
+- If results exist, call `netbox_dcim_front_ports_get` with a result `id`.
+
+**Rear Ports**
+- Call `netbox_dcim_rear_ports_list` with no arguments.
+- If results exist, call `netbox_dcim_rear_ports_get` with a result `id`.
+
+**Device Bays**
+- Call `netbox_dcim_device_bays_list` with no arguments.
+- If results exist, call `netbox_dcim_device_bays_get` with a result `id`.
+
+**Modules**
+- Call `netbox_dcim_modules_list` with no arguments.
+- If results exist, call `netbox_dcim_modules_list` with `status` set to `active`.
+- Call `netbox_dcim_modules_get` with a result `id`.
+
+**Module Bays**
+- Call `netbox_dcim_module_bays_list` with no arguments.
+- If results exist, call `netbox_dcim_module_bays_get` with a result `id`.
+
+**Module Types**
+- Call `netbox_dcim_module_types_list` with no arguments.
+- If results exist, call `netbox_dcim_module_types_get` with a result `id`.
+
+**Inventory Items**
+- Call `netbox_dcim_inventory_items_list` with no arguments.
+- If results exist, call `netbox_dcim_inventory_items_list` with `device_id` from the noted device.
+- Call `netbox_dcim_inventory_items_get` with a result `id`.
+
+**MAC Addresses**
+- Call `netbox_dcim_mac_addresses_list` with no arguments.
+- If results exist, call `netbox_dcim_mac_addresses_get` with a result `id`.
+
+**Virtual Chassis**
+- Call `netbox_dcim_virtual_chassis_list` with no arguments.
+- If results exist, call `netbox_dcim_virtual_chassis_get` with a result `id`.
+
+**Virtual Device Contexts**
+- Call `netbox_dcim_virtual_device_contexts_list` with no arguments.
+- If results exist, call `netbox_dcim_virtual_device_contexts_get` with a result `id`.
 
 ---
 
@@ -87,17 +206,58 @@ For each tool area below, follow the sequence: list with no filters → list wit
 - Call `netbox_ipam_prefixes_list` with `status` set to `active`.
 - Call `netbox_ipam_prefixes_get` with the noted `id`.
 
+**Aggregates**
+- Call `netbox_ipam_aggregates_list` with no arguments.
+- If results exist, call `netbox_ipam_aggregates_get` with a result `id`.
+
+**IP Ranges**
+- Call `netbox_ipam_ip_ranges_list` with no arguments.
+- If results exist, call `netbox_ipam_ip_ranges_list` with `status` set to `active`.
+- Call `netbox_ipam_ip_ranges_get` with a result `id`.
+
 **VRFs**
 - Call `netbox_ipam_vrfs_list` with no arguments.
 - If results exist, note a VRF name and `id`.
 - Call `netbox_ipam_vrfs_get` with that `id`.
 - Call `netbox_ipam_ip_addresses_list` with `vrf` set to the VRF name and confirm results are scoped correctly.
 
+**Route Targets**
+- Call `netbox_ipam_route_targets_list` with no arguments.
+- If results exist, call `netbox_ipam_route_targets_get` with a result `id`.
+
+**RIRs**
+- Call `netbox_ipam_rirs_list` with no arguments.
+- If results exist, call `netbox_ipam_rirs_get` with a result `id`.
+
 **VLANs**
 - Call `netbox_ipam_vlans_list` with no arguments.
 - If results exist, note a VLAN `vid` and `id`.
 - Call `netbox_ipam_vlans_list` with `vid` set to that number.
 - Call `netbox_ipam_vlans_get` with the noted `id`.
+
+**VLAN Groups**
+- Call `netbox_ipam_vlan_groups_list` with no arguments.
+- If results exist, call `netbox_ipam_vlan_groups_get` with a result `id`.
+
+**ASNs**
+- Call `netbox_ipam_asns_list` with no arguments.
+- If results exist, call `netbox_ipam_asns_get` with a result `id`.
+
+**Services**
+- Call `netbox_ipam_services_list` with no arguments.
+- If results exist, call `netbox_ipam_services_list` with `protocol` set to `tcp`.
+- Call `netbox_ipam_services_get` with a result `id`.
+
+**FHRP Groups**
+- Call `netbox_ipam_fhrp_groups_list` with no arguments.
+- If results exist, note a group `id`.
+- Call `netbox_ipam_fhrp_groups_get` with that `id`.
+- Call `netbox_ipam_fhrp_group_assignments_list` with `group_id` set to that `id`.
+- If assignments exist, call `netbox_ipam_fhrp_group_assignments_get` with an assignment `id`.
+
+**IP Roles**
+- Call `netbox_ipam_roles_list` with no arguments.
+- If results exist, call `netbox_ipam_roles_get` with a result `id`.
 
 ---
 
@@ -115,6 +275,24 @@ For each tool area below, follow the sequence: list with no filters → list wit
 - Call `netbox_circuits_providers_list` with `name` set to that name.
 - Call `netbox_circuits_providers_get` with the noted `id`.
 
+**Circuit Types**
+- Call `netbox_circuits_circuit_types_list` with no arguments.
+- If results exist, call `netbox_circuits_circuit_types_get` with a result `id`.
+
+**Circuit Terminations**
+- Call `netbox_circuits_circuit_terminations_list` with no arguments.
+- If results exist, call `netbox_circuits_circuit_terminations_list` with `circuit` set to a known circuit `id`.
+- Call `netbox_circuits_circuit_terminations_get` with a result `id`.
+
+**Provider Accounts**
+- Call `netbox_circuits_provider_accounts_list` with no arguments.
+- If results exist, call `netbox_circuits_provider_accounts_get` with a result `id`.
+
+**Provider Networks**
+- Call `netbox_circuits_provider_networks_list` with no arguments.
+- If results exist, call `netbox_circuits_provider_networks_list` with `provider` set to a known provider slug.
+- Call `netbox_circuits_provider_networks_get` with a result `id`.
+
 ---
 
 ### 4. Tenancy
@@ -125,6 +303,24 @@ For each tool area below, follow the sequence: list with no filters → list wit
 - Call `netbox_tenancy_tenants_list` with `name` set to that name.
 - Call `netbox_tenancy_tenants_get` with the noted `id`.
 - If a tenant group is present in the results, call `netbox_tenancy_tenants_list` with `group` set to the group slug.
+
+**Tenant Groups**
+- Call `netbox_tenancy_tenant_groups_list` with no arguments.
+- If results exist, call `netbox_tenancy_tenant_groups_get` with a result `id`.
+
+**Contacts**
+- Call `netbox_tenancy_contacts_list` with no arguments.
+- If results exist, note a contact name and `id`.
+- Call `netbox_tenancy_contacts_list` with `name` set to that name.
+- Call `netbox_tenancy_contacts_get` with the noted `id`.
+
+**Contact Groups**
+- Call `netbox_tenancy_contact_groups_list` with no arguments.
+- If results exist, call `netbox_tenancy_contact_groups_get` with a result `id`.
+
+**Contact Roles**
+- Call `netbox_tenancy_contact_roles_list` with no arguments.
+- If results exist, call `netbox_tenancy_contact_roles_get` with a result `id`.
 
 ---
 
@@ -137,11 +333,144 @@ For each tool area below, follow the sequence: list with no filters → list wit
 - Call `netbox_virtualization_vms_list` with `status` set to `active`.
 - Call `netbox_virtualization_vms_get` with the noted `id`.
 
+**VM Interfaces**
+- Call `netbox_virtualization_interfaces_list` with no arguments.
+- If results exist, call `netbox_virtualization_interfaces_list` with `virtual_machine` set to a known VM name.
+- Call `netbox_virtualization_interfaces_get` with a result `id`.
+
+**Virtual Disks**
+- Call `netbox_virtualization_virtual_disks_list` with no arguments.
+- If results exist, call `netbox_virtualization_virtual_disks_get` with a result `id`.
+
 **Clusters**
 - Call `netbox_virtualization_clusters_list` with no arguments.
 - If results exist, note a cluster name and `id`.
 - Call `netbox_virtualization_clusters_list` with `name` set to that name.
 - Call `netbox_virtualization_clusters_get` with the noted `id`.
+
+**Cluster Groups**
+- Call `netbox_virtualization_cluster_groups_list` with no arguments.
+- If results exist, call `netbox_virtualization_cluster_groups_get` with a result `id`.
+
+**Cluster Types**
+- Call `netbox_virtualization_cluster_types_list` with no arguments.
+- If results exist, call `netbox_virtualization_cluster_types_get` with a result `id`.
+
+---
+
+### 6. Extras
+
+**Tags**
+- Call `netbox_extras_tags_list` with no arguments.
+- If results exist, note a tag name and `id`.
+- Call `netbox_extras_tags_list` with `name` set to that name.
+- Call `netbox_extras_tags_get` with the noted `id`.
+
+**Config Contexts**
+- Call `netbox_extras_config_contexts_list` with no arguments.
+- If results exist, call `netbox_extras_config_contexts_list` with `is_active` set to `true`.
+- Call `netbox_extras_config_contexts_get` with a result `id`.
+
+**Custom Fields**
+- Call `netbox_extras_custom_fields_list` with no arguments.
+- If results exist, call `netbox_extras_custom_fields_get` with a result `id`.
+
+**Export Templates**
+- Call `netbox_extras_export_templates_list` with no arguments.
+- If results exist, call `netbox_extras_export_templates_get` with a result `id`.
+
+**Webhooks**
+- Call `netbox_extras_webhooks_list` with no arguments.
+- If results exist, call `netbox_extras_webhooks_get` with a result `id`.
+
+**Journal Entries**
+- Call `netbox_extras_journal_entries_list` with no arguments.
+- If results exist, call `netbox_extras_journal_entries_get` with a result `id`.
+
+---
+
+### 7. VPN
+
+**Tunnels**
+- Call `netbox_vpn_tunnels_list` with no arguments.
+- If results exist, call `netbox_vpn_tunnels_list` with `status` set to `active`.
+- Call `netbox_vpn_tunnels_get` with a result `id`.
+
+**Tunnel Groups**
+- Call `netbox_vpn_tunnel_groups_list` with no arguments.
+- If results exist, call `netbox_vpn_tunnel_groups_get` with a result `id`.
+
+**Tunnel Terminations**
+- Call `netbox_vpn_tunnel_terminations_list` with no arguments.
+- If results exist, call `netbox_vpn_tunnel_terminations_list` with `tunnel_id` set to a known tunnel `id`.
+- Call `netbox_vpn_tunnel_terminations_get` with a result `id`.
+
+**L2VPNs**
+- Call `netbox_vpn_l2vpns_list` with no arguments.
+- If results exist, call `netbox_vpn_l2vpns_get` with a result `id`.
+
+**IKE Policies**
+- Call `netbox_vpn_ike_policies_list` with no arguments.
+- If results exist, call `netbox_vpn_ike_policies_get` with a result `id`.
+
+**IPSec Policies**
+- Call `netbox_vpn_ipsec_policies_list` with no arguments.
+- If results exist, call `netbox_vpn_ipsec_policies_get` with a result `id`.
+
+---
+
+### 8. Wireless
+
+**Wireless LANs**
+- Call `netbox_wireless_lans_list` with no arguments.
+- If results exist, call `netbox_wireless_lans_list` with `status` set to `active`.
+- Call `netbox_wireless_lans_get` with a result `id`.
+
+**Wireless LAN Groups**
+- Call `netbox_wireless_lan_groups_list` with no arguments.
+- If results exist, call `netbox_wireless_lan_groups_get` with a result `id`.
+
+**Wireless Links**
+- Call `netbox_wireless_links_list` with no arguments.
+- If results exist, call `netbox_wireless_links_list` with `status` set to `active`.
+- Call `netbox_wireless_links_get` with a result `id`.
+
+---
+
+### 9. Core
+
+**Data Sources**
+- Call `netbox_core_data_sources_list` with no arguments.
+- If results exist, call `netbox_core_data_sources_list` with `status` set to `completed`.
+- Call `netbox_core_data_sources_get` with a result `id`.
+
+**Background Jobs**
+- Call `netbox_core_jobs_list` with no arguments.
+- If results exist, call `netbox_core_jobs_get` with a result `id`.
+
+**Object Changes (Audit Log)**
+- Call `netbox_core_object_changes_list` with no arguments.
+- Confirm the results contain change records.
+- Call `netbox_core_object_changes_list` with `user` set to a username from the results.
+- Call `netbox_core_object_changes_get` with a result `id`.
+
+---
+
+### 10. Users
+
+**Users**
+- Call `netbox_users_users_list` with no arguments.
+- If results exist, note a username and `id`.
+- Call `netbox_users_users_list` with `is_active` set to `true`.
+- Call `netbox_users_users_get` with the noted `id`.
+
+**Groups**
+- Call `netbox_users_groups_list` with no arguments.
+- If results exist, call `netbox_users_groups_get` with a result `id`.
+
+**API Tokens**
+- Call `netbox_users_tokens_list` with no arguments.
+- If results exist, call `netbox_users_tokens_get` with a result `id`.
 
 ---
 
@@ -152,6 +481,8 @@ Once the per-tool checks pass, verify a few natural joins:
 - Take a site from `netbox_dcim_sites_list`. Query `netbox_dcim_devices_list` and `netbox_ipam_prefixes_list` with that site and confirm the results are consistent.
 - Take a tenant from `netbox_tenancy_tenants_list`. Query `netbox_ipam_ip_addresses_list` with that tenant and confirm the results reference it.
 - Take a device from `netbox_dcim_devices_list`. Query `netbox_dcim_interfaces_list` with `device_id` and confirm all returned interfaces belong to that device.
+- Take a VM from `netbox_virtualization_vms_list`. Query `netbox_virtualization_interfaces_list` with `virtual_machine` set to its name and confirm the results match.
+- Take a circuit from `netbox_circuits_circuits_list`. Query `netbox_circuits_circuit_terminations_list` with `circuit` set to its `id` and confirm the terminations reference it.
 
 ---
 

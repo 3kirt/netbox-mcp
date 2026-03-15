@@ -78,7 +78,30 @@ The config file is typically located at:
 
 ## Claude Code integration
 
-Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mcpServers`:
+Register the server using the `claude mcp add` command:
+
+```sh
+claude mcp add --transport stdio netbox -- netbox-mcp
+```
+
+With credentials passed as environment variables:
+
+```sh
+claude mcp add --transport stdio \
+  --env NETBOX_URL=https://netbox.example.com \
+  --env NETBOX_TOKEN=your-api-token \
+  netbox -- netbox-mcp
+```
+
+To share the configuration with your team, use `--scope project` (writes to `.mcp.json`):
+
+```sh
+claude mcp add --transport stdio --scope project \
+  --env NETBOX_URL=https://netbox.example.com \
+  netbox -- netbox-mcp
+```
+
+Alternatively, add the following directly to your project's `.mcp.json` or to `~/.claude.json` under `mcpServers`:
 
 ```json
 {
