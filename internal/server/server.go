@@ -11,8 +11,13 @@ import (
 // Register adds all NetBox tools to s.
 func Register(s *mcp.Server, client *netbox.APIClient) {
 	tools.RegisterCircuits(s, client)
+	tools.RegisterCore(s, client)
 	tools.RegisterDCIM(s, client)
+	tools.RegisterExtras(s, client)
 	tools.RegisterIPAM(s, client)
 	tools.RegisterTenancy(s, client)
+	tools.RegisterUsers(s, client)
 	tools.RegisterVirtualization(s, client)
+	tools.RegisterVPN(s, client)
+	tools.RegisterWireless(s, client)
 }
