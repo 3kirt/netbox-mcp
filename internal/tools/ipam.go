@@ -30,6 +30,14 @@ func RegisterIPAM(s *mcp.Server, client *netbox.APIClient) {
 	addIPAMVLANGroupsGet(s, client)
 	addIPAMServicesList(s, client)
 	addIPAMServicesGet(s, client)
+	addIPAMASNsList(s, client)
+	addIPAMASNsGet(s, client)
+	addIPAMFHRPGroupsList(s, client)
+	addIPAMFHRPGroupsGet(s, client)
+	addIPAMFHRPGroupAssignmentsList(s, client)
+	addIPAMFHRPGroupAssignmentsGet(s, client)
+	addIPAMRolesList(s, client)
+	addIPAMRolesGet(s, client)
 }
 
 func addIPAMIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
@@ -506,6 +514,174 @@ func addIPAMServicesGet(s *mcp.Server, client *netbox.APIClient) {
 	addGetTool(s, "netbox_ipam_services_get", "Get a single service by its NetBox ID.", "service",
 		func(ctx context.Context, id int32) (any, error) {
 			r, _, err := client.IpamAPI.IpamServicesRetrieve(ctx, id).Execute()
+			return r, err
+		})
+}
+
+func addIPAMASNsList(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Site     []string `json:"site,omitempty"     jsonschema:"Site name or slug to filter by"`
+		Tenant   []string `json:"tenant,omitempty"   jsonschema:"Tenant name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty"    jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty"   jsonschema:"Pagination offset"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_ipam_asns_list",
+		Description: "List ASNs in NetBox, optionally filtered by site or tenant.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		r := client.IpamAPI.IpamAsnsList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
+		}
+		if len(in.Tenant) > 0 {
+			r = r.Tenant(in.Tenant)
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
+		}
+		limit := clampLimit(in.Limit)
+		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("listing ASNs: %v", err))
+		}
+		return jsonResult(resp)
+	})
+}
+
+func addIPAMASNsGet(s *mcp.Server, client *netbox.APIClient) {
+	addGetTool(s, "netbox_ipam_asns_get", "Get a single ASN by its NetBox ID.", "ASN",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamAsnsRetrieve(ctx, id).Execute()
+			return r, err
+		})
+}
+
+func addIPAMFHRPGroupsList(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     []string `json:"name,omitempty"     jsonschema:"FHRP group name(s) to filter by"`
+		Protocol []string `json:"protocol,omitempty" jsonschema:"FHRP protocol to filter by (vrrp2, vrrp3, carp, clusterxl, hsrp, glbp, other)"`
+		Limit    int32    `json:"limit,omitempty"    jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty"   jsonschema:"Pagination offset"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_ipam_fhrp_groups_list",
+		Description: "List FHRP groups (HSRP/VRRP/GLBP) in NetBox, optionally filtered by name or protocol.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		r := client.IpamAPI.IpamFhrpGroupsList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
+		}
+		if len(in.Protocol) > 0 {
+			r = r.Protocol(in.Protocol)
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
+		}
+		limit := clampLimit(in.Limit)
+		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("listing FHRP groups: %v", err))
+		}
+		return jsonResult(resp)
+	})
+}
+
+func addIPAMFHRPGroupsGet(s *mcp.Server, client *netbox.APIClient) {
+	addGetTool(s, "netbox_ipam_fhrp_groups_get", "Get a single FHRP group by its NetBox ID.", "FHRP group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamFhrpGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
+}
+
+func addIPAMFHRPGroupAssignmentsList(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		Ordering string `json:"ordering,omitempty"  jsonschema:"Field to order results by (prefix with - for descending)"`
+		GroupID  int32  `json:"group_id,omitempty"  jsonschema:"FHRP group ID to filter by"`
+		DeviceID int32  `json:"device_id,omitempty" jsonschema:"Device ID to filter by"`
+		Limit    int32  `json:"limit,omitempty"     jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32  `json:"offset,omitempty"    jsonschema:"Pagination offset"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_ipam_fhrp_group_assignments_list",
+		Description: "List FHRP group assignments in NetBox, optionally filtered by group or device.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		r := client.IpamAPI.IpamFhrpGroupAssignmentsList(ctx)
+		if in.GroupID != 0 {
+			r = r.GroupId([]int32{in.GroupID})
+		}
+		if in.DeviceID != 0 {
+			r = r.DeviceId([]int32{in.DeviceID})
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
+		}
+		limit := clampLimit(in.Limit)
+		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("listing FHRP group assignments: %v", err))
+		}
+		return jsonResult(resp)
+	})
+}
+
+func addIPAMFHRPGroupAssignmentsGet(s *mcp.Server, client *netbox.APIClient) {
+	addGetTool(s, "netbox_ipam_fhrp_group_assignments_get", "Get a single FHRP group assignment by its NetBox ID.", "FHRP group assignment",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamFhrpGroupAssignmentsRetrieve(ctx, id).Execute()
+			return r, err
+		})
+}
+
+func addIPAMRolesList(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     []string `json:"name,omitempty"     jsonschema:"Role name(s) to filter by"`
+		Slug     []string `json:"slug,omitempty"     jsonschema:"Role slug(s) to filter by"`
+		Limit    int32    `json:"limit,omitempty"    jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty"   jsonschema:"Pagination offset"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_ipam_roles_list",
+		Description: "List IP roles in NetBox, optionally filtered by name or slug.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		r := client.IpamAPI.IpamRolesList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
+		}
+		if len(in.Slug) > 0 {
+			r = r.Slug(in.Slug)
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
+		}
+		limit := clampLimit(in.Limit)
+		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("listing IP roles: %v", err))
+		}
+		return jsonResult(resp)
+	})
+}
+
+func addIPAMRolesGet(s *mcp.Server, client *netbox.APIClient) {
+	addGetTool(s, "netbox_ipam_roles_get", "Get a single IP role by its NetBox ID.", "IP role",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamRolesRetrieve(ctx, id).Execute()
 			return r, err
 		})
 }

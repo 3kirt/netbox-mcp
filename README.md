@@ -96,7 +96,7 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 
 ## Available tools
 
-124 tools are currently implemented across ten NetBox API areas.
+168 tools are currently implemented across ten NetBox API areas.
 
 ### DCIM — [docs/dcim.md](docs/dcim.md)
 
@@ -132,6 +132,40 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 | `netbox_dcim_virtual_chassis_get` | Get a virtual chassis by ID |
 | `netbox_dcim_inventory_items_list` | List inventory items (filter: q, device, manufacturer, discovered) |
 | `netbox_dcim_inventory_items_get` | Get an inventory item by ID |
+| `netbox_dcim_cable_terminations_list` | List cable terminations (filter: cable_id) |
+| `netbox_dcim_cable_terminations_get` | Get a cable termination by ID |
+| `netbox_dcim_console_ports_list` | List console ports (filter: q, name, device_id, site) |
+| `netbox_dcim_console_ports_get` | Get a console port by ID |
+| `netbox_dcim_console_server_ports_list` | List console server ports (filter: q, name, device_id, site) |
+| `netbox_dcim_console_server_ports_get` | Get a console server port by ID |
+| `netbox_dcim_device_bays_list` | List device bays (filter: q, name, device_id, site) |
+| `netbox_dcim_device_bays_get` | Get a device bay by ID |
+| `netbox_dcim_front_ports_list` | List front ports (filter: q, name) |
+| `netbox_dcim_front_ports_get` | Get a front port by ID |
+| `netbox_dcim_mac_addresses_list` | List MAC addresses (filter: q, device_id) |
+| `netbox_dcim_mac_addresses_get` | Get a MAC address by ID |
+| `netbox_dcim_modules_list` | List modules (filter: q, device_id, site, status) |
+| `netbox_dcim_modules_get` | Get a module by ID |
+| `netbox_dcim_module_bays_list` | List module bays (filter: q, device_id) |
+| `netbox_dcim_module_bays_get` | Get a module bay by ID |
+| `netbox_dcim_module_types_list` | List module types (filter: q, manufacturer) |
+| `netbox_dcim_module_types_get` | Get a module type by ID |
+| `netbox_dcim_power_outlets_list` | List power outlets (filter: q, name, device_id, site) |
+| `netbox_dcim_power_outlets_get` | Get a power outlet by ID |
+| `netbox_dcim_power_ports_list` | List power ports (filter: q, name, device_id, site) |
+| `netbox_dcim_power_ports_get` | Get a power port by ID |
+| `netbox_dcim_rack_reservations_list` | List rack reservations (filter: q, rack_id, site, tenant) |
+| `netbox_dcim_rack_reservations_get` | Get a rack reservation by ID |
+| `netbox_dcim_rack_roles_list` | List rack roles (filter: q, name, slug) |
+| `netbox_dcim_rack_roles_get` | Get a rack role by ID |
+| `netbox_dcim_rack_types_list` | List rack types (filter: q, slug, manufacturer) |
+| `netbox_dcim_rack_types_get` | Get a rack type by ID |
+| `netbox_dcim_rear_ports_list` | List rear ports (filter: q, name) |
+| `netbox_dcim_rear_ports_get` | Get a rear port by ID |
+| `netbox_dcim_site_groups_list` | List site groups (filter: q, name, slug) |
+| `netbox_dcim_site_groups_get` | Get a site group by ID |
+| `netbox_dcim_virtual_device_contexts_list` | List virtual device contexts (filter: q, device_id, tenant) |
+| `netbox_dcim_virtual_device_contexts_get` | Get a virtual device context by ID |
 
 ### IPAM — [docs/ipam.md](docs/ipam.md)
 
@@ -157,6 +191,14 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 | `netbox_ipam_vlan_groups_get` | Get a VLAN group by ID |
 | `netbox_ipam_services_list` | List services (filter: q, device, virtual machine, protocol) |
 | `netbox_ipam_services_get` | Get a service by ID |
+| `netbox_ipam_asns_list` | List ASNs (filter: q, site, tenant) |
+| `netbox_ipam_asns_get` | Get an ASN by ID |
+| `netbox_ipam_fhrp_groups_list` | List FHRP groups (filter: q, name, protocol) |
+| `netbox_ipam_fhrp_groups_get` | Get an FHRP group by ID |
+| `netbox_ipam_fhrp_group_assignments_list` | List FHRP group assignments (filter: group_id, device_id) |
+| `netbox_ipam_fhrp_group_assignments_get` | Get an FHRP group assignment by ID |
+| `netbox_ipam_roles_list` | List IP roles (filter: q, name, slug) |
+| `netbox_ipam_roles_get` | Get an IP role by ID |
 
 ### Circuits — [docs/circuits.md](docs/circuits.md)
 
@@ -238,6 +280,8 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 | `netbox_vpn_ike_policies_get` | Get an IKE policy by ID |
 | `netbox_vpn_ipsec_policies_list` | List IPSec policies (filter: q, name) |
 | `netbox_vpn_ipsec_policies_get` | Get an IPSec policy by ID |
+| `netbox_vpn_tunnel_terminations_list` | List VPN tunnel terminations (filter: q, tunnel_id, role) |
+| `netbox_vpn_tunnel_terminations_get` | Get a VPN tunnel termination by ID |
 
 ### Wireless — [docs/wireless.md](docs/wireless.md)
 

@@ -303,3 +303,118 @@ Get a single service by ID.
 | `id` | integer | yes | NetBox service ID |
 
 Returns a single `Service` object.
+
+---
+
+### `netbox_ipam_asns_list`
+
+List ASNs (Autonomous System Numbers), with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `site` | string[] | no | Site name or slug to filter by |
+| `tenant` | string[] | no | Tenant name or slug to filter by |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `ASN` objects.
+
+---
+
+### `netbox_ipam_asns_get`
+
+Get a single ASN by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox ASN ID |
+
+Returns a single `ASN` object.
+
+---
+
+### `netbox_ipam_fhrp_groups_list`
+
+List FHRP (First Hop Redundancy Protocol) groups, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string[] | no | Group name(s) to filter by |
+| `protocol` | string[] | no | Protocol(s) to filter by (e.g. `vrrp2`, `vrrp3`, `carp`, `clusterxl`, `hsrp`, `glbp`) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `FHRPGroup` objects.
+
+---
+
+### `netbox_ipam_fhrp_groups_get`
+
+Get a single FHRP group by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox FHRP group ID |
+
+Returns a single `FHRPGroup` object.
+
+---
+
+### `netbox_ipam_fhrp_group_assignments_list`
+
+List FHRP group assignments, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `group_id` | integer | no | FHRP group ID to filter by |
+| `device_id` | integer | no | Device ID to filter by |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `FHRPGroupAssignment` objects.
+
+---
+
+### `netbox_ipam_fhrp_group_assignments_get`
+
+Get a single FHRP group assignment by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox FHRP group assignment ID |
+
+Returns a single `FHRPGroupAssignment` object.
+
+---
+
+### `netbox_ipam_roles_list`
+
+List IP roles, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string[] | no | Role name(s) to filter by |
+| `slug` | string[] | no | Role slug(s) to filter by |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `Role` objects.
+
+---
+
+### `netbox_ipam_roles_get`
+
+Get a single IP role by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox IP role ID |
+
+Returns a single `Role` object.

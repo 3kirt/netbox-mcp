@@ -20,6 +20,8 @@ func RegisterVPN(s *mcp.Server, client *netbox.APIClient) {
 	addVPNIKEPoliciesGet(s, client)
 	addVPNIPSecPoliciesList(s, client)
 	addVPNIPSecPoliciesGet(s, client)
+	addVPNTunnelTerminationsList(s, client)
+	addVPNTunnelTerminationsGet(s, client)
 }
 
 func addVPNTunnelsList(s *mcp.Server, client *netbox.APIClient) {
@@ -229,6 +231,49 @@ func addVPNIPSecPoliciesGet(s *mcp.Server, client *netbox.APIClient) {
 	addGetTool(s, "netbox_vpn_ipsec_policies_get", "Get a single IPSec policy by its NetBox ID.", "IPSec policy",
 		func(ctx context.Context, id int32) (any, error) {
 			r, _, err := client.VpnAPI.VpnIpsecPoliciesRetrieve(ctx, id).Execute()
+			return r, err
+		})
+}
+
+func addVPNTunnelTerminationsList(s *mcp.Server, client *netbox.APIClient) {
+	type input struct {
+		Q        string   `json:"q,omitempty"         jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty"  jsonschema:"Field to order results by (prefix with - for descending)"`
+		TunnelID int32    `json:"tunnel_id,omitempty" jsonschema:"Tunnel ID to filter by"`
+		Role     []string `json:"role,omitempty"      jsonschema:"Termination role to filter by (peer, hub, spoke)"`
+		Limit    int32    `json:"limit,omitempty"     jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty"    jsonschema:"Pagination offset"`
+	}
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "netbox_vpn_tunnel_terminations_list",
+		Description: "List VPN tunnel terminations in NetBox, optionally filtered by tunnel or role.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		r := client.VpnAPI.VpnTunnelTerminationsList(ctx)
+		if in.Q != "" {
+			r = r.Q(in.Q)
+		}
+		if in.TunnelID != 0 {
+			r = r.TunnelId([]int32{in.TunnelID})
+		}
+		if len(in.Role) > 0 {
+			r = r.Role(in.Role)
+		}
+		if in.Ordering != "" {
+			r = r.Ordering(in.Ordering)
+		}
+		limit := clampLimit(in.Limit)
+		resp, _, err := r.Limit(limit).Offset(in.Offset).Execute()
+		if err != nil {
+			return toolError(fmt.Sprintf("listing VPN tunnel terminations: %v", err))
+		}
+		return jsonResult(resp)
+	})
+}
+
+func addVPNTunnelTerminationsGet(s *mcp.Server, client *netbox.APIClient) {
+	addGetTool(s, "netbox_vpn_tunnel_terminations_get", "Get a single VPN tunnel termination by its NetBox ID.", "VPN tunnel termination",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VpnAPI.VpnTunnelTerminationsRetrieve(ctx, id).Execute()
 			return r, err
 		})
 }

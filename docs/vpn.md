@@ -145,3 +145,32 @@ Get a single IPSec policy by ID.
 | `id` | integer | yes | NetBox IPSec policy ID |
 
 Returns a single `IPSecPolicy` object.
+
+---
+
+### `netbox_vpn_tunnel_terminations_list`
+
+List VPN tunnel terminations in NetBox, with optional filtering.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | no | Free-text search |
+| `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `tunnel_id` | integer | no | Tunnel ID to filter by |
+| `role` | string[] | no | Termination role(s) to filter by (e.g. `peer`, `hub`, `spoke`) |
+| `limit` | integer | no | Maximum results (default 50, max 1000) |
+| `offset` | integer | no | Pagination offset |
+
+Returns a paginated list of `TunnelTermination` objects.
+
+---
+
+### `netbox_vpn_tunnel_terminations_get`
+
+Get a single VPN tunnel termination by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | integer | yes | NetBox VPN tunnel termination ID |
+
+Returns a single `TunnelTermination` object.
