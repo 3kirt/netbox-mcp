@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -37,7 +37,7 @@ func RunHTTP(addr, netboxURL, version string) error {
 
 	srv := &http.Server{
 		Addr:    addr,
-		Handler: mux,
+		Handler: requestLogger(mux),
 		// ReadHeaderTimeout guards against slowloris attacks.
 		// WriteTimeout is intentionally omitted: SSE streams used by the
 		// streamable HTTP transport are long-lived and would be killed by it.
@@ -45,8 +45,44 @@ func RunHTTP(addr, netboxURL, version string) error {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	log.Printf("netbox-mcp HTTP server listening on %s/mcp", addr)
+	slog.Info("netbox-mcp HTTP server listening", "addr", addr+"/mcp")
 	return srv.ListenAndServe()
+}
+
+// statusRecorder wraps http.ResponseWriter to capture the response status code
+// for logging. It forwards Flush so that SSE streams work through the middleware.
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(status int) {
+	r.status = status
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *statusRecorder) Flush() {
+	if f, ok := r.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// requestLogger is an HTTP middleware that logs each request as a structured
+// log line once the handler returns. For short-lived requests this records
+// outcome and latency; for long-lived SSE streams it records session duration.
+func requestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, r)
+		slog.Info("request", //nolint:gosec // G706: values are JSON-encoded by slog.NewJSONHandler; no injection risk
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", rec.status,
+			"duration_ms", time.Since(start).Milliseconds(),
+			"remote_addr", r.RemoteAddr,
+		)
+	})
 }
 
 // makeTokenVerifier returns a TokenVerifier that validates a bearer token by
@@ -67,7 +103,7 @@ func makeTokenVerifier(netboxURL string) auth.TokenVerifier {
 			}
 			// Log the real error server-side; return a generic denial to the
 			// caller so internal details are not exposed in the HTTP response.
-			log.Printf("netbox-mcp: token validation request failed: %v", err)
+			slog.Error("token validation request failed", "error", err)
 			return nil, fmt.Errorf("%w", auth.ErrInvalidToken)
 		}
 		return &auth.TokenInfo{Extra: map[string]any{netboxTokenKey: token}}, nil
@@ -85,7 +121,7 @@ func makeGetServer(netboxURL, version string) func(*http.Request) *mcp.Server {
 		}
 		token, ok := tokenInfo.Extra[netboxTokenKey].(string)
 		if !ok || token == "" {
-			log.Printf("netbox-mcp: internal error: token missing from session context")
+			slog.Error("token missing from session context")
 			return nil
 		}
 		client := netbox.NewAPIClientFor(netboxURL, token)
@@ -94,6 +130,7 @@ func makeGetServer(netboxURL, version string) func(*http.Request) *mcp.Server {
 			Version: version,
 		}, nil)
 		Register(s, client)
+		slog.Info("session created", "remote_addr", r.RemoteAddr) //nolint:gosec // G706: r.RemoteAddr is a validated host:port from net; JSON-encoded by handler
 		return s
 	}
 }

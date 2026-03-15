@@ -7,7 +7,8 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	netbox "github.com/netbox-community/go-netbox/v4"
@@ -19,6 +20,8 @@ import (
 var version = "dev"
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
+
 	var configPath string
 	var listenAddr string
 	flag.StringVar(&configPath, "config", "", "path to JSON config file (default: ~/.netbox_mcp.json)")
@@ -27,19 +30,22 @@ func main() {
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("failed to load config", "error", err)
+		os.Exit(1)
 	}
 
 	url, err := cfg.ResolveURL()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("failed to resolve NetBox URL", "error", err)
+		os.Exit(1)
 	}
 
 	// HTTP mode: each session authenticates with its own bearer token.
 	// No server-side NetBox token is needed.
 	if listenAddr != "" {
 		if err := server.RunHTTP(listenAddr, url, version); err != nil {
-			log.Fatal(err)
+			slog.Error("HTTP server error", "error", err)
+			os.Exit(1)
 		}
 		return
 	}
@@ -47,7 +53,8 @@ func main() {
 	// Stdio mode: a single server-side token is required.
 	token, err := cfg.ResolveToken()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("failed to resolve NetBox token", "error", err)
+		os.Exit(1)
 	}
 
 	client := netbox.NewAPIClientFor(url, token)
@@ -60,6 +67,6 @@ func main() {
 	server.Register(s, client)
 
 	if err := s.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
-		log.Printf("server error: %v", err)
+		slog.Error("server error", "error", err)
 	}
 }
