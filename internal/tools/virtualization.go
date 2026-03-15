@@ -72,22 +72,11 @@ func addVirtualizationVMsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVirtualizationVMsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the virtual machine to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_virtualization_vms_get",
-		Description: "Get a single virtual machine by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VirtualizationAPI.VirtualizationVirtualMachinesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting virtual machine %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_virtualization_vms_get", "Get a single virtual machine by its NetBox ID.", "virtual machine",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VirtualizationAPI.VirtualizationVirtualMachinesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
@@ -130,22 +119,11 @@ func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVirtualizationClustersGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the cluster to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_virtualization_clusters_get",
-		Description: "Get a single virtualization cluster by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VirtualizationAPI.VirtualizationClustersRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting cluster %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_virtualization_clusters_get", "Get a single virtualization cluster by its NetBox ID.", "cluster",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VirtualizationAPI.VirtualizationClustersRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVirtualizationClusterGroupsList(s *mcp.Server, client *netbox.APIClient) {
@@ -180,22 +158,11 @@ func addVirtualizationClusterGroupsList(s *mcp.Server, client *netbox.APIClient)
 }
 
 func addVirtualizationClusterGroupsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the cluster group to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_virtualization_cluster_groups_get",
-		Description: "Get a single cluster group by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VirtualizationAPI.VirtualizationClusterGroupsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting cluster group %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_virtualization_cluster_groups_get", "Get a single cluster group by its NetBox ID.", "cluster group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VirtualizationAPI.VirtualizationClusterGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVirtualizationClusterTypesList(s *mcp.Server, client *netbox.APIClient) {
@@ -230,22 +197,11 @@ func addVirtualizationClusterTypesList(s *mcp.Server, client *netbox.APIClient) 
 }
 
 func addVirtualizationClusterTypesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the cluster type to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_virtualization_cluster_types_get",
-		Description: "Get a single cluster type by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VirtualizationAPI.VirtualizationClusterTypesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting cluster type %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_virtualization_cluster_types_get", "Get a single cluster type by its NetBox ID.", "cluster type",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VirtualizationAPI.VirtualizationClusterTypesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVirtualizationInterfacesList(s *mcp.Server, client *netbox.APIClient) {
@@ -288,22 +244,11 @@ func addVirtualizationInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVirtualizationInterfacesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the VM interface to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_virtualization_interfaces_get",
-		Description: "Get a single VM interface by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VirtualizationAPI.VirtualizationInterfacesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting VM interface %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_virtualization_interfaces_get", "Get a single VM interface by its NetBox ID.", "VM interface",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VirtualizationAPI.VirtualizationInterfacesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVirtualizationVirtualDisksList(s *mcp.Server, client *netbox.APIClient) {
@@ -342,20 +287,9 @@ func addVirtualizationVirtualDisksList(s *mcp.Server, client *netbox.APIClient) 
 }
 
 func addVirtualizationVirtualDisksGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the virtual disk to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_virtualization_virtual_disks_get",
-		Description: "Get a single virtual disk by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VirtualizationAPI.VirtualizationVirtualDisksRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting virtual disk %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_virtualization_virtual_disks_get", "Get a single virtual disk by its NetBox ID.", "virtual disk",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VirtualizationAPI.VirtualizationVirtualDisksRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

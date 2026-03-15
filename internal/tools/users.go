@@ -54,22 +54,11 @@ func addUsersUsersList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addUsersUsersGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the user to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_users_users_get",
-		Description: "Get a single user by their NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.UsersAPI.UsersUsersRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting user %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_users_users_get", "Get a single user by their NetBox ID.", "user",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.UsersAPI.UsersUsersRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addUsersGroupsList(s *mcp.Server, client *netbox.APIClient) {
@@ -104,22 +93,11 @@ func addUsersGroupsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addUsersGroupsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the user group to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_users_groups_get",
-		Description: "Get a single user group by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.UsersAPI.UsersGroupsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting user group %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_users_groups_get", "Get a single user group by its NetBox ID.", "user group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.UsersAPI.UsersGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addUsersTokensList(s *mcp.Server, client *netbox.APIClient) {
@@ -154,20 +132,9 @@ func addUsersTokensList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addUsersTokensGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the token to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_users_tokens_get",
-		Description: "Get a single API token by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.UsersAPI.UsersTokensRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting token %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_users_tokens_get", "Get a single API token by its NetBox ID.", "token",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.UsersAPI.UsersTokensRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

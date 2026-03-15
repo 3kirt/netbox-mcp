@@ -58,22 +58,11 @@ func addTenancyTenantsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addTenancyTenantsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the tenant to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_tenancy_tenants_get",
-		Description: "Get a single tenant by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.TenancyAPI.TenancyTenantsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting tenant %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_tenancy_tenants_get", "Get a single tenant by its NetBox ID.", "tenant",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.TenancyAPI.TenancyTenantsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addTenancyTenantGroupsList(s *mcp.Server, client *netbox.APIClient) {
@@ -112,22 +101,11 @@ func addTenancyTenantGroupsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addTenancyTenantGroupsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the tenant group to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_tenancy_tenant_groups_get",
-		Description: "Get a single tenant group by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.TenancyAPI.TenancyTenantGroupsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting tenant group %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_tenancy_tenant_groups_get", "Get a single tenant group by its NetBox ID.", "tenant group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.TenancyAPI.TenancyTenantGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addTenancyContactsList(s *mcp.Server, client *netbox.APIClient) {
@@ -166,22 +144,11 @@ func addTenancyContactsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addTenancyContactsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the contact to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_tenancy_contacts_get",
-		Description: "Get a single contact by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.TenancyAPI.TenancyContactsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting contact %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_tenancy_contacts_get", "Get a single contact by its NetBox ID.", "contact",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.TenancyAPI.TenancyContactsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addTenancyContactGroupsList(s *mcp.Server, client *netbox.APIClient) {
@@ -220,22 +187,11 @@ func addTenancyContactGroupsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addTenancyContactGroupsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the contact group to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_tenancy_contact_groups_get",
-		Description: "Get a single contact group by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.TenancyAPI.TenancyContactGroupsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting contact group %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_tenancy_contact_groups_get", "Get a single contact group by its NetBox ID.", "contact group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.TenancyAPI.TenancyContactGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addTenancyContactRolesList(s *mcp.Server, client *netbox.APIClient) {
@@ -274,20 +230,9 @@ func addTenancyContactRolesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addTenancyContactRolesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the contact role to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_tenancy_contact_roles_get",
-		Description: "Get a single contact role by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.TenancyAPI.TenancyContactRolesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting contact role %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_tenancy_contact_roles_get", "Get a single contact role by its NetBox ID.", "contact role",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.TenancyAPI.TenancyContactRolesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

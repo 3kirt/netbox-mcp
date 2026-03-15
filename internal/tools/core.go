@@ -54,22 +54,11 @@ func addCoreDataSourcesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCoreDataSourcesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the data source to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_core_data_sources_get",
-		Description: "Get a single data source by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CoreAPI.CoreDataSourcesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting data source %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_core_data_sources_get", "Get a single data source by its NetBox ID.", "data source",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CoreAPI.CoreDataSourcesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCoreJobsList(s *mcp.Server, client *netbox.APIClient) {
@@ -104,22 +93,11 @@ func addCoreJobsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCoreJobsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the job to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_core_jobs_get",
-		Description: "Get a single background job by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CoreAPI.CoreJobsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting job %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_core_jobs_get", "Get a single background job by its NetBox ID.", "job",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CoreAPI.CoreJobsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCoreObjectChangesList(s *mcp.Server, client *netbox.APIClient) {
@@ -154,20 +132,9 @@ func addCoreObjectChangesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCoreObjectChangesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the object change to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_core_object_changes_get",
-		Description: "Get a single object change record by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CoreAPI.CoreObjectChangesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting object change %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_core_object_changes_get", "Get a single object change record by its NetBox ID.", "object change",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CoreAPI.CoreObjectChangesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

@@ -80,22 +80,11 @@ func addIPAMIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMIPAddressesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the IP address to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_ip_addresses_get",
-		Description: "Get a single IP address by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamIpAddressesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting IP address %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_ip_addresses_get", "Get a single IP address by its NetBox ID.", "IP address",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamIpAddressesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMPrefixesList(s *mcp.Server, client *netbox.APIClient) {
@@ -146,22 +135,11 @@ func addIPAMPrefixesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMPrefixesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the prefix to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_prefixes_get",
-		Description: "Get a single IP prefix by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamPrefixesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting prefix %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_prefixes_get", "Get a single IP prefix by its NetBox ID.", "prefix",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamPrefixesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMVRFsList(s *mcp.Server, client *netbox.APIClient) {
@@ -204,22 +182,11 @@ func addIPAMVRFsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMVRFsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the VRF to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_vrfs_get",
-		Description: "Get a single VRF by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamVrfsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting VRF %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_vrfs_get", "Get a single VRF by its NetBox ID.", "VRF",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamVrfsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMVLANsList(s *mcp.Server, client *netbox.APIClient) {
@@ -270,22 +237,11 @@ func addIPAMVLANsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMVLANsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the VLAN to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_vlans_get",
-		Description: "Get a single VLAN by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamVlansRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting VLAN %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_vlans_get", "Get a single VLAN by its NetBox ID.", "VLAN",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamVlansRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMAggregatesList(s *mcp.Server, client *netbox.APIClient) {
@@ -328,22 +284,11 @@ func addIPAMAggregatesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMAggregatesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the aggregate to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_aggregates_get",
-		Description: "Get a single IP aggregate by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamAggregatesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting aggregate %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_aggregates_get", "Get a single IP aggregate by its NetBox ID.", "aggregate",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamAggregatesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMIPRangesList(s *mcp.Server, client *netbox.APIClient) {
@@ -386,22 +331,11 @@ func addIPAMIPRangesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMIPRangesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the IP range to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_ip_ranges_get",
-		Description: "Get a single IP range by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamIpRangesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting IP range %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_ip_ranges_get", "Get a single IP range by its NetBox ID.", "IP range",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamIpRangesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMRouteTargetsList(s *mcp.Server, client *netbox.APIClient) {
@@ -440,22 +374,11 @@ func addIPAMRouteTargetsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMRouteTargetsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the route target to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_route_targets_get",
-		Description: "Get a single route target by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamRouteTargetsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting route target %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_route_targets_get", "Get a single route target by its NetBox ID.", "route target",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamRouteTargetsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMRIRsList(s *mcp.Server, client *netbox.APIClient) {
@@ -494,22 +417,11 @@ func addIPAMRIRsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMRIRsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the RIR to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_rirs_get",
-		Description: "Get a single RIR by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamRirsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting RIR %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_rirs_get", "Get a single RIR by its NetBox ID.", "RIR",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamRirsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMVLANGroupsList(s *mcp.Server, client *netbox.APIClient) {
@@ -544,22 +456,11 @@ func addIPAMVLANGroupsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMVLANGroupsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the VLAN group to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_vlan_groups_get",
-		Description: "Get a single VLAN group by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamVlanGroupsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting VLAN group %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_vlan_groups_get", "Get a single VLAN group by its NetBox ID.", "VLAN group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamVlanGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addIPAMServicesList(s *mcp.Server, client *netbox.APIClient) {
@@ -602,20 +503,9 @@ func addIPAMServicesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addIPAMServicesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the service to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_ipam_services_get",
-		Description: "Get a single service by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.IpamAPI.IpamServicesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting service %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_ipam_services_get", "Get a single service by its NetBox ID.", "service",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.IpamAPI.IpamServicesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

@@ -72,22 +72,11 @@ func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCircuitsCircuitsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the circuit to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_circuits_circuits_get",
-		Description: "Get a single circuit by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CircuitsAPI.CircuitsCircuitsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting circuit %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_circuits_circuits_get", "Get a single circuit by its NetBox ID.", "circuit",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CircuitsAPI.CircuitsCircuitsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCircuitsProvidersList(s *mcp.Server, client *netbox.APIClient) {
@@ -122,22 +111,11 @@ func addCircuitsProvidersList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCircuitsProvidersGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the provider to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_circuits_providers_get",
-		Description: "Get a single circuit provider by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CircuitsAPI.CircuitsProvidersRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting provider %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_circuits_providers_get", "Get a single circuit provider by its NetBox ID.", "provider",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CircuitsAPI.CircuitsProvidersRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCircuitsCircuitTypesList(s *mcp.Server, client *netbox.APIClient) {
@@ -176,22 +154,11 @@ func addCircuitsCircuitTypesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCircuitsCircuitTypesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the circuit type to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_circuits_circuit_types_get",
-		Description: "Get a single circuit type by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CircuitsAPI.CircuitsCircuitTypesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting circuit type %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_circuits_circuit_types_get", "Get a single circuit type by its NetBox ID.", "circuit type",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CircuitsAPI.CircuitsCircuitTypesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCircuitsCircuitTerminationsList(s *mcp.Server, client *netbox.APIClient) {
@@ -230,22 +197,11 @@ func addCircuitsCircuitTerminationsList(s *mcp.Server, client *netbox.APIClient)
 }
 
 func addCircuitsCircuitTerminationsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the circuit termination to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_circuits_circuit_terminations_get",
-		Description: "Get a single circuit termination by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CircuitsAPI.CircuitsCircuitTerminationsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting circuit termination %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_circuits_circuit_terminations_get", "Get a single circuit termination by its NetBox ID.", "circuit termination",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CircuitsAPI.CircuitsCircuitTerminationsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCircuitsProviderAccountsList(s *mcp.Server, client *netbox.APIClient) {
@@ -280,22 +236,11 @@ func addCircuitsProviderAccountsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCircuitsProviderAccountsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the provider account to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_circuits_provider_accounts_get",
-		Description: "Get a single provider account by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CircuitsAPI.CircuitsProviderAccountsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting provider account %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_circuits_provider_accounts_get", "Get a single provider account by its NetBox ID.", "provider account",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CircuitsAPI.CircuitsProviderAccountsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addCircuitsProviderNetworksList(s *mcp.Server, client *netbox.APIClient) {
@@ -330,20 +275,9 @@ func addCircuitsProviderNetworksList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addCircuitsProviderNetworksGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the provider network to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_circuits_provider_networks_get",
-		Description: "Get a single provider network by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.CircuitsAPI.CircuitsProviderNetworksRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting provider network %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_circuits_provider_networks_get", "Get a single provider network by its NetBox ID.", "provider network",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.CircuitsAPI.CircuitsProviderNetworksRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

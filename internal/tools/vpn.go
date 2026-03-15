@@ -62,22 +62,11 @@ func addVPNTunnelsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVPNTunnelsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the VPN tunnel to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_vpn_tunnels_get",
-		Description: "Get a single VPN tunnel by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VpnAPI.VpnTunnelsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting VPN tunnel %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_vpn_tunnels_get", "Get a single VPN tunnel by its NetBox ID.", "VPN tunnel",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VpnAPI.VpnTunnelsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVPNTunnelGroupsList(s *mcp.Server, client *netbox.APIClient) {
@@ -116,22 +105,11 @@ func addVPNTunnelGroupsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVPNTunnelGroupsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the VPN tunnel group to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_vpn_tunnel_groups_get",
-		Description: "Get a single VPN tunnel group by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VpnAPI.VpnTunnelGroupsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting VPN tunnel group %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_vpn_tunnel_groups_get", "Get a single VPN tunnel group by its NetBox ID.", "VPN tunnel group",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VpnAPI.VpnTunnelGroupsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVPNL2VPNsList(s *mcp.Server, client *netbox.APIClient) {
@@ -170,22 +148,11 @@ func addVPNL2VPNsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVPNL2VPNsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the L2VPN to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_vpn_l2vpns_get",
-		Description: "Get a single L2VPN by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VpnAPI.VpnL2vpnsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting L2VPN %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_vpn_l2vpns_get", "Get a single L2VPN by its NetBox ID.", "L2VPN",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VpnAPI.VpnL2vpnsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVPNIKEPoliciesList(s *mcp.Server, client *netbox.APIClient) {
@@ -220,22 +187,11 @@ func addVPNIKEPoliciesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVPNIKEPoliciesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the IKE policy to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_vpn_ike_policies_get",
-		Description: "Get a single IKE policy by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VpnAPI.VpnIkePoliciesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting IKE policy %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_vpn_ike_policies_get", "Get a single IKE policy by its NetBox ID.", "IKE policy",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VpnAPI.VpnIkePoliciesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addVPNIPSecPoliciesList(s *mcp.Server, client *netbox.APIClient) {
@@ -270,20 +226,9 @@ func addVPNIPSecPoliciesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addVPNIPSecPoliciesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the IPSec policy to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_vpn_ipsec_policies_get",
-		Description: "Get a single IPSec policy by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.VpnAPI.VpnIpsecPoliciesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting IPSec policy %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_vpn_ipsec_policies_get", "Get a single IPSec policy by its NetBox ID.", "IPSec policy",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.VpnAPI.VpnIpsecPoliciesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

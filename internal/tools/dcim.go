@@ -87,22 +87,11 @@ func addDCIMDevicesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMDevicesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the device to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_devices_get",
-		Description: "Get a single device by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimDevicesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting device %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_devices_get", "Get a single device by its NetBox ID.", "device",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimDevicesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMSitesList(s *mcp.Server, client *netbox.APIClient) {
@@ -145,22 +134,11 @@ func addDCIMSitesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMSitesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the site to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_sites_get",
-		Description: "Get a single site by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimSitesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting site %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_sites_get", "Get a single site by its NetBox ID.", "site",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimSitesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMRacksList(s *mcp.Server, client *netbox.APIClient) {
@@ -203,22 +181,11 @@ func addDCIMRacksList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMRacksGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the rack to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_racks_get",
-		Description: "Get a single rack by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimRacksRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting rack %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_racks_get", "Get a single rack by its NetBox ID.", "rack",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimRacksRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
@@ -261,22 +228,11 @@ func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMInterfacesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the interface to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_interfaces_get",
-		Description: "Get a single device interface by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimInterfacesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting interface %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_interfaces_get", "Get a single device interface by its NetBox ID.", "interface",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimInterfacesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
@@ -315,22 +271,11 @@ func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMCablesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the cable to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_cables_get",
-		Description: "Get a single cable by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimCablesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting cable %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_cables_get", "Get a single cable by its NetBox ID.", "cable",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimCablesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMRegionsList(s *mcp.Server, client *netbox.APIClient) {
@@ -373,22 +318,11 @@ func addDCIMRegionsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMRegionsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the region to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_regions_get",
-		Description: "Get a single region by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimRegionsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting region %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_regions_get", "Get a single region by its NetBox ID.", "region",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimRegionsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMLocationsList(s *mcp.Server, client *netbox.APIClient) {
@@ -435,22 +369,11 @@ func addDCIMLocationsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMLocationsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the location to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_locations_get",
-		Description: "Get a single location by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimLocationsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting location %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_locations_get", "Get a single location by its NetBox ID.", "location",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimLocationsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMManufacturersList(s *mcp.Server, client *netbox.APIClient) {
@@ -489,22 +412,11 @@ func addDCIMManufacturersList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMManufacturersGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the manufacturer to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_manufacturers_get",
-		Description: "Get a single manufacturer by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimManufacturersRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting manufacturer %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_manufacturers_get", "Get a single manufacturer by its NetBox ID.", "manufacturer",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimManufacturersRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMDeviceTypesList(s *mcp.Server, client *netbox.APIClient) {
@@ -543,22 +455,11 @@ func addDCIMDeviceTypesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMDeviceTypesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the device type to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_device_types_get",
-		Description: "Get a single device type by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimDeviceTypesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting device type %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_device_types_get", "Get a single device type by its NetBox ID.", "device type",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimDeviceTypesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMDeviceRolesList(s *mcp.Server, client *netbox.APIClient) {
@@ -601,22 +502,11 @@ func addDCIMDeviceRolesList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMDeviceRolesGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the device role to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_device_roles_get",
-		Description: "Get a single device role by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimDeviceRolesRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting device role %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_device_roles_get", "Get a single device role by its NetBox ID.", "device role",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimDeviceRolesRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMPlatformsList(s *mcp.Server, client *netbox.APIClient) {
@@ -655,22 +545,11 @@ func addDCIMPlatformsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMPlatformsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the platform to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_platforms_get",
-		Description: "Get a single platform by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimPlatformsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting platform %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_platforms_get", "Get a single platform by its NetBox ID.", "platform",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimPlatformsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMPowerPanelsList(s *mcp.Server, client *netbox.APIClient) {
@@ -705,22 +584,11 @@ func addDCIMPowerPanelsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMPowerPanelsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the power panel to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_power_panels_get",
-		Description: "Get a single power panel by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimPowerPanelsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting power panel %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_power_panels_get", "Get a single power panel by its NetBox ID.", "power panel",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimPowerPanelsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMPowerFeedsList(s *mcp.Server, client *netbox.APIClient) {
@@ -763,22 +631,11 @@ func addDCIMPowerFeedsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMPowerFeedsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the power feed to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_power_feeds_get",
-		Description: "Get a single power feed by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimPowerFeedsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting power feed %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_power_feeds_get", "Get a single power feed by its NetBox ID.", "power feed",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimPowerFeedsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMVirtualChassisList(s *mcp.Server, client *netbox.APIClient) {
@@ -817,22 +674,11 @@ func addDCIMVirtualChassisList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMVirtualChassisGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the virtual chassis to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_virtual_chassis_get",
-		Description: "Get a single virtual chassis by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimVirtualChassisRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting virtual chassis %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_virtual_chassis_get", "Get a single virtual chassis by its NetBox ID.", "virtual chassis",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimVirtualChassisRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }
 
 func addDCIMInventoryItemsList(s *mcp.Server, client *netbox.APIClient) {
@@ -875,20 +721,9 @@ func addDCIMInventoryItemsList(s *mcp.Server, client *netbox.APIClient) {
 }
 
 func addDCIMInventoryItemsGet(s *mcp.Server, client *netbox.APIClient) {
-	type input struct {
-		ID int32 `json:"id" jsonschema:"NetBox ID of the inventory item to retrieve"`
-	}
-	mcp.AddTool(s, &mcp.Tool{
-		Name:        "netbox_dcim_inventory_items_get",
-		Description: "Get a single inventory item by its NetBox ID.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
-		if in.ID == 0 {
-			return toolError("id is required")
-		}
-		resp, _, err := client.DcimAPI.DcimInventoryItemsRetrieve(ctx, in.ID).Execute()
-		if err != nil {
-			return toolError(fmt.Sprintf("getting inventory item %d: %v", in.ID, err))
-		}
-		return jsonResult(resp)
-	})
+	addGetTool(s, "netbox_dcim_inventory_items_get", "Get a single inventory item by its NetBox ID.", "inventory item",
+		func(ctx context.Context, id int32) (any, error) {
+			r, _, err := client.DcimAPI.DcimInventoryItemsRetrieve(ctx, id).Execute()
+			return r, err
+		})
 }

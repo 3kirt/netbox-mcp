@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -56,4 +57,28 @@ func clampLimit(limit int32) int32 {
 		return maxLimit
 	}
 	return limit
+}
+
+// addGetTool registers a "get by ID" tool that retrieves a single NetBox object.
+// retrieve receives the request context and object ID and must return the object
+// (or an error); the *http.Response from the API call is discarded.
+func addGetTool(
+	s *mcp.Server,
+	name, description, itemName string,
+	retrieve func(ctx context.Context, id int32) (any, error),
+) {
+	type input struct {
+		ID int32 `json:"id" jsonschema:"NetBox ID to retrieve"`
+	}
+	mcp.AddTool(s, &mcp.Tool{Name: name, Description: description},
+		func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+			if in.ID == 0 {
+				return toolError("id is required")
+			}
+			resp, err := retrieve(ctx, in.ID)
+			if err != nil {
+				return toolError(fmt.Sprintf("getting %s %d: %v", itemName, in.ID, err))
+			}
+			return jsonResult(resp)
+		})
 }
