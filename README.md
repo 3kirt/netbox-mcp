@@ -53,6 +53,19 @@ A custom config file path can be specified with the `--config` flag:
 netbox-mcp --config /path/to/config.json
 ```
 
+### Obtaining a NetBox API token
+
+Tokens can be created from your NetBox profile under **Admin → API Tokens**, or provisioned programmatically via the REST API:
+
+```sh
+curl -s -X POST https://netbox.example.com/api/users/tokens/provision/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "you", "password": "yourpassword"}' \
+  | jq '.key'
+```
+
+Because netbox-mcp is entirely read-only, it is recommended to create a **read-only token** (deselect "Write enabled" in the token settings). Tokens may optionally have an expiration date — if the server begins returning 403 errors, check whether the token has expired.
+
 ## Claude Desktop integration
 
 Add the following to your Claude Desktop `claude_desktop_config.json`:
@@ -116,6 +129,14 @@ Alternatively, add the following directly to your project's `.mcp.json` or to `~
   }
 }
 ```
+
+## Remote MCP (Claude.ai web and mobile)
+
+Remote MCP allows netbox-mcp to be used from Claude.ai on the web, iOS, and Android without a locally installed binary. This requires an HTTP transport and an OAuth authentication flow, which netbox-mcp does not currently implement.
+
+NetBox does not ship a built-in OAuth server. A remote transport would likely use the `/api/users/tokens/provision/` endpoint to exchange a user's credentials for a NetBox token during the OAuth callback, or rely on a third-party NetBox OAuth plugin.
+
+Remote HTTP transport is planned for a future release. Until then, use the local stdio integration described above.
 
 ## Available tools
 
