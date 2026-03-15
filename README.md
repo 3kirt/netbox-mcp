@@ -425,6 +425,10 @@ make docker-build  # build Docker image
 make docker-run    # run HTTP server on :8080 (requires NETBOX_URL=...)
 ```
 
+## Attribution
+
+This project is primarily developed by [Claude](https://claude.ai), Anthropic's AI assistant, in collaboration with a human maintainer.
+
 ## License
 
 [GPL-3.0](LICENSE)
