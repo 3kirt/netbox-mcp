@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: netbox-mcp-metrics
+  labels:
+    app: netbox-mcp
+  annotations:
+    # Prometheus annotation-based scraping. The server currently exposes
+    # /healthz and /readyz; update the path to /metrics once a Prometheus
+    # endpoint is added. Remove these annotations if you use a ServiceMonitor
+    # CRD instead.
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/healthz"
+spec:
+  selector:
+    app: netbox-mcp
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: http
+      protocol: TCP
