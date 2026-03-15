@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: netbox-mcp
+  labels:
+    app: netbox-mcp
+    # This label must match the serviceMonitorSelector configured on your
+    # Prometheus or kube-prometheus-stack installation. A common value is
+    # "release: prometheus" — adjust to match your environment.
+spec:
+  selector:
+    matchLabels:
+      app: netbox-mcp
+  endpoints:
+    - port: metrics
+      path: /healthz
+      interval: 30s
+      scheme: http

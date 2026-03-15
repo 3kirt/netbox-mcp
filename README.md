@@ -167,7 +167,8 @@ Example manifests are provided in [deploy/kubernetes/](deploy/kubernetes/).
 | `deployment.yaml` | Deployment with liveness/readiness probes, non-root security context |
 | `service.yaml` | ClusterIP Service for MCP traffic (referenced by Ingress) |
 | `ingress.yaml` | nginx Ingress with extended SSE proxy timeouts |
-| `service-metrics.yaml` | Cluster-internal Service with Prometheus scrape annotations |
+| `service-metrics.yaml` | Cluster-internal Service for Prometheus scraping |
+| `service-monitor.yaml` | Prometheus Operator `ServiceMonitor` targeting the metrics Service |
 
 1. Edit `configmap.yaml` to set your NetBox URL.
 2. Edit `deployment.yaml` to reference your image.
@@ -181,9 +182,13 @@ The Ingress routes only `/mcp` and is pre-configured for nginx with extended
 proxy timeouts to keep SSE streams alive for the duration of a session.
 
 `service-metrics.yaml` creates a separate ClusterIP Service (`netbox-mcp-metrics`)
-on port 8080 with `prometheus.io/scrape` annotations. Keeping it separate from
-`service.yaml` avoids coupling monitoring configuration to the Ingress-facing
-traffic path.
+on port 8080. Keeping it separate from `service.yaml` avoids coupling monitoring
+configuration to the Ingress-facing traffic path.
+
+`service-monitor.yaml` creates a Prometheus Operator `ServiceMonitor` that
+targets the metrics Service and scrapes `/healthz` every 30 seconds. The
+`ServiceMonitor` must carry a label matching your Prometheus installation's
+`serviceMonitorSelector` — the file includes a comment with common values.
 
 ### Operations
 
