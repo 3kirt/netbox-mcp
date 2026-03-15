@@ -2,9 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/auth"
@@ -20,8 +26,15 @@ const netboxTokenKey = "netbox_token"
 // RunHTTP starts an HTTP MCP server on addr. Each session authenticates with
 // its own NetBox API token supplied as an Authorization: Bearer header.
 // netboxURL is the base URL of the NetBox instance used for token validation
-// and API calls. The MCP endpoint is available at /mcp.
+// and API calls. The MCP endpoint is available at /mcp. RunHTTP blocks until
+// SIGTERM or SIGINT is received, then drains in-flight requests within 30
+// seconds before returning.
 func RunHTTP(addr, netboxURL, version string) error {
+	parsedURL, err := url.Parse(netboxURL)
+	if err != nil {
+		return fmt.Errorf("invalid NetBox URL: %w", err)
+	}
+
 	verifier := makeTokenVerifier(netboxURL)
 	authMiddleware := auth.RequireBearerToken(verifier, nil)
 
@@ -34,6 +47,8 @@ func RunHTTP(addr, netboxURL, version string) error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/mcp", authMiddleware(mcpHandler))
+	mux.HandleFunc("/healthz", healthzHandler(version))
+	mux.HandleFunc("/readyz", readyzHandler(parsedURL.Hostname()))
 
 	srv := &http.Server{
 		Addr:    addr,
@@ -45,8 +60,76 @@ func RunHTTP(addr, netboxURL, version string) error {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	slog.Info("netbox-mcp HTTP server listening", "addr", addr+"/mcp")
-	return srv.ListenAndServe()
+	slog.Info("netbox-mcp starting",
+		"addr", addr,
+		"netbox_url", netboxURL,
+		"version", version,
+	)
+	return runWithGracefulShutdown(srv)
+}
+
+// runWithGracefulShutdown runs srv and blocks until SIGTERM or SIGINT is
+// received, then gives in-flight requests up to 30 seconds to complete.
+func runWithGracefulShutdown(srv *http.Server) error {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+
+	errCh := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+		}
+		close(errCh)
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		slog.Info("shutting down")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.Error("graceful shutdown failed", "error", err)
+		return err
+	}
+	slog.Info("shutdown complete")
+	return nil
+}
+
+// healthzHandler returns an unauthenticated handler reporting the server
+// version. Used for Kubernetes liveness probes.
+func healthzHandler(version string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(struct {
+			Status  string `json:"status"`
+			Version string `json:"version"`
+		}{"ok", version})
+	}
+}
+
+// readyzHandler returns an unauthenticated handler that confirms the NetBox
+// hostname is resolvable via DNS. Used for Kubernetes readiness probes to
+// prevent routing traffic to a pod that cannot reach NetBox.
+func readyzHandler(hostname string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := net.LookupHost(hostname); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_ = json.NewEncoder(w).Encode(struct {
+				Status string `json:"status"`
+				Error  string `json:"error"`
+			}{"error", err.Error()})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(struct {
+			Status string `json:"status"`
+		}{"ok"})
+	}
 }
 
 // statusRecorder wraps http.ResponseWriter to capture the response status code
@@ -68,10 +151,15 @@ func (r *statusRecorder) Flush() {
 }
 
 // requestLogger is an HTTP middleware that logs each request as a structured
-// log line once the handler returns. For short-lived requests this records
-// outcome and latency; for long-lived SSE streams it records session duration.
+// log line once the handler returns. Health and readiness probe paths are
+// excluded to avoid log noise from frequent Kubernetes probe traffic.
 func requestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip logging for health/readiness probes (fired every 10s by K8s).
+		if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		start := time.Now()
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rec, r)
