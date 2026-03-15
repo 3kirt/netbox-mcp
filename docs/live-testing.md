@@ -520,6 +520,53 @@ claude mcp add --transport http \
 
 Confirm the server appears in `/mcp` and shows as connected.
 
+### Health and readiness checks
+
+**Liveness probe**
+
+```sh
+curl -s http://localhost:8080/healthz
+```
+
+Expected: HTTP 200 with body `{"status":"ok","version":"..."}`. Confirm the
+`version` field is non-empty.
+
+**Readiness probe**
+
+```sh
+curl -s http://localhost:8080/readyz
+```
+
+Expected: HTTP 200 with body `{"status":"ok"}` when the NetBox hostname is
+resolvable. To verify the failure path, start the server with an unresolvable
+hostname (e.g. `NETBOX_URL=https://does-not-exist.invalid netbox-mcp --listen :8080`)
+and confirm `/readyz` returns HTTP 503 with `{"status":"error","error":"..."}`.
+
+**Log format**
+
+Confirm the server emits JSON lines to stderr on startup:
+
+```sh
+NETBOX_URL=https://netbox.example.com netbox-mcp --listen :8080 2>&1 | head -1 | python3 -m json.tool
+```
+
+The output should parse as valid JSON with at minimum `time`, `level`, `msg`,
+`addr`, `netbox_url`, and `version` fields. Confirm no token values appear in
+any log line.
+
+**Graceful shutdown**
+
+Start the server, register it with Claude Code, then send SIGTERM:
+
+```sh
+kill -TERM <pid>
+```
+
+Confirm:
+- The server logs `{"level":"INFO","msg":"shutting down"}` followed by `{"level":"INFO","msg":"shutdown complete"}`.
+- Any tool call in flight at the time completes normally (not abruptly disconnected).
+- The process exits with code 0.
+
 ### Authentication checks
 
 **Valid token**

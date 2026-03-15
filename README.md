@@ -161,6 +161,14 @@ NETBOX_URL=https://netbox.example.com netbox-mcp --listen :8080
 
 Example manifests are provided in [deploy/kubernetes/](deploy/kubernetes/).
 
+| File | Purpose |
+|---|---|
+| `configmap.yaml` | `NETBOX_URL` environment variable |
+| `deployment.yaml` | Deployment with liveness/readiness probes, non-root security context |
+| `service.yaml` | ClusterIP Service for MCP traffic (referenced by Ingress) |
+| `ingress.yaml` | nginx Ingress with extended SSE proxy timeouts |
+| `service-metrics.yaml` | Cluster-internal Service with Prometheus scrape annotations |
+
 1. Edit `configmap.yaml` to set your NetBox URL.
 2. Edit `deployment.yaml` to reference your image.
 3. Edit `ingress.yaml` to set your hostname (and TLS secret or cert-manager issuer).
@@ -169,8 +177,49 @@ Example manifests are provided in [deploy/kubernetes/](deploy/kubernetes/).
 kubectl apply -f deploy/kubernetes/
 ```
 
-The Ingress is pre-configured for nginx with extended proxy timeouts to keep
-SSE streams alive for the duration of a session.
+The Ingress routes only `/mcp` and is pre-configured for nginx with extended
+proxy timeouts to keep SSE streams alive for the duration of a session.
+
+`service-metrics.yaml` creates a separate ClusterIP Service (`netbox-mcp-metrics`)
+on port 8080 with `prometheus.io/scrape` annotations. Keeping it separate from
+`service.yaml` avoids coupling monitoring configuration to the Ingress-facing
+traffic path.
+
+### Operations
+
+**Health and readiness endpoints**
+
+The HTTP server exposes two unauthenticated probe endpoints:
+
+| Endpoint | Purpose | Success response |
+|---|---|---|
+| `GET /healthz` | Liveness — server is running | `{"status":"ok","version":"v..."}` |
+| `GET /readyz` | Readiness — NetBox hostname resolves via DNS | `{"status":"ok"}` |
+
+`/readyz` returns `503` with `{"status":"error","error":"..."}` when the NetBox
+hostname cannot be resolved, preventing Kubernetes from routing traffic to a
+pod that cannot reach NetBox.
+
+**Structured logging**
+
+The server writes JSON log lines to stderr using `log/slog`. Startup:
+
+```json
+{"time":"2026-01-15T10:00:00Z","level":"INFO","msg":"netbox-mcp starting","addr":":8080","netbox_url":"https://netbox.example.com","version":"v0.0.9"}
+```
+
+Per-request log line (excludes probe paths to reduce noise):
+
+```json
+{"time":"2026-01-15T10:00:01Z","level":"INFO","msg":"request","method":"POST","path":"/mcp","status":200,"duration_ms":42,"remote_addr":"10.0.0.1:54321"}
+```
+
+**Graceful shutdown**
+
+On `SIGTERM` or `SIGINT` the server stops accepting new connections and gives
+in-flight requests up to 30 seconds to complete before exiting. This matches
+the default Kubernetes `terminationGracePeriodSeconds`, so active SSE sessions
+are not abruptly closed during a rolling update or pod deletion.
 
 ### Registering with Claude Code
 
