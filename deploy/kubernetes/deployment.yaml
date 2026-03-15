@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: netbox-mcp
-  namespace: default
   labels:
     app: netbox-mcp
 spec:
