@@ -497,6 +497,83 @@ Then call again with `limit=1, offset=1` and confirm a different result is retur
 
 ---
 
+## Remote MCP (HTTP transport)
+
+These steps verify the `--listen` HTTP mode and bearer-token authentication.
+Run them after the stdio checks above pass.
+
+### Setup
+
+Start the server in HTTP mode (no `NETBOX_TOKEN` needed):
+
+```sh
+NETBOX_URL=https://netbox.example.com netbox-mcp --listen :8080
+```
+
+Register it with Claude Code:
+
+```sh
+claude mcp add --transport http \
+  --header "Authorization: Bearer your-netbox-token" \
+  netbox-http http://localhost:8080/mcp
+```
+
+Confirm the server appears in `/mcp` and shows as connected.
+
+### Authentication checks
+
+**Valid token**
+- Confirm the server accepted the connection (no 401 in Claude Code or server logs).
+- Call `netbox_dcim_sites_list` with no arguments. Confirm results are returned.
+
+**Invalid token**
+- Register a second server entry with a deliberately wrong token:
+  ```sh
+  claude mcp add --transport http \
+    --header "Authorization: Bearer invalid-token-value" \
+    netbox-http-bad http://localhost:8080/mcp
+  ```
+- Confirm the connection fails (Claude Code should report a 401 error).
+- Remove the bad entry: `claude mcp remove netbox-http-bad`
+
+**Missing token**
+- Send a raw request with no Authorization header:
+  ```sh
+  curl -s -o /dev/null -w "%{http_code}" \
+    -X POST http://localhost:8080/mcp \
+    -H "Content-Type: application/json" \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+  ```
+- Confirm the response is `401`.
+
+### Tool behaviour
+
+Run the following tool calls through the HTTP-registered server and confirm
+results match what was returned during the stdio run above:
+
+- `netbox_dcim_devices_list` with no arguments
+- `netbox_dcim_sites_list` with `status` set to `active`
+- `netbox_ipam_ip_addresses_list` with no arguments
+- `netbox_dcim_devices_get` with an ID from the list result
+
+### Session isolation
+
+Open a second Claude Code window and register the same HTTP server with a
+different (but valid) NetBox token belonging to a different user account. Run
+`netbox_users_tokens_list` in both sessions and confirm each session returns
+only the tokens for its own user, verifying that sessions do not share state.
+
+### Pagination over HTTP
+
+Call `netbox_dcim_devices_list` with `limit=1`. Confirm:
+- Exactly one result is returned.
+- `count` reflects the true total.
+- `next` is non-null (if more results exist).
+
+Call again with `limit=1, offset=1` and confirm a different device is returned.
+
+---
+
 ## Things to note during testing
 
 - Any tool that returns `isError: true` unexpectedly.
