@@ -58,6 +58,9 @@ func makeTokenVerifier(netboxURL string) auth.TokenVerifier {
 	return func(ctx context.Context, token string, _ *http.Request) (*auth.TokenInfo, error) {
 		client := netbox.NewAPIClientFor(netboxURL, token)
 		_, resp, err := client.UsersAPI.UsersTokensList(ctx).Limit(1).Execute()
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
 		if err != nil {
 			if resp != nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 				return nil, fmt.Errorf("%w", auth.ErrInvalidToken)
