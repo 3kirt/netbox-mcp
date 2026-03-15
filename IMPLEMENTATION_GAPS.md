@@ -88,7 +88,7 @@ tools.RegisterExtras(s, client)
 1. ~~**Phase A** — Universal filter additions to all existing list tools (`q`, `ordering`)~~ ✅
 2. ~~**Phase B** — Missing `_get` tools for existing list-only resources~~ ✅
 3. ~~**Phase C** — Missing resources in existing modules (no new files)~~ ✅
-4. **Phase D** — New modules (new files + server.go registration)
+4. ~~**Phase D** — New modules (new files + server.go registration)~~ ✅
 
 ---
 

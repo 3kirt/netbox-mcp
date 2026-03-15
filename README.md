@@ -96,7 +96,7 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 
 ## Available tools
 
-84 tools are currently implemented across five NetBox API areas.
+124 tools are currently implemented across ten NetBox API areas.
 
 ### DCIM — [docs/dcim.md](docs/dcim.md)
 
@@ -206,6 +206,71 @@ Add the following to your project's `.mcp.json` or to `~/.claude.json` under `mc
 | `netbox_virtualization_interfaces_get` | Get a VM interface by ID |
 | `netbox_virtualization_virtual_disks_list` | List virtual disks (filter: q, virtual machine, name) |
 | `netbox_virtualization_virtual_disks_get` | Get a virtual disk by ID |
+
+### Extras — [docs/extras.md](docs/extras.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_extras_tags_list` | List tags (filter: q, name, slug) |
+| `netbox_extras_tags_get` | Get a tag by ID |
+| `netbox_extras_config_contexts_list` | List config contexts (filter: q, name, is_active, site, role) |
+| `netbox_extras_config_contexts_get` | Get a config context by ID |
+| `netbox_extras_journal_entries_list` | List journal entries (filter: q, assigned_object_type, assigned_object_id, kind, created_by) |
+| `netbox_extras_journal_entries_get` | Get a journal entry by ID |
+| `netbox_extras_custom_fields_list` | List custom fields (filter: q, name, type, object_type) |
+| `netbox_extras_custom_fields_get` | Get a custom field by ID |
+| `netbox_extras_export_templates_list` | List export templates (filter: q, name, object_type) |
+| `netbox_extras_export_templates_get` | Get an export template by ID |
+| `netbox_extras_webhooks_list` | List webhooks (filter: q, name) |
+| `netbox_extras_webhooks_get` | Get a webhook by ID |
+
+### VPN — [docs/vpn.md](docs/vpn.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_vpn_tunnels_list` | List VPN tunnels (filter: q, status, group, tenant) |
+| `netbox_vpn_tunnels_get` | Get a VPN tunnel by ID |
+| `netbox_vpn_tunnel_groups_list` | List VPN tunnel groups (filter: q, name, slug) |
+| `netbox_vpn_tunnel_groups_get` | Get a VPN tunnel group by ID |
+| `netbox_vpn_l2vpns_list` | List L2VPNs (filter: q, type, tenant) |
+| `netbox_vpn_l2vpns_get` | Get an L2VPN by ID |
+| `netbox_vpn_ike_policies_list` | List IKE policies (filter: q, name) |
+| `netbox_vpn_ike_policies_get` | Get an IKE policy by ID |
+| `netbox_vpn_ipsec_policies_list` | List IPSec policies (filter: q, name) |
+| `netbox_vpn_ipsec_policies_get` | Get an IPSec policy by ID |
+
+### Wireless — [docs/wireless.md](docs/wireless.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_wireless_lans_list` | List wireless LANs (filter: q, ssid, group, status, tenant) |
+| `netbox_wireless_lans_get` | Get a wireless LAN by ID |
+| `netbox_wireless_lan_groups_list` | List wireless LAN groups (filter: q, name, parent) |
+| `netbox_wireless_lan_groups_get` | Get a wireless LAN group by ID |
+| `netbox_wireless_links_list` | List wireless links (filter: q, status, tenant) |
+| `netbox_wireless_links_get` | Get a wireless link by ID |
+
+### Core — [docs/core.md](docs/core.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_core_data_sources_list` | List data sources (filter: q, name, status) |
+| `netbox_core_data_sources_get` | Get a data source by ID |
+| `netbox_core_jobs_list` | List background jobs (filter: q, status) |
+| `netbox_core_jobs_get` | Get a background job by ID |
+| `netbox_core_object_changes_list` | List object changes / audit log (filter: q, user) |
+| `netbox_core_object_changes_get` | Get an object change record by ID |
+
+### Users — [docs/users.md](docs/users.md)
+
+| Tool | Description |
+|---|---|
+| `netbox_users_users_list` | List users (filter: q, username, is_active) |
+| `netbox_users_users_get` | Get a user by ID |
+| `netbox_users_groups_list` | List user groups (filter: q, name) |
+| `netbox_users_groups_get` | Get a user group by ID |
+| `netbox_users_tokens_list` | List API tokens (filter: q, user_id) |
+| `netbox_users_tokens_get` | Get an API token by ID |
 
 ## Development
 

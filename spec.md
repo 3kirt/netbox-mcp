@@ -41,17 +41,27 @@ netbox-mcp/
 │   │   └── server.go        # MCP server construction and tool registration
 │   └── tools/
 │       ├── circuits.go      # Circuits tools
+│       ├── core.go          # Core tools (data sources, jobs, object changes)
 │       ├── dcim.go          # DCIM tools
-│       ├── helpers.go       # Shared helpers: jsonResult, toolError, ptrOf
+│       ├── extras.go        # Extras tools (tags, config contexts, custom fields, etc.)
+│       ├── helpers.go       # Shared helpers: jsonResult, toolError, ptrOf, clampLimit
 │       ├── ipam.go          # IPAM tools
 │       ├── tenancy.go       # Tenancy tools
-│       └── virtualization.go # Virtualization tools
+│       ├── users.go         # Users tools (users, groups, tokens)
+│       ├── virtualization.go # Virtualization tools
+│       ├── vpn.go           # VPN tools (tunnels, L2VPNs, IKE/IPSec policies)
+│       └── wireless.go      # Wireless tools (LANs, LAN groups, links)
 ├── docs/
 │   ├── circuits.md
+│   ├── core.md
 │   ├── dcim.md
+│   ├── extras.md
 │   ├── ipam.md
 │   ├── tenancy.md
-│   └── virtualization.md
+│   ├── users.md
+│   ├── virtualization.md
+│   ├── vpn.md
+│   └── wireless.md
 ├── spec.md
 ├── style.md
 ├── Makefile
@@ -124,10 +134,15 @@ Tool registration lives in `internal/server/server.go`:
 // Register adds all NetBox tools to the MCP server.
 func Register(s *mcp.Server, client *netbox.APIClient) {
     tools.RegisterCircuits(s, client)
+    tools.RegisterCore(s, client)
     tools.RegisterDCIM(s, client)
+    tools.RegisterExtras(s, client)
     tools.RegisterIPAM(s, client)
     tools.RegisterTenancy(s, client)
+    tools.RegisterUsers(s, client)
     tools.RegisterVirtualization(s, client)
+    tools.RegisterVPN(s, client)
+    tools.RegisterWireless(s, client)
 }
 ```
 
@@ -295,6 +310,71 @@ mcp.AddTool(s, &mcp.Tool{
 | `netbox_virtualization_virtual_disks_list` | List virtual disks | q, virtual_machine_id, name, ordering, limit, offset |
 | `netbox_virtualization_virtual_disks_get` | Get a virtual disk by ID | id |
 
+### Extras (`internal/tools/extras.go`)
+
+| Tool name | Description | Key filters |
+|---|---|---|
+| `netbox_extras_tags_list` | List tags | q, name, slug, ordering, limit, offset |
+| `netbox_extras_tags_get` | Get a tag by ID | id |
+| `netbox_extras_config_contexts_list` | List config contexts | q, name, is_active, site, role, ordering, limit, offset |
+| `netbox_extras_config_contexts_get` | Get a config context by ID | id |
+| `netbox_extras_journal_entries_list` | List journal entries | q, assigned_object_type, assigned_object_id, kind, created_by, ordering, limit, offset |
+| `netbox_extras_journal_entries_get` | Get a journal entry by ID | id |
+| `netbox_extras_custom_fields_list` | List custom fields | q, name, type, object_type, ordering, limit, offset |
+| `netbox_extras_custom_fields_get` | Get a custom field by ID | id |
+| `netbox_extras_export_templates_list` | List export templates | q, name, object_type, ordering, limit, offset |
+| `netbox_extras_export_templates_get` | Get an export template by ID | id |
+| `netbox_extras_webhooks_list` | List webhooks | q, name, ordering, limit, offset |
+| `netbox_extras_webhooks_get` | Get a webhook by ID | id |
+
+### VPN (`internal/tools/vpn.go`)
+
+| Tool name | Description | Key filters |
+|---|---|---|
+| `netbox_vpn_tunnels_list` | List VPN tunnels | q, status, group, tenant, ordering, limit, offset |
+| `netbox_vpn_tunnels_get` | Get a VPN tunnel by ID | id |
+| `netbox_vpn_tunnel_groups_list` | List VPN tunnel groups | q, name, slug, ordering, limit, offset |
+| `netbox_vpn_tunnel_groups_get` | Get a VPN tunnel group by ID | id |
+| `netbox_vpn_l2vpns_list` | List L2VPNs | q, type, tenant, ordering, limit, offset |
+| `netbox_vpn_l2vpns_get` | Get an L2VPN by ID | id |
+| `netbox_vpn_ike_policies_list` | List IKE policies | q, name, ordering, limit, offset |
+| `netbox_vpn_ike_policies_get` | Get an IKE policy by ID | id |
+| `netbox_vpn_ipsec_policies_list` | List IPSec policies | q, name, ordering, limit, offset |
+| `netbox_vpn_ipsec_policies_get` | Get an IPSec policy by ID | id |
+
+### Wireless (`internal/tools/wireless.go`)
+
+| Tool name | Description | Key filters |
+|---|---|---|
+| `netbox_wireless_lans_list` | List wireless LANs | q, ssid, group, status, tenant, ordering, limit, offset |
+| `netbox_wireless_lans_get` | Get a wireless LAN by ID | id |
+| `netbox_wireless_lan_groups_list` | List wireless LAN groups | q, name, parent, ordering, limit, offset |
+| `netbox_wireless_lan_groups_get` | Get a wireless LAN group by ID | id |
+| `netbox_wireless_links_list` | List wireless links | q, status, tenant, ordering, limit, offset |
+| `netbox_wireless_links_get` | Get a wireless link by ID | id |
+
+### Core (`internal/tools/core.go`)
+
+| Tool name | Description | Key filters |
+|---|---|---|
+| `netbox_core_data_sources_list` | List data sources | q, name, status, ordering, limit, offset |
+| `netbox_core_data_sources_get` | Get a data source by ID | id |
+| `netbox_core_jobs_list` | List background jobs | q, status, ordering, limit, offset |
+| `netbox_core_jobs_get` | Get a background job by ID | id |
+| `netbox_core_object_changes_list` | List object changes (audit log) | q, user, ordering, limit, offset |
+| `netbox_core_object_changes_get` | Get an object change record by ID | id |
+
+### Users (`internal/tools/users.go`)
+
+| Tool name | Description | Key filters |
+|---|---|---|
+| `netbox_users_users_list` | List users | q, username, is_active, ordering, limit, offset |
+| `netbox_users_users_get` | Get a user by ID | id |
+| `netbox_users_groups_list` | List user groups | q, name, ordering, limit, offset |
+| `netbox_users_groups_get` | Get a user group by ID | id |
+| `netbox_users_tokens_list` | List API tokens | q, user_id, ordering, limit, offset |
+| `netbox_users_tokens_get` | Get an API token by ID | id |
+
 ---
 
 ## Error Handling
@@ -358,3 +438,4 @@ install:
 - [x] Phase A: add `q` and `ordering` to all list tools
 - [x] Phase B: add missing `_get` tools (interfaces, cables)
 - [x] Phase C: add missing resources in existing modules (44 new tool pairs)
+- [x] Phase D: add new modules (extras, vpn, wireless, core, users — 40 new tools)
