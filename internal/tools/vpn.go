@@ -69,6 +69,9 @@ func addVPNTunnelsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_vpn_tunnels_get",
 		Description: "Get a single VPN tunnel by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VpnAPI.VpnTunnelsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting VPN tunnel %d: %v", in.ID, err))
@@ -120,6 +123,9 @@ func addVPNTunnelGroupsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_vpn_tunnel_groups_get",
 		Description: "Get a single VPN tunnel group by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VpnAPI.VpnTunnelGroupsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting VPN tunnel group %d: %v", in.ID, err))
@@ -171,6 +177,9 @@ func addVPNL2VPNsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_vpn_l2vpns_get",
 		Description: "Get a single L2VPN by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VpnAPI.VpnL2vpnsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting L2VPN %d: %v", in.ID, err))
@@ -218,6 +227,9 @@ func addVPNIKEPoliciesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_vpn_ike_policies_get",
 		Description: "Get a single IKE policy by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VpnAPI.VpnIkePoliciesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting IKE policy %d: %v", in.ID, err))
@@ -265,6 +277,9 @@ func addVPNIPSecPoliciesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_vpn_ipsec_policies_get",
 		Description: "Get a single IPSec policy by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VpnAPI.VpnIpsecPoliciesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting IPSec policy %d: %v", in.ID, err))

@@ -46,6 +46,7 @@ func TestLoad_worldReadableFileReturnsError(t *testing.T) {
 		t.Skip("file permission checks not enforced on Windows")
 	}
 	f := filepath.Join(t.TempDir(), "config.json")
+	//nolint:gosec // intentionally world-readable: this test verifies that Load rejects such files
 	if err := os.WriteFile(f, []byte(`{"url":"https://netbox.example.com","token":"abc"}`), 0o644); err != nil {
 		t.Fatalf("writing temp file: %v", err)
 	}

@@ -31,6 +31,16 @@ func toolError(msg string) (*mcp.CallToolResult, any, error) {
 // requires a slice of pointers (e.g. []*string).
 func ptrOf[T any](v T) *T { return &v }
 
+// ptrSlice converts a slice of values to a slice of pointers. It is used when
+// a NetBox API filter requires []*string rather than []string (nullable FK fields).
+func ptrSlice[T any](vs []T) []*T {
+	ps := make([]*T, len(vs))
+	for i, v := range vs {
+		ps[i] = ptrOf(v)
+	}
+	return ps
+}
+
 const (
 	defaultLimit = int32(50)
 	maxLimit     = int32(1000)

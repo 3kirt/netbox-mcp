@@ -26,15 +26,15 @@ func RegisterVirtualization(s *mcp.Server, client *netbox.APIClient) {
 
 func addVirtualizationVMsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Cluster  string `json:"cluster,omitempty" jsonschema:"Cluster name to filter by"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"VM status (active, offline, staged, failed, decommissioning)"`
-		Role     string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
-		Tenant   string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Cluster  []string `json:"cluster,omitempty" jsonschema:"Cluster name to filter by"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"VM status (active, offline, staged, failed, decommissioning)"`
+		Role     []string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
+		Tenant   []string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_virtualization_vms_list",
@@ -44,20 +44,20 @@ func addVirtualizationVMsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Cluster != "" {
-			r = r.Cluster([]string{in.Cluster})
+		if len(in.Cluster) > 0 {
+			r = r.Cluster(in.Cluster)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
-		if in.Role != "" {
-			r = r.Role([]string{in.Role})
+		if len(in.Role) > 0 {
+			r = r.Role(in.Role)
 		}
-		if in.Tenant != "" {
-			r = r.Tenant([]string{in.Tenant})
+		if len(in.Tenant) > 0 {
+			r = r.Tenant(in.Tenant)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -79,6 +79,9 @@ func addVirtualizationVMsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_virtualization_vms_get",
 		Description: "Get a single virtual machine by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VirtualizationAPI.VirtualizationVirtualMachinesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting virtual machine %d: %v", in.ID, err))
@@ -89,13 +92,13 @@ func addVirtualizationVMsGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Name     string `json:"name,omitempty" jsonschema:"Cluster name to filter by"`
-		Type     string `json:"type,omitempty" jsonschema:"Cluster type name or slug to filter by"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     []string `json:"name,omitempty" jsonschema:"Cluster name to filter by"`
+		Type     []string `json:"type,omitempty" jsonschema:"Cluster type name or slug to filter by"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_virtualization_clusters_list",
@@ -105,14 +108,14 @@ func addVirtualizationClustersList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Name != "" {
-			r = r.Name([]string{in.Name})
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
 		}
-		if in.Type != "" {
-			r = r.Type_([]string{in.Type})
+		if len(in.Type) > 0 {
+			r = r.Type_(in.Type)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -134,6 +137,9 @@ func addVirtualizationClustersGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_virtualization_clusters_get",
 		Description: "Get a single virtualization cluster by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VirtualizationAPI.VirtualizationClustersRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting cluster %d: %v", in.ID, err))
@@ -181,6 +187,9 @@ func addVirtualizationClusterGroupsGet(s *mcp.Server, client *netbox.APIClient) 
 		Name:        "netbox_virtualization_cluster_groups_get",
 		Description: "Get a single cluster group by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VirtualizationAPI.VirtualizationClusterGroupsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting cluster group %d: %v", in.ID, err))
@@ -228,6 +237,9 @@ func addVirtualizationClusterTypesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_virtualization_cluster_types_get",
 		Description: "Get a single cluster type by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VirtualizationAPI.VirtualizationClusterTypesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting cluster type %d: %v", in.ID, err))
@@ -283,6 +295,9 @@ func addVirtualizationInterfacesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_virtualization_interfaces_get",
 		Description: "Get a single VM interface by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VirtualizationAPI.VirtualizationInterfacesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting VM interface %d: %v", in.ID, err))
@@ -334,6 +349,9 @@ func addVirtualizationVirtualDisksGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_virtualization_virtual_disks_get",
 		Description: "Get a single virtual disk by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.VirtualizationAPI.VirtualizationVirtualDisksRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting virtual disk %d: %v", in.ID, err))

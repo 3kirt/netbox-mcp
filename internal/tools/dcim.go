@@ -45,14 +45,14 @@ func RegisterDCIM(s *mcp.Server, client *netbox.APIClient) {
 
 func addDCIMDevicesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Role     string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"Device status (active, planned, staged, failed, inventory, decommissioning)"`
-		RackID   int32  `json:"rack_id,omitempty" jsonschema:"Rack ID to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Role     []string `json:"role,omitempty" jsonschema:"Device role name or slug to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"Device status (active, planned, staged, failed, inventory, decommissioning)"`
+		RackID   int32    `json:"rack_id,omitempty" jsonschema:"Rack ID to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_dcim_devices_list",
@@ -62,14 +62,14 @@ func addDCIMDevicesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Role != "" {
-			r = r.Role([]string{in.Role})
+		if len(in.Role) > 0 {
+			r = r.Role(in.Role)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
 		if in.RackID != 0 {
 			r = r.RackId([]int32{in.RackID})
@@ -94,6 +94,9 @@ func addDCIMDevicesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_devices_get",
 		Description: "Get a single device by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimDevicesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting device %d: %v", in.ID, err))
@@ -104,13 +107,13 @@ func addDCIMDevicesGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addDCIMSitesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Name     string `json:"name,omitempty" jsonschema:"Site name to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"Site status (active, planned, retired, staging)"`
-		Region   string `json:"region,omitempty" jsonschema:"Region name or slug to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     []string `json:"name,omitempty" jsonschema:"Site name to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"Site status (active, planned, retired, staging)"`
+		Region   []string `json:"region,omitempty" jsonschema:"Region name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_dcim_sites_list",
@@ -120,14 +123,14 @@ func addDCIMSitesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Name != "" {
-			r = r.Name([]string{in.Name})
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
-		if in.Region != "" {
-			r = r.Region([]string{in.Region})
+		if len(in.Region) > 0 {
+			r = r.Region(in.Region)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -149,6 +152,9 @@ func addDCIMSitesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_sites_get",
 		Description: "Get a single site by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimSitesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting site %d: %v", in.ID, err))
@@ -159,13 +165,13 @@ func addDCIMSitesGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addDCIMRacksList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Location string `json:"location,omitempty" jsonschema:"Location name or slug to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"Rack status (active, planned, reserved, available, deprecated)"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Location []string `json:"location,omitempty" jsonschema:"Location name or slug to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"Rack status (active, planned, reserved, available, deprecated)"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_dcim_racks_list",
@@ -175,14 +181,14 @@ func addDCIMRacksList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Location != "" {
-			r = r.Location([]string{in.Location})
+		if len(in.Location) > 0 {
+			r = r.Location(in.Location)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -204,6 +210,9 @@ func addDCIMRacksGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_racks_get",
 		Description: "Get a single rack by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimRacksRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting rack %d: %v", in.ID, err))
@@ -214,13 +223,13 @@ func addDCIMRacksGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		DeviceID int32  `json:"device_id,omitempty" jsonschema:"Device ID to filter by"`
-		Name     string `json:"name,omitempty" jsonschema:"Interface name to filter by"`
-		Type     string `json:"type,omitempty" jsonschema:"Interface type to filter by (e.g. 1000base-t, 10gbase-x-sfpp)"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		DeviceID int32    `json:"device_id,omitempty" jsonschema:"Device ID to filter by"`
+		Name     []string `json:"name,omitempty" jsonschema:"Interface name to filter by"`
+		Type     []string `json:"type,omitempty" jsonschema:"Interface type to filter by (e.g. 1000base-t, 10gbase-x-sfpp)"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_dcim_interfaces_list",
@@ -233,11 +242,11 @@ func addDCIMInterfacesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.DeviceID != 0 {
 			r = r.DeviceId([]int32{in.DeviceID})
 		}
-		if in.Name != "" {
-			r = r.Name([]string{in.Name})
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
 		}
-		if in.Type != "" {
-			r = r.Type_([]string{in.Type})
+		if len(in.Type) > 0 {
+			r = r.Type_(in.Type)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -259,6 +268,9 @@ func addDCIMInterfacesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_interfaces_get",
 		Description: "Get a single device interface by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimInterfacesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting interface %d: %v", in.ID, err))
@@ -269,12 +281,12 @@ func addDCIMInterfacesGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"Cable status (connected, planned, decommissioning)"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"Cable status (connected, planned, decommissioning)"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_dcim_cables_list",
@@ -284,11 +296,11 @@ func addDCIMCablesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -310,6 +322,9 @@ func addDCIMCablesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_cables_get",
 		Description: "Get a single cable by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimCablesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting cable %d: %v", in.ID, err))
@@ -365,6 +380,9 @@ func addDCIMRegionsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_regions_get",
 		Description: "Get a single region by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimRegionsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting region %d: %v", in.ID, err))
@@ -424,6 +442,9 @@ func addDCIMLocationsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_locations_get",
 		Description: "Get a single location by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimLocationsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting location %d: %v", in.ID, err))
@@ -475,6 +496,9 @@ func addDCIMManufacturersGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_manufacturers_get",
 		Description: "Get a single manufacturer by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimManufacturersRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting manufacturer %d: %v", in.ID, err))
@@ -526,6 +550,9 @@ func addDCIMDeviceTypesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_device_types_get",
 		Description: "Get a single device type by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimDeviceTypesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting device type %d: %v", in.ID, err))
@@ -581,6 +608,9 @@ func addDCIMDeviceRolesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_device_roles_get",
 		Description: "Get a single device role by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimDeviceRolesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting device role %d: %v", in.ID, err))
@@ -632,6 +662,9 @@ func addDCIMPlatformsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_platforms_get",
 		Description: "Get a single platform by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimPlatformsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting platform %d: %v", in.ID, err))
@@ -679,6 +712,9 @@ func addDCIMPowerPanelsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_power_panels_get",
 		Description: "Get a single power panel by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimPowerPanelsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting power panel %d: %v", in.ID, err))
@@ -734,6 +770,9 @@ func addDCIMPowerFeedsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_power_feeds_get",
 		Description: "Get a single power feed by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimPowerFeedsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting power feed %d: %v", in.ID, err))
@@ -785,6 +824,9 @@ func addDCIMVirtualChassisGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_virtual_chassis_get",
 		Description: "Get a single virtual chassis by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimVirtualChassisRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting virtual chassis %d: %v", in.ID, err))
@@ -840,6 +882,9 @@ func addDCIMInventoryItemsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_dcim_inventory_items_get",
 		Description: "Get a single inventory item by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.DcimAPI.DcimInventoryItemsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting inventory item %d: %v", in.ID, err))

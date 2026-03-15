@@ -61,6 +61,9 @@ func addCoreDataSourcesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_core_data_sources_get",
 		Description: "Get a single data source by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CoreAPI.CoreDataSourcesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting data source %d: %v", in.ID, err))
@@ -108,6 +111,9 @@ func addCoreJobsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_core_jobs_get",
 		Description: "Get a single background job by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CoreAPI.CoreJobsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting job %d: %v", in.ID, err))
@@ -155,6 +161,9 @@ func addCoreObjectChangesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_core_object_changes_get",
 		Description: "Get a single object change record by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CoreAPI.CoreObjectChangesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting object change %d: %v", in.ID, err))

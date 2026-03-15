@@ -69,6 +69,9 @@ func addWirelessLANsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_wireless_lans_get",
 		Description: "Get a single wireless LAN by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.WirelessAPI.WirelessWirelessLansRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting wireless LAN %d: %v", in.ID, err))
@@ -120,6 +123,9 @@ func addWirelessLANGroupsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_wireless_lan_groups_get",
 		Description: "Get a single wireless LAN group by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.WirelessAPI.WirelessWirelessLanGroupsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting wireless LAN group %d: %v", in.ID, err))
@@ -171,6 +177,9 @@ func addWirelessLinksGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_wireless_links_get",
 		Description: "Get a single wireless link by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.WirelessAPI.WirelessWirelessLinksRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting wireless link %d: %v", in.ID, err))

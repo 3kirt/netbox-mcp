@@ -34,15 +34,15 @@ func RegisterIPAM(s *mcp.Server, client *netbox.APIClient) {
 
 func addIPAMIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Address  string `json:"address,omitempty" jsonschema:"IP address to filter by (e.g. 192.0.2.1/24)"`
-		VRF      string `json:"vrf,omitempty" jsonschema:"VRF name to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"IP address status (active, reserved, deprecated, dhcp, slaac)"`
-		Tenant   string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
-		Device   string `json:"device,omitempty" jsonschema:"Device name to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Address  []string `json:"address,omitempty" jsonschema:"IP address to filter by (e.g. 192.0.2.1/24)"`
+		VRF      []string `json:"vrf,omitempty" jsonschema:"VRF name to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"IP address status (active, reserved, deprecated, dhcp, slaac)"`
+		Tenant   []string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
+		Device   []string `json:"device,omitempty" jsonschema:"Device name to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_ipam_ip_addresses_list",
@@ -52,20 +52,20 @@ func addIPAMIPAddressesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Address != "" {
-			r = r.Address([]string{in.Address})
+		if len(in.Address) > 0 {
+			r = r.Address(in.Address)
 		}
-		if in.VRF != "" {
-			r = r.Vrf([]*string{ptrOf(in.VRF)})
+		if len(in.VRF) > 0 {
+			r = r.Vrf(ptrSlice(in.VRF))
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
-		if in.Tenant != "" {
-			r = r.Tenant([]string{in.Tenant})
+		if len(in.Tenant) > 0 {
+			r = r.Tenant(in.Tenant)
 		}
-		if in.Device != "" {
-			r = r.Device([]string{in.Device})
+		if len(in.Device) > 0 {
+			r = r.Device(in.Device)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -87,6 +87,9 @@ func addIPAMIPAddressesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_ip_addresses_get",
 		Description: "Get a single IP address by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamIpAddressesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting IP address %d: %v", in.ID, err))
@@ -97,15 +100,15 @@ func addIPAMIPAddressesGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addIPAMPrefixesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Prefix   string `json:"prefix,omitempty" jsonschema:"Prefix to filter by (e.g. 192.0.2.0/24)"`
-		VRF      string `json:"vrf,omitempty" jsonschema:"VRF name to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"Prefix status (active, container, reserved, deprecated)"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Tenant   string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Prefix   []string `json:"prefix,omitempty" jsonschema:"Prefix to filter by (e.g. 192.0.2.0/24)"`
+		VRF      []string `json:"vrf,omitempty" jsonschema:"VRF name to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"Prefix status (active, container, reserved, deprecated)"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Tenant   []string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_ipam_prefixes_list",
@@ -115,20 +118,20 @@ func addIPAMPrefixesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Prefix != "" {
-			r = r.Prefix([]string{in.Prefix})
+		if len(in.Prefix) > 0 {
+			r = r.Prefix(in.Prefix)
 		}
-		if in.VRF != "" {
-			r = r.Vrf([]*string{ptrOf(in.VRF)})
+		if len(in.VRF) > 0 {
+			r = r.Vrf(ptrSlice(in.VRF))
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Tenant != "" {
-			r = r.Tenant([]string{in.Tenant})
+		if len(in.Tenant) > 0 {
+			r = r.Tenant(in.Tenant)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -150,6 +153,9 @@ func addIPAMPrefixesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_prefixes_get",
 		Description: "Get a single IP prefix by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamPrefixesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting prefix %d: %v", in.ID, err))
@@ -160,13 +166,13 @@ func addIPAMPrefixesGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addIPAMVRFsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Name     string `json:"name,omitempty" jsonschema:"VRF name to filter by"`
-		RD       string `json:"rd,omitempty" jsonschema:"Route distinguisher to filter by"`
-		Tenant   string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     []string `json:"name,omitempty" jsonschema:"VRF name to filter by"`
+		RD       []string `json:"rd,omitempty" jsonschema:"Route distinguisher to filter by"`
+		Tenant   []string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_ipam_vrfs_list",
@@ -176,14 +182,14 @@ func addIPAMVRFsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Name != "" {
-			r = r.Name([]string{in.Name})
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
 		}
-		if in.RD != "" {
-			r = r.Rd([]string{in.RD})
+		if len(in.RD) > 0 {
+			r = r.Rd(in.RD)
 		}
-		if in.Tenant != "" {
-			r = r.Tenant([]string{in.Tenant})
+		if len(in.Tenant) > 0 {
+			r = r.Tenant(in.Tenant)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -205,6 +211,9 @@ func addIPAMVRFsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_vrfs_get",
 		Description: "Get a single VRF by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamVrfsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting VRF %d: %v", in.ID, err))
@@ -215,15 +224,15 @@ func addIPAMVRFsGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addIPAMVLANsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		VID      int32  `json:"vid,omitempty" jsonschema:"VLAN ID number to filter by (1-4094)"`
-		Name     string `json:"name,omitempty" jsonschema:"VLAN name to filter by"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Group    string `json:"group,omitempty" jsonschema:"VLAN group name or slug to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"VLAN status (active, reserved, deprecated)"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		VID      int32    `json:"vid,omitempty" jsonschema:"VLAN ID number to filter by (1-4094)"`
+		Name     []string `json:"name,omitempty" jsonschema:"VLAN name to filter by"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Group    []string `json:"group,omitempty" jsonschema:"VLAN group name or slug to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"VLAN status (active, reserved, deprecated)"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_ipam_vlans_list",
@@ -236,17 +245,17 @@ func addIPAMVLANsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.VID != 0 {
 			r = r.Vid([]int32{in.VID})
 		}
-		if in.Name != "" {
-			r = r.Name([]string{in.Name})
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Group != "" {
-			r = r.Group([]string{in.Group})
+		if len(in.Group) > 0 {
+			r = r.Group(in.Group)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -268,6 +277,9 @@ func addIPAMVLANsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_vlans_get",
 		Description: "Get a single VLAN by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamVlansRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting VLAN %d: %v", in.ID, err))
@@ -323,6 +335,9 @@ func addIPAMAggregatesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_aggregates_get",
 		Description: "Get a single IP aggregate by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamAggregatesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting aggregate %d: %v", in.ID, err))
@@ -335,7 +350,7 @@ func addIPAMIPRangesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
 		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		VRF      string   `json:"vrf,omitempty"      jsonschema:"VRF name to filter by (use empty string for global)"`
+		VRF      []string `json:"vrf,omitempty"      jsonschema:"VRF name to filter by (use empty string for global)"`
 		Status   []string `json:"status,omitempty"   jsonschema:"IP range status (active, reserved, deprecated)"`
 		Tenant   []string `json:"tenant,omitempty"   jsonschema:"Tenant name or slug to filter by"`
 		Limit    int32    `json:"limit,omitempty"    jsonschema:"Maximum number of results (default 50)"`
@@ -349,8 +364,8 @@ func addIPAMIPRangesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.VRF != "" {
-			r = r.Vrf([]*string{ptrOf(in.VRF)})
+		if len(in.VRF) > 0 {
+			r = r.Vrf(ptrSlice(in.VRF))
 		}
 		if len(in.Status) > 0 {
 			r = r.Status(in.Status)
@@ -378,6 +393,9 @@ func addIPAMIPRangesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_ip_ranges_get",
 		Description: "Get a single IP range by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamIpRangesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting IP range %d: %v", in.ID, err))
@@ -429,6 +447,9 @@ func addIPAMRouteTargetsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_route_targets_get",
 		Description: "Get a single route target by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamRouteTargetsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting route target %d: %v", in.ID, err))
@@ -480,6 +501,9 @@ func addIPAMRIRsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_rirs_get",
 		Description: "Get a single RIR by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamRirsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting RIR %d: %v", in.ID, err))
@@ -527,6 +551,9 @@ func addIPAMVLANGroupsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_vlan_groups_get",
 		Description: "Get a single VLAN group by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamVlanGroupsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting VLAN group %d: %v", in.ID, err))
@@ -582,6 +609,9 @@ func addIPAMServicesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_ipam_services_get",
 		Description: "Get a single service by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.IpamAPI.IpamServicesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting service %d: %v", in.ID, err))

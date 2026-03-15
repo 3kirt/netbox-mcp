@@ -61,6 +61,9 @@ func addUsersUsersGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_users_users_get",
 		Description: "Get a single user by their NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.UsersAPI.UsersUsersRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting user %d: %v", in.ID, err))
@@ -108,6 +111,9 @@ func addUsersGroupsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_users_groups_get",
 		Description: "Get a single user group by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.UsersAPI.UsersGroupsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting user group %d: %v", in.ID, err))
@@ -155,6 +161,9 @@ func addUsersTokensGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_users_tokens_get",
 		Description: "Get a single API token by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.UsersAPI.UsersTokensRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting token %d: %v", in.ID, err))

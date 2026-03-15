@@ -67,6 +67,9 @@ func addExtrasTagsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_extras_tags_get",
 		Description: "Get a single tag by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.ExtrasAPI.ExtrasTagsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting tag %d: %v", in.ID, err))
@@ -126,6 +129,9 @@ func addExtrasConfigContextsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_extras_config_contexts_get",
 		Description: "Get a single config context by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.ExtrasAPI.ExtrasConfigContextsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting config context %d: %v", in.ID, err))
@@ -138,7 +144,7 @@ func addExtrasJournalEntriesList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
 		Q                  string   `json:"q,omitempty"                    jsonschema:"Free-text search"`
 		Ordering           string   `json:"ordering,omitempty"             jsonschema:"Field to order results by (prefix with - for descending)"`
-		AssignedObjectType []string `json:"assigned_object_type,omitempty" jsonschema:"Assigned object type(s) to filter by"`
+		AssignedObjectType string   `json:"assigned_object_type,omitempty" jsonschema:"Assigned object type to filter by (e.g. dcim.device)"`
 		AssignedObjectID   int32    `json:"assigned_object_id,omitempty"   jsonschema:"Assigned object ID to filter by"`
 		Kind               []string `json:"kind,omitempty"                 jsonschema:"Journal entry kind(s) to filter by"`
 		CreatedBy          []string `json:"created_by,omitempty"           jsonschema:"Creator username(s) to filter by"`
@@ -153,8 +159,8 @@ func addExtrasJournalEntriesList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if len(in.AssignedObjectType) > 0 {
-			r = r.AssignedObjectType(in.AssignedObjectType[0])
+		if in.AssignedObjectType != "" {
+			r = r.AssignedObjectType(in.AssignedObjectType)
 		}
 		if in.AssignedObjectID != 0 {
 			r = r.AssignedObjectId([]int32{in.AssignedObjectID})
@@ -185,6 +191,9 @@ func addExtrasJournalEntriesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_extras_journal_entries_get",
 		Description: "Get a single journal entry by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.ExtrasAPI.ExtrasJournalEntriesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting journal entry %d: %v", in.ID, err))
@@ -240,6 +249,9 @@ func addExtrasCustomFieldsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_extras_custom_fields_get",
 		Description: "Get a single custom field by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.ExtrasAPI.ExtrasCustomFieldsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting custom field %d: %v", in.ID, err))
@@ -291,6 +303,9 @@ func addExtrasExportTemplatesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_extras_export_templates_get",
 		Description: "Get a single export template by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.ExtrasAPI.ExtrasExportTemplatesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting export template %d: %v", in.ID, err))
@@ -338,6 +353,9 @@ func addExtrasWebhooksGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_extras_webhooks_get",
 		Description: "Get a single webhook by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.ExtrasAPI.ExtrasWebhooksRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting webhook %d: %v", in.ID, err))

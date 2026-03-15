@@ -72,7 +72,7 @@ List journal entries in NetBox, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `assigned_object_type` | string[] | no | Assigned object type(s) to filter by (e.g. `dcim.device`) |
+| `assigned_object_type` | string | no | Assigned object type to filter by (e.g. `dcim.device`) |
 | `assigned_object_id` | integer | no | Assigned object ID to filter by |
 | `kind` | string[] | no | Journal entry kind(s) to filter by (`info`, `success`, `warning`, `danger`) |
 | `created_by` | string[] | no | Creator username(s) to filter by |

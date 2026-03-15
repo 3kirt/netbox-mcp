@@ -26,15 +26,15 @@ func RegisterCircuits(s *mcp.Server, client *netbox.APIClient) {
 
 func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Provider string `json:"provider,omitempty" jsonschema:"Provider name or slug to filter by"`
-		Status   string `json:"status,omitempty" jsonschema:"Circuit status (active, planned, provisioning, offline, deprovisioning, decommissioned)"`
-		Type     string `json:"type,omitempty" jsonschema:"Circuit type name or slug to filter by"`
-		Site     string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
-		Tenant   string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Provider []string `json:"provider,omitempty" jsonschema:"Provider name or slug to filter by"`
+		Status   []string `json:"status,omitempty" jsonschema:"Circuit status (active, planned, provisioning, offline, deprovisioning, decommissioned)"`
+		Type     []string `json:"type,omitempty" jsonschema:"Circuit type name or slug to filter by"`
+		Site     []string `json:"site,omitempty" jsonschema:"Site name or slug to filter by"`
+		Tenant   []string `json:"tenant,omitempty" jsonschema:"Tenant name or slug to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_circuits_circuits_list",
@@ -44,20 +44,20 @@ func addCircuitsCircuitsList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Provider != "" {
-			r = r.Provider([]string{in.Provider})
+		if len(in.Provider) > 0 {
+			r = r.Provider(in.Provider)
 		}
-		if in.Status != "" {
-			r = r.Status([]string{in.Status})
+		if len(in.Status) > 0 {
+			r = r.Status(in.Status)
 		}
-		if in.Type != "" {
-			r = r.Type_([]string{in.Type})
+		if len(in.Type) > 0 {
+			r = r.Type_(in.Type)
 		}
-		if in.Site != "" {
-			r = r.Site([]string{in.Site})
+		if len(in.Site) > 0 {
+			r = r.Site(in.Site)
 		}
-		if in.Tenant != "" {
-			r = r.Tenant([]string{in.Tenant})
+		if len(in.Tenant) > 0 {
+			r = r.Tenant(in.Tenant)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -79,6 +79,9 @@ func addCircuitsCircuitsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_circuits_circuits_get",
 		Description: "Get a single circuit by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CircuitsAPI.CircuitsCircuitsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting circuit %d: %v", in.ID, err))
@@ -89,11 +92,11 @@ func addCircuitsCircuitsGet(s *mcp.Server, client *netbox.APIClient) {
 
 func addCircuitsProvidersList(s *mcp.Server, client *netbox.APIClient) {
 	type input struct {
-		Q        string `json:"q,omitempty"        jsonschema:"Free-text search"`
-		Ordering string `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
-		Name     string `json:"name,omitempty" jsonschema:"Provider name to filter by"`
-		Limit    int32  `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
-		Offset   int32  `json:"offset,omitempty" jsonschema:"Pagination offset"`
+		Q        string   `json:"q,omitempty"        jsonschema:"Free-text search"`
+		Ordering string   `json:"ordering,omitempty" jsonschema:"Field to order results by (prefix with - for descending)"`
+		Name     []string `json:"name,omitempty" jsonschema:"Provider name to filter by"`
+		Limit    int32    `json:"limit,omitempty" jsonschema:"Maximum number of results (default 50)"`
+		Offset   int32    `json:"offset,omitempty" jsonschema:"Pagination offset"`
 	}
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "netbox_circuits_providers_list",
@@ -103,8 +106,8 @@ func addCircuitsProvidersList(s *mcp.Server, client *netbox.APIClient) {
 		if in.Q != "" {
 			r = r.Q(in.Q)
 		}
-		if in.Name != "" {
-			r = r.Name([]string{in.Name})
+		if len(in.Name) > 0 {
+			r = r.Name(in.Name)
 		}
 		if in.Ordering != "" {
 			r = r.Ordering(in.Ordering)
@@ -126,6 +129,9 @@ func addCircuitsProvidersGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_circuits_providers_get",
 		Description: "Get a single circuit provider by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CircuitsAPI.CircuitsProvidersRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting provider %d: %v", in.ID, err))
@@ -177,6 +183,9 @@ func addCircuitsCircuitTypesGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_circuits_circuit_types_get",
 		Description: "Get a single circuit type by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CircuitsAPI.CircuitsCircuitTypesRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting circuit type %d: %v", in.ID, err))
@@ -228,6 +237,9 @@ func addCircuitsCircuitTerminationsGet(s *mcp.Server, client *netbox.APIClient) 
 		Name:        "netbox_circuits_circuit_terminations_get",
 		Description: "Get a single circuit termination by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CircuitsAPI.CircuitsCircuitTerminationsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting circuit termination %d: %v", in.ID, err))
@@ -275,6 +287,9 @@ func addCircuitsProviderAccountsGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_circuits_provider_accounts_get",
 		Description: "Get a single provider account by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CircuitsAPI.CircuitsProviderAccountsRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting provider account %d: %v", in.ID, err))
@@ -322,6 +337,9 @@ func addCircuitsProviderNetworksGet(s *mcp.Server, client *netbox.APIClient) {
 		Name:        "netbox_circuits_provider_networks_get",
 		Description: "Get a single provider network by its NetBox ID.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, any, error) {
+		if in.ID == 0 {
+			return toolError("id is required")
+		}
 		resp, _, err := client.CircuitsAPI.CircuitsProviderNetworksRetrieve(ctx, in.ID).Execute()
 		if err != nil {
 			return toolError(fmt.Sprintf("getting provider network %d: %v", in.ID, err))
