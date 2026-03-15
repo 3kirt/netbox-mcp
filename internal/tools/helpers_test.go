@@ -69,6 +69,26 @@ func TestPtrOf(t *testing.T) {
 	}
 }
 
+func TestPtrSlice(t *testing.T) {
+	input := []string{"a", "b", "c"}
+	got := ptrSlice(input)
+	if len(got) != len(input) {
+		t.Fatalf("len = %d, want %d", len(got), len(input))
+	}
+	for i, p := range got {
+		if *p != input[i] {
+			t.Errorf("[%d] = %q, want %q", i, *p, input[i])
+		}
+	}
+}
+
+func TestPtrSlice_empty(t *testing.T) {
+	got := ptrSlice([]int{})
+	if len(got) != 0 {
+		t.Errorf("len = %d, want 0", len(got))
+	}
+}
+
 func TestClampLimit(t *testing.T) {
 	tests := []struct {
 		in   int32
