@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: netbox-mcp
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # SSE streams used by the Streamable HTTP transport are long-lived.
+    # Increase the proxy read timeout beyond the default 60s so that open
+    # MCP sessions are not killed by the ingress mid-stream.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - netbox-mcp.example.com
+      # Pre-provision this secret with your TLS certificate, or use
+      # cert-manager (annotate with cert-manager.io/cluster-issuer).
+      secretName: netbox-mcp-tls
+  rules:
+    - host: netbox-mcp.example.com
+      http:
+        paths:
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: netbox-mcp
+                port:
+                  name: http

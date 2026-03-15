@@ -157,12 +157,27 @@ NETBOX_URL=https://netbox.example.com make docker-build docker-run
 NETBOX_URL=https://netbox.example.com netbox-mcp --listen :8080
 ```
 
+### Deploying to Kubernetes
+
+Example manifests are provided in [deploy/kubernetes/](deploy/kubernetes/).
+
+1. Edit `configmap.yaml` to set your NetBox URL.
+2. Edit `deployment.yaml` to reference your image.
+3. Edit `ingress.yaml` to set your hostname (and TLS secret or cert-manager issuer).
+
+```sh
+kubectl apply -f deploy/kubernetes/
+```
+
+The Ingress is pre-configured for nginx with extended proxy timeouts to keep
+SSE streams alive for the duration of a session.
+
 ### Registering with Claude Code
 
 ```sh
 claude mcp add --transport http \
   --header "Authorization: Bearer your-netbox-token" \
-  netbox http://your-host:8080/mcp
+  netbox https://netbox-mcp.example.com/mcp
 ```
 
 > **TLS note:** The HTTP listener does not terminate TLS. In production, place
