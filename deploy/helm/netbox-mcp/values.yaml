@@ -1,0 +1,60 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/3kirt/netbox-mcp
+  pullPolicy: IfNotPresent
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+netbox:
+  # Required: base URL of your NetBox instance. Must use HTTPS.
+  url: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  host: netbox-mcp.example.com
+  # Additional annotations merged into the Ingress metadata.
+  # The nginx SSE timeout annotations are always applied.
+  annotations: {}
+  tls:
+    enabled: false
+    # Pre-provision this secret with your TLS certificate, or use cert-manager.
+    secretName: netbox-mcp-tls
+
+# Cluster-internal Service for Prometheus scraping.
+metricsService:
+  enabled: true
+
+serviceMonitor:
+  # Set to true if you have the Prometheus Operator installed.
+  enabled: false
+  # Labels added to the ServiceMonitor. Must match the serviceMonitorSelector
+  # on your Prometheus / kube-prometheus-stack installation.
+  # Example: labels: { release: prometheus }
+  labels: {}
+  interval: 30s
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]

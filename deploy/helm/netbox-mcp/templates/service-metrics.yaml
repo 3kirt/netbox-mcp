@@ -1,0 +1,16 @@
+{{- if .Values.metricsService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "netbox-mcp.fullname" . }}-metrics
+  labels:
+    {{- include "netbox-mcp.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "netbox-mcp.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: http
+      protocol: TCP
+{{- end }}

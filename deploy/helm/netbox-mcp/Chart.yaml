@@ -1,0 +1,14 @@
+apiVersion: v2
+name: netbox-mcp
+description: MCP server exposing NetBox infrastructure data as tools for Claude
+type: application
+version: 0.1.0
+appVersion: "v0.0.10"
+keywords:
+  - netbox
+  - mcp
+  - claude
+  - infrastructure
+home: https://github.com/3kirt/netbox-mcp
+sources:
+  - https://github.com/3kirt/netbox-mcp

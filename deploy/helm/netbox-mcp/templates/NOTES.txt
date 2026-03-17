@@ -1,0 +1,17 @@
+netbox-mcp is deployed.
+
+MCP endpoint: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}/mcp
+
+Register with Claude Code:
+  claude mcp add --transport http \
+    --header "Authorization: Bearer <your-netbox-api-token>" \
+    netbox http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}/mcp
+
+Health endpoints (unauthenticated):
+  /healthz  — liveness
+  /readyz   — readiness (DNS check against NetBox)
+{{- if .Values.serviceMonitor.enabled }}
+
+A ServiceMonitor has been created. Ensure its labels match the
+serviceMonitorSelector on your Prometheus installation.
+{{- end }}

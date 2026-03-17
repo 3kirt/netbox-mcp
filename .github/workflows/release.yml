@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -27,3 +28,36 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set chart version
+        id: version
+        # Strip the leading 'v' — Helm chart versions must be semver without it.
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Lint chart
+        run: helm lint deploy/helm/netbox-mcp --set netbox.url=https://netbox.example.com
+
+      - name: Package chart
+        run: |
+          helm package deploy/helm/netbox-mcp \
+            --version "${{ steps.version.outputs.version }}" \
+            --app-version "${{ github.ref_name }}"
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            helm registry login ghcr.io \
+              --username "${{ github.actor }}" \
+              --password-stdin
+
+      - name: Push chart to GHCR
+        run: |
+          helm push \
+            "netbox-mcp-${{ steps.version.outputs.version }}.tgz" \
+            "oci://ghcr.io/${{ github.repository_owner }}/charts"
