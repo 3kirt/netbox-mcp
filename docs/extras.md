@@ -13,7 +13,7 @@ List tags in NetBox, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string[] | no | Tag name(s) to filter by |
-| `slug` | string[] | no | Tag slug(s) to filter by |
+| `color` | string[] | no | Tag color(s) to filter by (hex, e.g. `ff0000`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -43,8 +43,9 @@ List config contexts in NetBox, with optional filtering.
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string[] | no | Config context name(s) to filter by |
 | `is_active` | boolean | no | Filter by active status |
-| `site` | string[] | no | Site name or slug to filter by |
-| `role` | string[] | no | Device role name or slug to filter by |
+| `site` | string[] | no | Site slug(s) to filter by |
+| `role` | string[] | no | Device role slug(s) to filter by |
+| `platform` | string[] | no | Platform slug(s) to filter by |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -72,8 +73,6 @@ List journal entries in NetBox, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `assigned_object_type` | string | no | Assigned object type to filter by (e.g. `dcim.device`) |
-| `assigned_object_id` | integer | no | Assigned object ID to filter by |
 | `kind` | string[] | no | Journal entry kind(s) to filter by (`info`, `success`, `warning`, `danger`) |
 | `created_by` | string[] | no | Creator username(s) to filter by |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
@@ -105,7 +104,7 @@ List custom fields in NetBox, with optional filtering.
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string[] | no | Custom field name(s) to filter by |
 | `type` | string[] | no | Custom field type(s) to filter by (e.g. `text`, `integer`, `boolean`) |
-| `object_type` | string | no | Object type to filter by (e.g. `dcim.device`) |
+| `content_types` | string[] | no | Content type(s) to filter by (e.g. `dcim.device`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -134,7 +133,7 @@ List export templates in NetBox, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string[] | no | Export template name(s) to filter by |
-| `object_type` | string | no | Object type to filter by (e.g. `dcim.device`) |
+| `content_types` | string[] | no | Content type(s) to filter by (e.g. `dcim.device`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -163,6 +162,7 @@ List webhooks in NetBox, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string[] | no | Webhook name(s) to filter by |
+| `http_method` | string[] | no | HTTP method(s) to filter by (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 

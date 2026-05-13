@@ -12,11 +12,13 @@ List virtual machines, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `cluster` | string | no | Cluster name |
-| `site` | string | no | Site name or slug |
-| `status` | string | no | `active`, `offline`, `staged`, `failed`, or `decommissioning` |
-| `role` | string | no | Device role name or slug |
-| `tenant` | string | no | Tenant name or slug |
+| `name` | string[] | no | VM name(s) |
+| `status` | string[] | no | `active`, `planned`, `staged`, `failed`, `offline`, or `decommissioning` |
+| `site` | string[] | no | Site slug(s) |
+| `cluster` | string[] | no | Cluster name(s) |
+| `role` | string[] | no | Device role slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
+| `platform` | string[] | no | Platform slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -44,9 +46,12 @@ List virtualization clusters, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Cluster name |
-| `type` | string | no | Cluster type name or slug |
-| `site` | string | no | Site name or slug |
+| `name` | string[] | no | Cluster name(s) |
+| `status` | string[] | no | `planned`, `staging`, `active`, `decommissioning`, or `offline` |
+| `site` | string[] | no | Site slug(s) |
+| `group` | string[] | no | Cluster group slug(s) |
+| `type` | string[] | no | Cluster type slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -74,7 +79,8 @@ List cluster groups, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Cluster group name |
+| `name` | string[] | no | Cluster group name(s) |
+| `slug` | string[] | no | Cluster group slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -102,7 +108,8 @@ List cluster types, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Cluster type name |
+| `name` | string[] | no | Cluster type name(s) |
+| `slug` | string[] | no | Cluster type slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -130,9 +137,10 @@ List VM interfaces, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `virtual_machine_id` | integer | no | Virtual machine ID |
-| `name` | string | no | Interface name |
+| `name` | string[] | no | Interface name(s) |
 | `enabled` | boolean | no | Filter to enabled interfaces only |
+| `virtual_machine_id` | integer | no | Virtual machine ID |
+| `mac_address` | string | no | MAC address |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -160,8 +168,8 @@ List virtual disks, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string[] | no | Virtual disk name(s) |
 | `virtual_machine_id` | integer | no | Virtual machine ID |
-| `name` | string | no | Virtual disk name |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 

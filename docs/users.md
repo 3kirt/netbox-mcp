@@ -14,6 +14,7 @@ List users in NetBox, with optional filtering.
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `username` | string[] | no | Username(s) to filter by |
 | `is_active` | boolean | no | Filter by active status |
+| `is_staff` | boolean | no | Filter by staff status |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -70,6 +71,8 @@ List API tokens in NetBox, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `user_id` | integer | no | User ID to filter tokens by |
+| `user` | string[] | no | Username(s) to filter tokens by |
+| `is_active` | boolean | no | Filter by active status |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 

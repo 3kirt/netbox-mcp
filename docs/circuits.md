@@ -12,11 +12,11 @@ List circuits, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `provider` | string | no | Provider name or slug |
-| `status` | string | no | `active`, `planned`, `provisioning`, `offline`, `deprovisioning`, or `decommissioned` |
-| `type` | string | no | Circuit type name or slug |
-| `site` | string | no | Site name or slug |
-| `tenant` | string | no | Tenant name or slug |
+| `provider` | string[] | no | Provider slug(s) |
+| `status` | string[] | no | `active`, `planned`, `provisioning`, `offline`, `deprovisioning`, or `decommissioned` |
+| `type` | string[] | no | Circuit type slug(s) |
+| `site` | string[] | no | Site slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -44,7 +44,8 @@ List circuit providers, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Provider name |
+| `name` | string[] | no | Provider name(s) |
+| `slug` | string[] | no | Provider slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -72,8 +73,8 @@ List circuit types, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Circuit type name |
-| `slug` | string | no | Circuit type slug |
+| `name` | string[] | no | Circuit type name(s) |
+| `slug` | string[] | no | Circuit type slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -102,7 +103,8 @@ List circuit terminations, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `circuit_id` | integer | no | Circuit ID |
-| `site` | string | no | Site name or slug |
+| `site` | string[] | no | Site slug(s) |
+| `term_side` | string | no | Termination side (`A` or `Z`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -130,7 +132,8 @@ List provider accounts, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `provider` | string | no | Provider name or slug |
+| `provider` | string[] | no | Provider slug(s) |
+| `name` | string[] | no | Account name(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -158,7 +161,8 @@ List provider networks, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `provider` | string | no | Provider name or slug |
+| `provider` | string[] | no | Provider slug(s) |
+| `name` | string[] | no | Network name(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 

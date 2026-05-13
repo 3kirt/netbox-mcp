@@ -12,11 +12,11 @@ List IP addresses, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `address` | string | no | IP address with prefix length (e.g. `192.0.2.1/24`) |
-| `vrf` | string | no | VRF name |
-| `status` | string | no | `active`, `reserved`, `deprecated`, `dhcp`, or `slaac` |
-| `tenant` | string | no | Tenant name or slug |
-| `device` | string | no | Device name |
+| `address` | string[] | no | IP address with prefix length (e.g. `192.0.2.1/24`) |
+| `vrf_id` | integer | no | VRF ID |
+| `status` | string[] | no | `active`, `reserved`, `deprecated`, `dhcp`, or `slaac` |
+| `role` | string[] | no | `loopback`, `secondary`, `anycast`, `vip`, `vrrp`, `hsrp`, `glbp`, or `carp` |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -44,11 +44,13 @@ List IP prefixes, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `prefix` | string | no | Prefix in CIDR notation (e.g. `192.0.2.0/24`) |
-| `vrf` | string | no | VRF name |
-| `status` | string | no | `active`, `container`, `reserved`, or `deprecated` |
-| `site` | string | no | Site name or slug |
-| `tenant` | string | no | Tenant name or slug |
+| `prefix` | string[] | no | Prefix in CIDR notation (e.g. `192.0.2.0/24`) |
+| `vrf_id` | integer | no | VRF ID |
+| `status` | string[] | no | `active`, `container`, `reserved`, or `deprecated` |
+| `role` | string[] | no | Role slug(s) |
+| `site` | string[] | no | Site slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
+| `family` | integer | no | Address family: `4` (IPv4) or `6` (IPv6) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -76,9 +78,9 @@ List VRFs, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | VRF name |
-| `rd` | string | no | Route distinguisher |
-| `tenant` | string | no | Tenant name or slug |
+| `name` | string[] | no | VRF name(s) |
+| `rd` | string[] | no | Route distinguisher(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -107,10 +109,12 @@ List VLANs, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `vid` | integer | no | VLAN ID number (1–4094) |
-| `name` | string | no | VLAN name |
-| `site` | string | no | Site name or slug |
-| `group` | string | no | VLAN group name or slug |
-| `status` | string | no | `active`, `reserved`, or `deprecated` |
+| `name` | string[] | no | VLAN name(s) |
+| `status` | string[] | no | `active`, `reserved`, or `deprecated` |
+| `role` | string[] | no | Role slug(s) |
+| `site` | string[] | no | Site slug(s) |
+| `group` | string[] | no | VLAN group slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -138,9 +142,9 @@ List IP aggregates, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `prefix` | string[] | no | Prefix in CIDR notation |
+| `rir` | string[] | no | RIR slug(s) |
 | `family` | integer | no | Address family: `4` (IPv4) or `6` (IPv6) |
-| `rir` | string | no | RIR name or slug |
-| `tenant` | string | no | Tenant name or slug |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -168,9 +172,10 @@ List IP ranges, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `vrf` | string | no | VRF name |
-| `status` | string | no | `active`, `reserved`, or `deprecated` |
-| `tenant` | string | no | Tenant name or slug |
+| `vrf_id` | integer | no | VRF ID |
+| `status` | string[] | no | `active`, `reserved`, or `deprecated` |
+| `role` | string[] | no | Role slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -198,8 +203,8 @@ List route targets, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Route target name |
-| `tenant` | string | no | Tenant name or slug |
+| `name` | string[] | no | Route target name(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -227,8 +232,8 @@ List RIRs (Regional Internet Registries), with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | RIR name |
-| `slug` | string | no | RIR slug |
+| `name` | string[] | no | RIR name(s) |
+| `slug` | string[] | no | RIR slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -256,7 +261,8 @@ List VLAN groups, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | VLAN group name |
+| `name` | string[] | no | VLAN group name(s) |
+| `site_id` | integer | no | Site ID |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -284,9 +290,10 @@ List services, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
+| `name` | string[] | no | Service name(s) |
 | `device_id` | integer | no | Device ID |
 | `virtual_machine_id` | integer | no | Virtual machine ID |
-| `protocol` | string | no | Protocol (e.g. `tcp`, `udp`) |
+| `protocol` | string[] | no | Protocol(s): `tcp`, `udp`, `sctp` |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -314,8 +321,9 @@ List ASNs (Autonomous System Numbers), with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `site` | string[] | no | Site name or slug to filter by |
-| `tenant` | string[] | no | Tenant name or slug to filter by |
+| `asn` | integer | no | AS number |
+| `rir` | string[] | no | RIR slug(s) |
+| `tenant` | string[] | no | Tenant slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -343,8 +351,8 @@ List FHRP (First Hop Redundancy Protocol) groups, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string[] | no | Group name(s) to filter by |
-| `protocol` | string[] | no | Protocol(s) to filter by (e.g. `vrrp2`, `vrrp3`, `carp`, `clusterxl`, `hsrp`, `glbp`) |
+| `group_id` | integer | no | Group ID number |
+| `protocol` | string[] | no | Protocol(s): `vrrp2`, `vrrp3`, `carp`, `clusterxl`, `hsrp`, `glbp`, `other` |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -371,8 +379,8 @@ List FHRP group assignments, with optional filtering.
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `group_id` | integer | no | FHRP group ID to filter by |
-| `device_id` | integer | no | Device ID to filter by |
+| `group_id` | integer | no | FHRP group ID |
+| `interface_type` | string | no | Interface type (e.g. `dcim.interface`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -400,8 +408,8 @@ List IP roles, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string[] | no | Role name(s) to filter by |
-| `slug` | string[] | no | Role slug(s) to filter by |
+| `name` | string[] | no | Role name(s) |
+| `slug` | string[] | no | Role slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 

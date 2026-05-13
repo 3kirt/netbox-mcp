@@ -13,7 +13,7 @@ List data sources in NetBox, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `name` | string[] | no | Data source name(s) to filter by |
-| `status` | string[] | no | Data source status(es) to filter by (e.g. `new`, `synced`, `failed`) |
+| `status` | string[] | no | Data source status(es) to filter by (`new`, `queued`, `syncing`, `completed`, `failed`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -41,7 +41,8 @@ List background jobs in NetBox, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `status` | string[] | no | Job status(es) to filter by (e.g. `pending`, `running`, `completed`, `failed`) |
+| `status` | string[] | no | Job status(es) to filter by (`pending`, `running`, `completed`, `errored`, `failed`) |
+| `object_type` | string | no | Object type to filter by (e.g. `dcim.device`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -70,6 +71,8 @@ List object changes (audit log) in NetBox, with optional filtering.
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
 | `user` | string[] | no | Username(s) to filter by |
+| `action` | string[] | no | Action(s) to filter by (`create`, `update`, `delete`) |
+| `changed_object_type` | string | no | Changed object type to filter by (e.g. `dcim.device`) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 

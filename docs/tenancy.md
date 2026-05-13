@@ -12,8 +12,9 @@ List tenants, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Tenant name |
-| `group` | string | no | Tenant group name or slug |
+| `name` | string[] | no | Tenant name(s) |
+| `group` | string[] | no | Tenant group slug(s) |
+| `tag` | string[] | no | Tag slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -41,8 +42,8 @@ List tenant groups, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Tenant group name |
-| `parent` | string | no | Parent group name or slug |
+| `name` | string[] | no | Tenant group name(s) |
+| `parent` | string[] | no | Parent group slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -70,8 +71,8 @@ List contacts, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Contact name |
-| `group` | string | no | Contact group name or slug |
+| `name` | string[] | no | Contact name(s) |
+| `group` | string[] | no | Contact group slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -99,8 +100,8 @@ List contact groups, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Contact group name |
-| `parent` | string | no | Parent group name or slug |
+| `name` | string[] | no | Contact group name(s) |
+| `parent` | string[] | no | Parent group slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
@@ -128,8 +129,8 @@ List contact roles, with optional filtering.
 |---|---|---|---|
 | `q` | string | no | Free-text search |
 | `ordering` | string | no | Field to order results by (prefix with `-` for descending) |
-| `name` | string | no | Contact role name |
-| `slug` | string | no | Contact role slug |
+| `name` | string[] | no | Contact role name(s) |
+| `slug` | string[] | no | Contact role slug(s) |
 | `limit` | integer | no | Maximum results (default 50, max 1000) |
 | `offset` | integer | no | Pagination offset |
 
