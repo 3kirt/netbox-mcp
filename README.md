@@ -6,8 +6,9 @@ The server communicates over stdio (local subprocess) or HTTP (remote MCP). It i
 
 ## Requirements
 
-- Go 1.24 or later
 - A running NetBox instance with a valid API token
+- To build from source: Rust stable toolchain (`rustup install stable`)
+- To use a pre-built release: nothing — grab the binary from the [releases page](https://github.com/3kirt/netbox-mcp/releases)
 
 ## Installation
 
@@ -19,7 +20,7 @@ cd netbox-mcp
 make install
 ```
 
-This installs the `netbox-mcp` binary to `$GOPATH/bin`.
+This installs the `netbox-mcp` binary to `$CARGO_HOME/bin` (typically `~/.cargo/bin`).
 
 ### Build only
 
@@ -201,13 +202,12 @@ The HTTP server exposes two unauthenticated probe endpoints:
 | `GET /healthz` | Liveness — server is running | `{"status":"ok","version":"v..."}` |
 | `GET /readyz` | Readiness — NetBox hostname resolves via DNS | `{"status":"ok"}` |
 
-`/readyz` returns `503` with `{"status":"error","error":"..."}` when the NetBox
-hostname cannot be resolved, preventing Kubernetes from routing traffic to a
-pod that cannot reach NetBox.
+`/readyz` returns `503` when the NetBox hostname cannot be resolved, preventing
+Kubernetes from routing traffic to a pod that cannot reach NetBox.
 
 **Structured logging**
 
-The server writes JSON log lines to stderr using `log/slog`. Startup:
+The server writes JSON log lines to stderr using `tracing`. Startup:
 
 ```json
 {"time":"2026-01-15T10:00:00Z","level":"INFO","msg":"netbox-mcp starting","addr":":8080","netbox_url":"https://netbox.example.com","version":"v0.0.9"}
@@ -471,10 +471,10 @@ then, use the HTTP transport with Claude Code as described above.
 ## Development
 
 ```sh
-make build         # compile
-make test          # run tests
-make lint          # run golangci-lint
-make clean         # remove compiled binary
+make build         # cargo build
+make test          # cargo test --all
+make lint          # cargo clippy -- -D warnings && cargo fmt --check
+make clean         # remove build artifacts
 make docker-build  # build Docker image
 make docker-run    # run HTTP server on :8080 (requires NETBOX_URL=...)
 ```
