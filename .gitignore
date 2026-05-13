@@ -1,2 +1,7 @@
 /netbox-mcp
 .claude/
+
+
+# Added by cargo
+
+/target
