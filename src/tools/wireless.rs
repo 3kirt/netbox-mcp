@@ -44,8 +44,15 @@ pub async fn lans_list(client: &NetboxClient, p: LansListParams) -> Result<Value
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/wireless/wireless-lans/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/wireless/wireless-lans/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -83,8 +90,15 @@ pub async fn lan_groups_list(
         .many("name", p.name)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/wireless/wireless-lan-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/wireless/wireless-lan-groups/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -122,6 +136,13 @@ pub async fn links_list(client: &NetboxClient, p: LinksListParams) -> Result<Val
         .many("tenant", p.tenant)
         .many("ssid", p.ssid)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/wireless/wireless-links/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/wireless/wireless-links/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

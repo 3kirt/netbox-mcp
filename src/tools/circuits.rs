@@ -52,8 +52,15 @@ pub async fn circuits_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/circuits/circuits/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/circuits/circuits/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -94,8 +101,15 @@ pub async fn providers_list(
         .many("slug", p.slug)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/circuits/providers/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/circuits/providers/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -133,8 +147,15 @@ pub async fn circuit_types_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/circuits/circuit-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/circuits/circuit-types/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -175,8 +196,15 @@ pub async fn circuit_terminations_list(
         .many("site", p.site)
         .opt("term_side", p.term_side)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/circuits/circuit-terminations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/circuits/circuit-terminations/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -214,8 +242,15 @@ pub async fn provider_accounts_list(
         .many("provider", p.provider)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/circuits/provider-accounts/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/circuits/provider-accounts/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -253,6 +288,13 @@ pub async fn provider_networks_list(
         .many("provider", p.provider)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/circuits/provider-networks/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/circuits/provider-networks/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

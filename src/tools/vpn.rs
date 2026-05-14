@@ -49,8 +49,15 @@ pub async fn tunnels_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/vpn/tunnels/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/vpn/tunnels/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -88,8 +95,15 @@ pub async fn tunnel_groups_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/vpn/tunnel-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/vpn/tunnel-groups/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -132,8 +146,15 @@ pub async fn l2vpns_list(client: &NetboxClient, p: L2vpnsListParams) -> Result<V
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/vpn/l2vpns/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/vpn/l2vpns/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -171,8 +192,15 @@ pub async fn ike_policies_list(
         .many("name", p.name)
         .opt("version", p.version)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/vpn/ike-policies/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/vpn/ike-policies/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -210,8 +238,15 @@ pub async fn ipsec_policies_list(
         .many("name", p.name)
         .many("pfs_group", p.pfs_group)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/vpn/ipsec-policies/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/vpn/ipsec-policies/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -249,6 +284,13 @@ pub async fn tunnel_terminations_list(
         .opt("tunnel_id", p.tunnel_id)
         .many("role", p.role)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/vpn/tunnel-terminations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/vpn/tunnel-terminations/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

@@ -41,8 +41,15 @@ pub async fn tenants_list(
         .many("group", p.group)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/tenancy/tenants/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/tenancy/tenants/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -80,8 +87,15 @@ pub async fn tenant_groups_list(
         .many("name", p.name)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/tenancy/tenant-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/tenancy/tenant-groups/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -119,8 +133,15 @@ pub async fn contacts_list(
         .many("name", p.name)
         .many("group", p.group)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/tenancy/contacts/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/tenancy/contacts/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -158,8 +179,15 @@ pub async fn contact_groups_list(
         .many("name", p.name)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/tenancy/contact-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/tenancy/contact-groups/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -197,6 +225,13 @@ pub async fn contact_roles_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/tenancy/contact-roles/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/tenancy/contact-roles/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

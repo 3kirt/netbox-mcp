@@ -27,11 +27,15 @@ pub struct DevicesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by (prefix with - for descending)")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -49,8 +53,15 @@ pub async fn devices_list(
         .opt("rack_id", p.rack_id)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/devices/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/devices/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -71,11 +82,15 @@ pub struct SitesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -87,8 +102,15 @@ pub async fn sites_list(client: &NetboxClient, p: SitesListParams) -> Result<Val
         .many("region", p.region)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/sites/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/sites/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -109,11 +131,15 @@ pub struct RacksListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -125,8 +151,15 @@ pub async fn racks_list(client: &NetboxClient, p: RacksListParams) -> Result<Val
         .many("status", p.status)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/racks/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/racks/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -139,7 +172,9 @@ pub struct InterfacesListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by interface name")]
     pub name: Option<Vec<String>>,
@@ -149,11 +184,15 @@ pub struct InterfacesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -172,8 +211,15 @@ pub async fn interfaces_list(
         .many("type", p.r#type)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/interfaces/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/interfaces/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -192,11 +238,15 @@ pub struct CablesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -207,8 +257,15 @@ pub async fn cables_list(client: &NetboxClient, p: CablesListParams) -> Result<V
         .many("status", p.status)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/cables/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/cables/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -227,11 +284,15 @@ pub struct RegionsListParams {
     pub parent: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -245,8 +306,15 @@ pub async fn regions_list(
         .many("slug", p.slug)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/regions/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/regions/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -269,11 +337,15 @@ pub struct LocationsListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -289,8 +361,15 @@ pub async fn locations_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/locations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/locations/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -307,11 +386,15 @@ pub struct ManufacturersListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -324,8 +407,15 @@ pub async fn manufacturers_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/manufacturers/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/manufacturers/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -344,11 +434,15 @@ pub struct DeviceTypesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -362,8 +456,15 @@ pub async fn device_types_list(
         .many("model", p.model)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/device-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/device-types/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -382,11 +483,15 @@ pub struct DeviceRolesListParams {
     pub vm_role: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -400,8 +505,15 @@ pub async fn device_roles_list(
         .many("slug", p.slug)
         .opt("vm_role", p.vm_role)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/device-roles/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/device-roles/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -420,11 +532,15 @@ pub struct PlatformsListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -438,8 +554,15 @@ pub async fn platforms_list(
         .many("manufacturer", p.manufacturer)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/platforms/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/platforms/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -454,11 +577,15 @@ pub struct PowerPanelsListParams {
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -470,8 +597,15 @@ pub async fn power_panels_list(
         .opt("q", p.q)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/power-panels/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/power-panels/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -490,11 +624,15 @@ pub struct PowerFeedsListParams {
     pub r#type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -508,8 +646,15 @@ pub async fn power_feeds_list(
         .many("status", p.status)
         .opt("type", p.r#type)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/power-feeds/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/power-feeds/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -526,11 +671,15 @@ pub struct VirtualChassisListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -543,8 +692,15 @@ pub async fn virtual_chassis_list(
         .many("site", p.site)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/virtual-chassis/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/virtual-chassis/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -557,7 +713,9 @@ pub struct InventoryItemsListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
@@ -565,11 +723,15 @@ pub struct InventoryItemsListParams {
     pub discovered: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -587,8 +749,15 @@ pub async fn inventory_items_list(
         .many("manufacturer", p.manufacturer)
         .opt("discovered", p.discovered)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/inventory-items/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/inventory-items/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -601,11 +770,15 @@ pub struct CableTerminationsListParams {
     pub cable_id: Option<i32>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -616,8 +789,15 @@ pub async fn cable_terminations_list(
     let qb = QueryBuilder::new()
         .opt("cable_id", p.cable_id)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/cable-terminations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/cable-terminations/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -632,17 +812,23 @@ pub struct ConsolePortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -660,8 +846,15 @@ pub async fn console_ports_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/console-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/console-ports/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -676,17 +869,23 @@ pub struct ConsoleServerPortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -704,8 +903,15 @@ pub async fn console_server_ports_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/console-server-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/console-server-ports/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -720,17 +926,23 @@ pub struct DeviceBaysListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -748,8 +960,15 @@ pub async fn device_bays_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/device-bays/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/device-bays/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -764,11 +983,15 @@ pub struct FrontPortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -780,8 +1003,15 @@ pub async fn front_ports_list(
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/front-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/front-ports/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -794,15 +1024,21 @@ pub struct MacAddressesListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -818,8 +1054,15 @@ pub async fn mac_addresses_list(
         .opt("device_id", device_id)
         .opt("q", p.q)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/mac-addresses/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/mac-addresses/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -832,7 +1075,9 @@ pub struct ModulesListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
@@ -840,11 +1085,15 @@ pub struct ModulesListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -862,8 +1111,15 @@ pub async fn modules_list(
         .many("site", p.site)
         .many("status", p.status)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/modules/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/modules/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -876,15 +1132,21 @@ pub struct ModuleBaysListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -900,8 +1162,15 @@ pub async fn module_bays_list(
         .opt("device_id", device_id)
         .opt("q", p.q)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/module-bays/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/module-bays/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -916,11 +1185,15 @@ pub struct ModuleTypesListParams {
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -932,8 +1205,15 @@ pub async fn module_types_list(
         .opt("q", p.q)
         .many("manufacturer", p.manufacturer)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/module-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/module-types/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -948,17 +1228,23 @@ pub struct PowerOutletsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -976,8 +1262,15 @@ pub async fn power_outlets_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/power-outlets/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/power-outlets/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -992,17 +1285,23 @@ pub struct PowerPortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1020,8 +1319,15 @@ pub async fn power_ports_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/power-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/power-ports/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -1040,11 +1346,15 @@ pub struct RackReservationsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1058,8 +1368,15 @@ pub async fn rack_reservations_list(
         .many("site", p.site)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/rack-reservations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/rack-reservations/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -1076,11 +1393,15 @@ pub struct RackRolesListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1093,8 +1414,15 @@ pub async fn rack_roles_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/rack-roles/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/rack-roles/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -1111,11 +1439,15 @@ pub struct RackTypesListParams {
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1128,8 +1460,15 @@ pub async fn rack_types_list(
         .many("slug", p.slug)
         .many("manufacturer", p.manufacturer)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/rack-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/rack-types/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -1144,11 +1483,15 @@ pub struct RearPortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1160,8 +1503,15 @@ pub async fn rear_ports_list(
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/rear-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/rear-ports/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -1178,11 +1528,15 @@ pub struct SiteGroupsListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1195,8 +1549,15 @@ pub async fn site_groups_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/site-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/site-groups/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -1209,17 +1570,23 @@ pub struct VirtualDeviceContextsListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
-    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    #[schemars(
+        description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
+    )]
     pub device: Option<String>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
     #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
-    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
     pub fetch_all: Option<bool>,
 }
 
@@ -1236,6 +1603,13 @@ pub async fn virtual_device_contexts_list(
         .opt("q", p.q)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/dcim/virtual-device-contexts/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/dcim/virtual-device-contexts/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

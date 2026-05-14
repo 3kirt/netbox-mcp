@@ -55,8 +55,15 @@ pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, 
         .many("platform", p.platform)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/virtualization/virtual-machines/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/virtualization/virtual-machines/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -111,8 +118,15 @@ pub async fn clusters_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/virtualization/clusters/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/virtualization/clusters/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -150,8 +164,15 @@ pub async fn cluster_groups_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/virtualization/cluster-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/virtualization/cluster-groups/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -189,8 +210,15 @@ pub async fn cluster_types_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/virtualization/cluster-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/virtualization/cluster-types/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -205,9 +233,7 @@ pub struct InterfacesListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by enabled state")]
     pub enabled: Option<bool>,
-    #[schemars(
-        description = "Filter by virtual machine name (preferred over virtual_machine_id)"
-    )]
+    #[schemars(description = "Filter by virtual machine name (preferred over virtual_machine_id)")]
     pub virtual_machine: Option<String>,
     #[schemars(description = "Filter by virtual machine ID")]
     pub virtual_machine_id: Option<i32>,
@@ -245,8 +271,15 @@ pub async fn interfaces_list(
         .opt("mac_address", p.mac_address)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/virtualization/interfaces/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/virtualization/interfaces/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -259,9 +292,7 @@ pub struct VirtualDisksListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by disk name")]
     pub name: Option<Vec<String>>,
-    #[schemars(
-        description = "Filter by virtual machine name (preferred over virtual_machine_id)"
-    )]
+    #[schemars(description = "Filter by virtual machine name (preferred over virtual_machine_id)")]
     pub virtual_machine: Option<String>,
     #[schemars(description = "Filter by virtual machine ID")]
     pub virtual_machine_id: Option<i32>,
@@ -292,6 +323,13 @@ pub async fn virtual_disks_list(
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/virtualization/virtual-disks/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/virtualization/virtual-disks/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

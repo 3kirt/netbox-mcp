@@ -38,8 +38,15 @@ pub async fn data_sources_list(
         .many("name", p.name)
         .many("status", p.status)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/core/data-sources/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/core/data-sources/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -76,8 +83,15 @@ pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value
         .many("status", p.status)
         .opt("object_type", p.object_type)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/core/jobs/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/core/jobs/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }
 
 // --------------------------------------------------------------------------
@@ -118,6 +132,13 @@ pub async fn object_changes_list(
         .many("action", p.action)
         .opt("changed_object_type", p.changed_object_type)
         .opt("ordering", p.ordering);
-    paginate(client, "/api/core/object-changes/", qb.into_params(), p.limit, p.offset, p.fetch_all)
-        .await
+    paginate(
+        client,
+        "/api/core/object-changes/",
+        qb.into_params(),
+        p.limit,
+        p.offset,
+        p.fetch_all,
+    )
+    .await
 }

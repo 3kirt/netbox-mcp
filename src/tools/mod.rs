@@ -268,7 +268,9 @@ impl NetboxMcpServer {
     ) -> Result<CallToolResult, McpError> {
         delegate_list!(self, dcim::devices_list, p, "devices")
     }
-    #[tool(description = "Get a single device by its NetBox ID. Use netbox_dcim_devices_list to find the ID first.")]
+    #[tool(
+        description = "Get a single device by its NetBox ID. Use netbox_dcim_devices_list to find the ID first."
+    )]
     async fn netbox_dcim_devices_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
@@ -277,7 +279,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — sites
-    #[tool(description = "List sites. Filters: name, status, region, tag. Use fetch_all=true to get all results.")]
+    #[tool(
+        description = "List sites. Filters: name, status, region, tag. Use fetch_all=true to get all results."
+    )]
     async fn netbox_dcim_sites_list(
         &self,
         Parameters(p): Parameters<dcim::SitesListParams>,
@@ -309,7 +313,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — interfaces
-    #[tool(description = "List device interfaces. Use device=<name> to filter by device name directly — no need to look up the device ID first. Also filters: name, type, tag, fetch_all.")]
+    #[tool(
+        description = "List device interfaces. Use device=<name> to filter by device name directly — no need to look up the device ID first. Also filters: name, type, tag, fetch_all."
+    )]
     async fn netbox_dcim_interfaces_list(
         &self,
         Parameters(p): Parameters<dcim::InterfacesListParams>,
@@ -523,7 +529,12 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/dcim/cable-terminations/", p.id, "cable termination")
+        delegate_get!(
+            self,
+            "/api/dcim/cable-terminations/",
+            p.id,
+            "cable termination"
+        )
     }
 
     // DCIM — console ports
@@ -552,14 +563,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<dcim::ConsoleServerPortsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, dcim::console_server_ports_list, p, "console server ports")
+        delegate_list!(
+            self,
+            dcim::console_server_ports_list,
+            p,
+            "console server ports"
+        )
     }
     #[tool(description = "Get a console server port by its NetBox ID.")]
     async fn netbox_dcim_console_server_ports_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/dcim/console-server-ports/", p.id, "console server port")
+        delegate_get!(
+            self,
+            "/api/dcim/console-server-ports/",
+            p.id,
+            "console server port"
+        )
     }
 
     // DCIM — device bays
@@ -711,7 +732,12 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/dcim/rack-reservations/", p.id, "rack reservation")
+        delegate_get!(
+            self,
+            "/api/dcim/rack-reservations/",
+            p.id,
+            "rack reservation"
+        )
     }
 
     // DCIM — rack roles
@@ -786,19 +812,31 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<dcim::VirtualDeviceContextsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, dcim::virtual_device_contexts_list, p, "virtual device contexts")
+        delegate_list!(
+            self,
+            dcim::virtual_device_contexts_list,
+            p,
+            "virtual device contexts"
+        )
     }
     #[tool(description = "Get a virtual device context by its NetBox ID.")]
     async fn netbox_dcim_virtual_device_contexts_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/dcim/virtual-device-contexts/", p.id, "virtual device context")
+        delegate_get!(
+            self,
+            "/api/dcim/virtual-device-contexts/",
+            p.id,
+            "virtual device context"
+        )
     }
 
     // ---- IPAM ----
 
-    #[tool(description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, tenant, tag. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, tenant, tag. Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_ip_addresses_list(
         &self,
         Parameters(p): Parameters<ipam::IpAddressesListParams>,
@@ -813,7 +851,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/ip-addresses/", p.id, "IP address")
     }
 
-    #[tool(description = "List prefixes. Filters: prefix, vrf (rd, e.g. 65000:100), status, role, site, tenant, family (4/6), tag. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List prefixes. Filters: prefix, vrf (rd, e.g. 65000:100), status, role, site, tenant, family (4/6), tag. Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_prefixes_list(
         &self,
         Parameters(p): Parameters<ipam::PrefixesListParams>,
@@ -983,14 +1023,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<ipam::FhrpGroupAssignmentsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, ipam::fhrp_group_assignments_list, p, "FHRP group assignments")
+        delegate_list!(
+            self,
+            ipam::fhrp_group_assignments_list,
+            p,
+            "FHRP group assignments"
+        )
     }
     #[tool(description = "Get an FHRP group assignment by its NetBox ID.")]
     async fn netbox_ipam_fhrp_group_assignments_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/ipam/fhrp-group-assignments/", p.id, "FHRP group assignment")
+        delegate_get!(
+            self,
+            "/api/ipam/fhrp-group-assignments/",
+            p.id,
+            "FHRP group assignment"
+        )
     }
 
     #[tool(description = "List IP roles (filter: q, name, slug).")]
@@ -1010,7 +1060,9 @@ impl NetboxMcpServer {
 
     // ---- Circuits ----
 
-    #[tool(description = "List circuits. Filters: provider, status, type, site, tenant, tag. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List circuits. Filters: provider, status, type, site, tenant, tag. Use fetch_all=true for all results."
+    )]
     async fn netbox_circuits_circuits_list(
         &self,
         Parameters(p): Parameters<circuits::CircuitsListParams>,
@@ -1060,14 +1112,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<circuits::CircuitTerminationsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, circuits::circuit_terminations_list, p, "circuit terminations")
+        delegate_list!(
+            self,
+            circuits::circuit_terminations_list,
+            p,
+            "circuit terminations"
+        )
     }
     #[tool(description = "Get a circuit termination by its NetBox ID.")]
     async fn netbox_circuits_circuit_terminations_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/circuits/circuit-terminations/", p.id, "circuit termination")
+        delegate_get!(
+            self,
+            "/api/circuits/circuit-terminations/",
+            p.id,
+            "circuit termination"
+        )
     }
 
     #[tool(description = "List provider accounts (filter: q, provider).")]
@@ -1075,14 +1137,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<circuits::ProviderAccountsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, circuits::provider_accounts_list, p, "provider accounts")
+        delegate_list!(
+            self,
+            circuits::provider_accounts_list,
+            p,
+            "provider accounts"
+        )
     }
     #[tool(description = "Get a provider account by its NetBox ID.")]
     async fn netbox_circuits_provider_accounts_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/circuits/provider-accounts/", p.id, "provider account")
+        delegate_get!(
+            self,
+            "/api/circuits/provider-accounts/",
+            p.id,
+            "provider account"
+        )
     }
 
     #[tool(description = "List provider networks (filter: q, provider).")]
@@ -1090,14 +1162,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<circuits::ProviderNetworksListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, circuits::provider_networks_list, p, "provider networks")
+        delegate_list!(
+            self,
+            circuits::provider_networks_list,
+            p,
+            "provider networks"
+        )
     }
     #[tool(description = "Get a provider network by its NetBox ID.")]
     async fn netbox_circuits_provider_networks_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/circuits/provider-networks/", p.id, "provider network")
+        delegate_get!(
+            self,
+            "/api/circuits/provider-networks/",
+            p.id,
+            "provider network"
+        )
     }
 
     // ---- Tenancy ----
@@ -1179,7 +1261,9 @@ impl NetboxMcpServer {
 
     // ---- Virtualization ----
 
-    #[tool(description = "List virtual machines. Filters: name, cluster, site, status, role, tenant, tag. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List virtual machines. Filters: name, cluster, site, status, role, tenant, tag. Use fetch_all=true for all results."
+    )]
     async fn netbox_virtualization_vms_list(
         &self,
         Parameters(p): Parameters<virtualization::VmsListParams>,
@@ -1214,14 +1298,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<virtualization::ClusterGroupsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, virtualization::cluster_groups_list, p, "cluster groups")
+        delegate_list!(
+            self,
+            virtualization::cluster_groups_list,
+            p,
+            "cluster groups"
+        )
     }
     #[tool(description = "Get a cluster group by its NetBox ID.")]
     async fn netbox_virtualization_cluster_groups_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/virtualization/cluster-groups/", p.id, "cluster group")
+        delegate_get!(
+            self,
+            "/api/virtualization/cluster-groups/",
+            p.id,
+            "cluster group"
+        )
     }
 
     #[tool(description = "List cluster types (filter: q, name).")]
@@ -1236,10 +1330,17 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/virtualization/cluster-types/", p.id, "cluster type")
+        delegate_get!(
+            self,
+            "/api/virtualization/cluster-types/",
+            p.id,
+            "cluster type"
+        )
     }
 
-    #[tool(description = "List VM interfaces. Use virtual_machine=<name> to filter by VM name directly. Also filters: name, enabled, mac_address, tag, fetch_all.")]
+    #[tool(
+        description = "List VM interfaces. Use virtual_machine=<name> to filter by VM name directly. Also filters: name, enabled, mac_address, tag, fetch_all."
+    )]
     async fn netbox_virtualization_interfaces_list(
         &self,
         Parameters(p): Parameters<virtualization::InterfacesListParams>,
@@ -1251,7 +1352,12 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/virtualization/interfaces/", p.id, "VM interface")
+        delegate_get!(
+            self,
+            "/api/virtualization/interfaces/",
+            p.id,
+            "VM interface"
+        )
     }
 
     #[tool(description = "List virtual disks (filter: q, virtual machine, name).")]
@@ -1266,7 +1372,12 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/virtualization/virtual-disks/", p.id, "virtual disk")
+        delegate_get!(
+            self,
+            "/api/virtualization/virtual-disks/",
+            p.id,
+            "virtual disk"
+        )
     }
 
     // ---- Extras ----
@@ -1345,7 +1456,12 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/extras/export-templates/", p.id, "export template")
+        delegate_get!(
+            self,
+            "/api/extras/export-templates/",
+            p.id,
+            "export template"
+        )
     }
 
     #[tool(description = "List webhooks (filter: q, name).")]
@@ -1445,14 +1561,24 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<vpn::TunnelTerminationsListParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_list!(self, vpn::tunnel_terminations_list, p, "VPN tunnel terminations")
+        delegate_list!(
+            self,
+            vpn::tunnel_terminations_list,
+            p,
+            "VPN tunnel terminations"
+        )
     }
     #[tool(description = "Get a VPN tunnel termination by its NetBox ID.")]
     async fn netbox_vpn_tunnel_terminations_get(
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/vpn/tunnel-terminations/", p.id, "VPN tunnel termination")
+        delegate_get!(
+            self,
+            "/api/vpn/tunnel-terminations/",
+            p.id,
+            "VPN tunnel termination"
+        )
     }
 
     // ---- Wireless ----
@@ -1484,7 +1610,12 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
-        delegate_get!(self, "/api/wireless/wireless-lan-groups/", p.id, "wireless LAN group")
+        delegate_get!(
+            self,
+            "/api/wireless/wireless-lan-groups/",
+            p.id,
+            "wireless LAN group"
+        )
     }
 
     #[tool(description = "List wireless links (filter: q, status, tenant).")]
@@ -1885,9 +2016,7 @@ mod tests {
 
     #[test]
     fn querybuilder_opt_none_skips() {
-        let params = QueryBuilder::new()
-            .opt("name", None::<&str>)
-            .into_params();
+        let params = QueryBuilder::new().opt("name", None::<&str>).into_params();
         assert!(params.is_empty());
     }
 
@@ -1899,10 +2028,7 @@ mod tests {
             .into_params();
         assert_eq!(
             params,
-            vec![
-                ("vid", "42".to_string()),
-                ("active", "true".to_string()),
-            ]
+            vec![("vid", "42".to_string()), ("active", "true".to_string()),]
         );
     }
 
@@ -1914,9 +2040,7 @@ mod tests {
 
     #[test]
     fn querybuilder_many_empty_skips() {
-        let params = QueryBuilder::new()
-            .many("tag", Some(vec![]))
-            .into_params();
+        let params = QueryBuilder::new().many("tag", Some(vec![])).into_params();
         assert!(params.is_empty());
     }
 
@@ -1927,10 +2051,7 @@ mod tests {
             .into_params();
         assert_eq!(
             params,
-            vec![
-                ("tag", "edge".to_string()),
-                ("tag", "prod".to_string()),
-            ]
+            vec![("tag", "edge".to_string()), ("tag", "prod".to_string()),]
         );
     }
 
@@ -1993,10 +2114,7 @@ mod tests {
         let params = finalize_params(vec![], Some(200), Some(10), Some(false));
         assert_eq!(
             params,
-            vec![
-                ("limit", "200".to_string()),
-                ("offset", "10".to_string()),
-            ]
+            vec![("limit", "200".to_string()), ("offset", "10".to_string()),]
         );
     }
 
