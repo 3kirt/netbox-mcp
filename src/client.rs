@@ -8,6 +8,8 @@ pub enum NetboxError {
     Api { status: StatusCode, body: String },
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
+    #[error("{0}")]
+    Generic(String),
 }
 
 /// Thin HTTP client for the NetBox REST API.
@@ -53,6 +55,43 @@ impl NetboxClient {
         let url = format!("{}{}{}/", self.base_url.trim_end_matches('/'), path, id);
         let resp = self.http.get(&url).send().await?;
         self.handle_response(resp).await
+    }
+
+    /// Repeatedly GET all pages at 1000 items each and merge into one response.
+    /// Returns `{"count": N, "results": [...]}` with all results combined.
+    pub async fn list_all(
+        &self,
+        path: &str,
+        base_params: &[(&str, String)],
+    ) -> Result<Value, NetboxError> {
+        let mut all_results: Vec<Value> = vec![];
+        let mut offset = 0usize;
+
+        loop {
+            let mut params = base_params.to_vec();
+            params.push(("limit", "1000".to_string()));
+            params.push(("offset", offset.to_string()));
+
+            let resp = self.list(path, &params).await?;
+            let total = resp["count"].as_u64().unwrap_or(0) as usize;
+
+            match resp["results"].as_array() {
+                Some(page) if !page.is_empty() => {
+                    let n = page.len();
+                    all_results.extend(page.iter().cloned());
+                    offset += n;
+                    if offset >= total {
+                        break;
+                    }
+                }
+                _ => break,
+            }
+        }
+
+        Ok(serde_json::json!({
+            "count": all_results.len(),
+            "results": all_results,
+        }))
     }
 
     async fn handle_response(&self, resp: reqwest::Response) -> Result<Value, NetboxError> {

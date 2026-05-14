@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::clamp_limit;
+use crate::tools::{QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -17,29 +17,26 @@ pub struct TagsListParams {
     pub color: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn tags_list(client: &NetboxClient, p: TagsListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.color.unwrap_or_default() {
-        params.push(("color", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/extras/tags/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("color", p.color)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/extras/tags/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -62,41 +59,32 @@ pub struct ConfigContextsListParams {
     pub platform: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn config_contexts_list(
     client: &NetboxClient,
     p: ConfigContextsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.is_active {
-        params.push(("is_active", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.role.unwrap_or_default() {
-        params.push(("role", v));
-    }
-    for v in p.platform.unwrap_or_default() {
-        params.push(("platform", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/extras/config-contexts/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .opt("is_active", p.is_active)
+        .many("site", p.site)
+        .many("role", p.role)
+        .many("platform", p.platform)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/extras/config-contexts/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -113,32 +101,29 @@ pub struct JournalEntriesListParams {
     pub kind: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn journal_entries_list(
     client: &NetboxClient,
     p: JournalEntriesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.created_by.unwrap_or_default() {
-        params.push(("created_by", v));
-    }
-    for v in p.kind.unwrap_or_default() {
-        params.push(("kind", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/extras/journal-entries/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("created_by", p.created_by)
+        .many("kind", p.kind)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/extras/journal-entries/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -159,35 +144,30 @@ pub struct CustomFieldsListParams {
     pub content_types: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn custom_fields_list(
     client: &NetboxClient,
     p: CustomFieldsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.r#type.unwrap_or_default() {
-        params.push(("type", v));
-    }
-    for v in p.content_types.unwrap_or_default() {
-        params.push(("content_types", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/extras/custom-fields/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("type", p.r#type)
+        .many("content_types", p.content_types)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/extras/custom-fields/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -204,32 +184,29 @@ pub struct ExportTemplatesListParams {
     pub content_types: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn export_templates_list(
     client: &NetboxClient,
     p: ExportTemplatesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.content_types.unwrap_or_default() {
-        params.push(("content_types", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/extras/export-templates/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("content_types", p.content_types)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/extras/export-templates/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -246,30 +223,27 @@ pub struct WebhooksListParams {
     pub http_method: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn webhooks_list(
     client: &NetboxClient,
     p: WebhooksListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.http_method.unwrap_or_default() {
-        params.push(("http_method", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/extras/webhooks/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("http_method", p.http_method)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/extras/webhooks/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }

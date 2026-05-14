@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::clamp_limit;
+use crate::tools::{QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -17,32 +17,29 @@ pub struct DataSourcesListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn data_sources_list(
     client: &NetboxClient,
     p: DataSourcesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/core/data-sources/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("status", p.status)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/core/data-sources/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -61,29 +58,26 @@ pub struct JobsListParams {
     pub object_type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.object_type {
-        params.push(("object_type", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/core/jobs/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("status", p.status)
+        .opt("object_type", p.object_type)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/core/jobs/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -102,33 +96,28 @@ pub struct ObjectChangesListParams {
     pub changed_object_type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn object_changes_list(
     client: &NetboxClient,
     p: ObjectChangesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.user.unwrap_or_default() {
-        params.push(("user", v));
-    }
-    for v in p.action.unwrap_or_default() {
-        params.push(("action", v));
-    }
-    if let Some(v) = p.changed_object_type {
-        params.push(("changed_object_type", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/core/object-changes/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("user", p.user)
+        .many("action", p.action)
+        .opt("changed_object_type", p.changed_object_type)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/core/object-changes/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }

@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::clamp_limit;
+use crate::tools::{QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -21,40 +21,36 @@ pub struct TunnelsListParams {
     pub encapsulation: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn tunnels_list(
     client: &NetboxClient,
     p: TunnelsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    for v in p.encapsulation.unwrap_or_default() {
-        params.push(("encapsulation", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/vpn/tunnels/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("status", p.status)
+        .many("encapsulation", p.encapsulation)
+        .many("tenant", p.tenant)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/vpn/tunnels/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -71,32 +67,29 @@ pub struct TunnelGroupsListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn tunnel_groups_list(
     client: &NetboxClient,
     p: TunnelGroupsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/vpn/tunnel-groups/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("slug", p.slug)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/vpn/tunnel-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -115,34 +108,32 @@ pub struct L2vpnsListParams {
     pub r#type: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn l2vpns_list(client: &NetboxClient, p: L2vpnsListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.r#type.unwrap_or_default() {
-        params.push(("type", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/vpn/l2vpns/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("type", p.r#type)
+        .many("tenant", p.tenant)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/vpn/l2vpns/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -159,32 +150,29 @@ pub struct IkePoliciesListParams {
     pub version: Option<i32>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn ike_policies_list(
     client: &NetboxClient,
     p: IkePoliciesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.version {
-        params.push(("version", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/vpn/ike-policies/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .opt("version", p.version)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/vpn/ike-policies/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -201,32 +189,29 @@ pub struct IpsecPoliciesListParams {
     pub pfs_group: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn ipsec_policies_list(
     client: &NetboxClient,
     p: IpsecPoliciesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.pfs_group.unwrap_or_default() {
-        params.push(("pfs_group", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/vpn/ipsec-policies/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("pfs_group", p.pfs_group)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/vpn/ipsec-policies/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -243,30 +228,27 @@ pub struct TunnelTerminationsListParams {
     pub role: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn tunnel_terminations_list(
     client: &NetboxClient,
     p: TunnelTerminationsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.tunnel_id {
-        params.push(("tunnel_id", v.to_string()));
-    }
-    for v in p.role.unwrap_or_default() {
-        params.push(("role", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/vpn/tunnel-terminations/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .opt("tunnel_id", p.tunnel_id)
+        .many("role", p.role)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/vpn/tunnel-terminations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }

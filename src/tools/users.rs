@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::clamp_limit;
+use crate::tools::{QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -19,32 +19,27 @@ pub struct UsersListParams {
     pub is_staff: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn users_list(client: &NetboxClient, p: UsersListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.username.unwrap_or_default() {
-        params.push(("username", v));
-    }
-    if let Some(v) = p.is_active {
-        params.push(("is_active", v.to_string()));
-    }
-    if let Some(v) = p.is_staff {
-        params.push(("is_staff", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/users/users/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("username", p.username)
+        .opt("is_active", p.is_active)
+        .opt("is_staff", p.is_staff)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/users/users/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -59,26 +54,25 @@ pub struct GroupsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn groups_list(client: &NetboxClient, p: GroupsListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/users/groups/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/users/groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -97,30 +91,25 @@ pub struct TokensListParams {
     pub is_active: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn tokens_list(client: &NetboxClient, p: TokensListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.user_id {
-        params.push(("user_id", v.to_string()));
-    }
-    for v in p.user.unwrap_or_default() {
-        params.push(("user", v));
-    }
-    if let Some(v) = p.is_active {
-        params.push(("is_active", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/users/tokens/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .opt("user_id", p.user_id)
+        .many("user", p.user)
+        .opt("is_active", p.is_active)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/users/tokens/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }

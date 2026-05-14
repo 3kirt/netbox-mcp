@@ -38,13 +38,13 @@ async fn main() -> anyhow::Result<()> {
 
     let cfg = config::Config::load(args.config.as_deref())?;
     let url = cfg.resolve_url()?;
-    let token = cfg.resolve_token()?;
 
     if let Some(listen) = args.listen {
-        info!(mode = "http", listen = %listen, "starting netbox-mcp");
-        server::http::run(&listen, url, token).await?;
+        info!(mode = "http", listen = %listen, netbox_url = %url, "starting netbox-mcp");
+        server::http::run(&listen, url).await?;
     } else {
-        info!(mode = "stdio", "starting netbox-mcp");
+        let token = cfg.resolve_token()?;
+        info!(mode = "stdio", netbox_url = %url, "starting netbox-mcp");
         let server = tools::NetboxMcpServer::new_stdio(url, token);
         server
             .serve(rmcp::transport::io::stdio())

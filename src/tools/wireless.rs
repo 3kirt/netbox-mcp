@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::clamp_limit;
+use crate::tools::{QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -19,37 +19,33 @@ pub struct LansListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn lans_list(client: &NetboxClient, p: LansListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.ssid.unwrap_or_default() {
-        params.push(("ssid", v));
-    }
-    for v in p.group.unwrap_or_default() {
-        params.push(("group", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/wireless/wireless-lans/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("ssid", p.ssid)
+        .many("group", p.group)
+        .many("status", p.status)
+        .many("tenant", p.tenant)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/wireless/wireless-lans/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -66,33 +62,28 @@ pub struct LanGroupsListParams {
     pub parent: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn lan_groups_list(
     client: &NetboxClient,
     p: LanGroupsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.parent.unwrap_or_default() {
-        params.push(("parent", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client
-        .list("/api/wireless/wireless-lan-groups/", &params)
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("parent", p.parent)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/wireless/wireless-lan-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
         .await
 }
 
@@ -112,30 +103,25 @@ pub struct LinksListParams {
     pub ssid: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn links_list(client: &NetboxClient, p: LinksListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    for v in p.ssid.unwrap_or_default() {
-        params.push(("ssid", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/wireless/wireless-links/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("status", p.status)
+        .many("tenant", p.tenant)
+        .many("ssid", p.ssid)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/wireless/wireless-links/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }

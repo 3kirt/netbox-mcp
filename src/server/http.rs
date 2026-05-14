@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Context as _;
 use axum::{
     Router,
@@ -19,10 +17,13 @@ use tracing::info;
 
 use crate::tools::NetboxMcpServer;
 
-pub async fn run(listen: &str, base_url: String, token: String) -> anyhow::Result<()> {
+pub async fn run(listen: &str, base_url: String) -> anyhow::Result<()> {
     let ct = CancellationToken::new();
 
     let base_url_for_factory = base_url.clone();
+    // disable_allowed_hosts(): the server is expected to run behind a trusted
+    // reverse proxy that rewrites Host; relying on Host validation here would
+    // reject legitimate requests.
     let config = StreamableHttpServerConfig::default()
         .disable_allowed_hosts()
         .with_cancellation_token(ct.child_token());
@@ -34,7 +35,6 @@ pub async fn run(listen: &str, base_url: String, token: String) -> anyhow::Resul
             config,
         );
 
-    let expected_token = Arc::new(token);
     let base_url_for_readyz = base_url.clone();
 
     let app = Router::new()
@@ -47,17 +47,13 @@ pub async fn run(listen: &str, base_url: String, token: String) -> anyhow::Resul
             }),
         )
         .nest_service("/mcp", mcp_service)
-        .layer(middleware::from_fn(move |req: Request, next: Next| {
-            let token = Arc::clone(&expected_token);
-            async move { auth(req, next, token).await }
-        }));
+        .layer(middleware::from_fn(require_bearer));
 
     let listener = TcpListener::bind(listen)
         .await
         .with_context(|| format!("binding to {listen}"))?;
 
-    info!(addr = listen, "HTTP MCP server listening");
-
+    // main.rs emits the startup log line; nothing to add here.
     let ct_clone = ct.clone();
     axum::serve(listener, app)
         .with_graceful_shutdown(async move {
@@ -70,21 +66,24 @@ pub async fn run(listen: &str, base_url: String, token: String) -> anyhow::Resul
     Ok(())
 }
 
-async fn auth(req: Request, next: Next, expected_token: Arc<String>) -> impl IntoResponse {
+async fn require_bearer(req: Request, next: Next) -> impl IntoResponse {
     let path = req.uri().path().to_owned();
     if path == "/healthz" || path == "/readyz" {
         return next.run(req).await;
     }
 
-    let authorized = req
+    // Per-session token model: require a non-empty Bearer header but do not
+    // compare it server-side. The token is extracted in NetboxMcpServer::initialize
+    // and forwarded to NetBox, which is the source of truth for validity.
+    let has_bearer = req
         .headers()
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
-        .map(|t| t == expected_token.as_str())
+        .map(|t| !t.trim().is_empty())
         .unwrap_or(false);
 
-    if authorized {
+    if has_bearer {
         next.run(req).await
     } else {
         StatusCode::UNAUTHORIZED.into_response()

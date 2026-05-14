@@ -99,11 +99,14 @@ fn check_file_permissions(path: &Path) -> anyhow::Result<()> {
 
 fn enforce_https(url: &str) -> anyhow::Result<()> {
     if url.starts_with("http://") {
-        bail!(
-            "NetBox URL must use HTTPS, got: {}  \
-             (use https:// to prevent token from being sent in plaintext)",
-            url
-        );
+        let is_local = url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1");
+        if !is_local {
+            bail!(
+                "NetBox URL must use HTTPS, got: {}  \
+                 (use https:// to prevent token from being sent in plaintext)",
+                url
+            );
+        }
     }
     Ok(())
 }

@@ -1,17 +1,7 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::clamp_limit;
+use crate::tools::{QueryBuilder, paginate, resolve_device_id};
 use serde::Deserialize;
 use serde_json::Value;
-
-// --------------------------------------------------------------------------
-// Shared "get by ID" params (reused across all domains via dcim::GetByIdParams)
-// --------------------------------------------------------------------------
-
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct GetByIdParams {
-    #[schemars(description = "NetBox ID of the object to retrieve")]
-    pub id: i32,
-}
 
 // --------------------------------------------------------------------------
 // Devices
@@ -21,48 +11,46 @@ pub struct GetByIdParams {
 pub struct DevicesListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
+    #[schemars(description = "Filter by exact device name (multi-value)")]
+    pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by device role slug")]
     pub role: Option<Vec<String>>,
     #[schemars(description = "Filter by status (e.g. active, planned)")]
     pub status: Option<Vec<String>>,
+    #[schemars(description = "Filter by tenant slug")]
+    pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by rack ID")]
     pub rack_id: Option<i32>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by (prefix with - for descending)")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn devices_list(
     client: &NetboxClient,
     p: DevicesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.role.unwrap_or_default() {
-        params.push(("role", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.rack_id {
-        params.push(("rack_id", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/devices/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("site", p.site)
+        .many("role", p.role)
+        .many("status", p.status)
+        .many("tenant", p.tenant)
+        .opt("rack_id", p.rack_id)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/devices/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -79,34 +67,28 @@ pub struct SitesListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by region slug")]
     pub region: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn sites_list(client: &NetboxClient, p: SitesListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    for v in p.region.unwrap_or_default() {
-        params.push(("region", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/sites/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("status", p.status)
+        .many("region", p.region)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/sites/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -123,34 +105,28 @@ pub struct RacksListParams {
     pub location: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
     pub status: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn racks_list(client: &NetboxClient, p: RacksListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.location.unwrap_or_default() {
-        params.push(("location", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/racks/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("site", p.site)
+        .many("location", p.location)
+        .many("status", p.status)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/racks/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -161,43 +137,43 @@ pub async fn racks_list(client: &NetboxClient, p: RacksListParams) -> Result<Val
 pub struct InterfacesListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by interface name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by interface type")]
     pub r#type: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn interfaces_list(
     client: &NetboxClient,
     p: InterfacesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.r#type.unwrap_or_default() {
-        params.push(("type", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/interfaces/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("type", p.r#type)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/interfaces/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -212,31 +188,27 @@ pub struct CablesListParams {
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
     pub status: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn cables_list(client: &NetboxClient, p: CablesListParams) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/cables/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("site", p.site)
+        .many("status", p.status)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/cables/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -255,35 +227,26 @@ pub struct RegionsListParams {
     pub parent: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn regions_list(
     client: &NetboxClient,
     p: RegionsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    for v in p.parent.unwrap_or_default() {
-        params.push(("parent", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/regions/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("slug", p.slug)
+        .many("parent", p.parent)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/regions/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -302,40 +265,32 @@ pub struct LocationsListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn locations_list(
     client: &NetboxClient,
     p: LocationsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.parent.unwrap_or_default() {
-        params.push(("parent", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/locations/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("site", p.site)
+        .many("parent", p.parent)
+        .many("status", p.status)
+        .many("tenant", p.tenant)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/locations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -352,32 +307,25 @@ pub struct ManufacturersListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn manufacturers_list(
     client: &NetboxClient,
     p: ManufacturersListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/manufacturers/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("slug", p.slug)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/manufacturers/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -392,34 +340,30 @@ pub struct DeviceTypesListParams {
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Filter by model")]
     pub model: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn device_types_list(
     client: &NetboxClient,
     p: DeviceTypesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.manufacturer.unwrap_or_default() {
-        params.push(("manufacturer", v));
-    }
-    for v in p.model.unwrap_or_default() {
-        params.push(("model", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/device-types/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("manufacturer", p.manufacturer)
+        .many("model", p.model)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/device-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -438,35 +382,26 @@ pub struct DeviceRolesListParams {
     pub vm_role: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn device_roles_list(
     client: &NetboxClient,
     p: DeviceRolesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    if let Some(v) = p.vm_role {
-        params.push(("vm_role", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/device-roles/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("slug", p.slug)
+        .opt("vm_role", p.vm_role)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/device-roles/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -481,34 +416,30 @@ pub struct PlatformsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
+    #[schemars(description = "Filter by tag slug (multi-value)")]
+    pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn platforms_list(
     client: &NetboxClient,
     p: PlatformsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.manufacturer.unwrap_or_default() {
-        params.push(("manufacturer", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/platforms/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("manufacturer", p.manufacturer)
+        .many("tag", p.tag)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/platforms/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -523,29 +454,24 @@ pub struct PowerPanelsListParams {
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn power_panels_list(
     client: &NetboxClient,
     p: PowerPanelsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/power-panels/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("site", p.site)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/power-panels/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -564,35 +490,26 @@ pub struct PowerFeedsListParams {
     pub r#type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn power_feeds_list(
     client: &NetboxClient,
     p: PowerFeedsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.r#type {
-        params.push(("type", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/power-feeds/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("site", p.site)
+        .many("status", p.status)
+        .opt("type", p.r#type)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/power-feeds/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -609,32 +526,25 @@ pub struct VirtualChassisListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn virtual_chassis_list(
     client: &NetboxClient,
     p: VirtualChassisListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/virtual-chassis/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("site", p.site)
+        .many("tenant", p.tenant)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/virtual-chassis/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -645,43 +555,40 @@ pub async fn virtual_chassis_list(
 pub struct InventoryItemsListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Filter to discovered items only")]
     pub discovered: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn inventory_items_list(
     client: &NetboxClient,
     p: InventoryItemsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.manufacturer.unwrap_or_default() {
-        params.push(("manufacturer", v));
-    }
-    if let Some(v) = p.discovered {
-        params.push(("discovered", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/inventory-items/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("manufacturer", p.manufacturer)
+        .opt("discovered", p.discovered)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/inventory-items/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -694,26 +601,23 @@ pub struct CableTerminationsListParams {
     pub cable_id: Option<i32>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn cable_terminations_list(
     client: &NetboxClient,
     p: CableTerminationsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(v) = p.cable_id {
-        params.push(("cable_id", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/cable-terminations/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("cable_id", p.cable_id)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/cable-terminations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -726,41 +630,38 @@ pub struct ConsolePortsListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn console_ports_list(
     client: &NetboxClient,
     p: ConsolePortsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/console-ports/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("site", p.site)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/console-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -773,42 +674,37 @@ pub struct ConsoleServerPortsListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn console_server_ports_list(
     client: &NetboxClient,
     p: ConsoleServerPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client
-        .list("/api/dcim/console-server-ports/", &params)
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("site", p.site)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/console-server-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
         .await
 }
 
@@ -822,41 +718,38 @@ pub struct DeviceBaysListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn device_bays_list(
     client: &NetboxClient,
     p: DeviceBaysListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/device-bays/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("site", p.site)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/device-bays/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -871,29 +764,24 @@ pub struct FrontPortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn front_ports_list(
     client: &NetboxClient,
     p: FrontPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/front-ports/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/front-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -904,33 +792,34 @@ pub async fn front_ports_list(
 pub struct MacAddressesListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn mac_addresses_list(
     client: &NetboxClient,
     p: MacAddressesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/mac-addresses/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/mac-addresses/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -941,43 +830,40 @@ pub async fn mac_addresses_list(
 pub struct ModulesListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
     pub status: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn modules_list(
     client: &NetboxClient,
     p: ModulesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.status.unwrap_or_default() {
-        params.push(("status", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/modules/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("site", p.site)
+        .many("status", p.status)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/modules/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -988,33 +874,34 @@ pub async fn modules_list(
 pub struct ModuleBaysListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn module_bays_list(
     client: &NetboxClient,
     p: ModuleBaysListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/module-bays/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/module-bays/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1029,29 +916,24 @@ pub struct ModuleTypesListParams {
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn module_types_list(
     client: &NetboxClient,
     p: ModuleTypesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.manufacturer.unwrap_or_default() {
-        params.push(("manufacturer", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/module-types/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("manufacturer", p.manufacturer)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/module-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1064,41 +946,38 @@ pub struct PowerOutletsListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn power_outlets_list(
     client: &NetboxClient,
     p: PowerOutletsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/power-outlets/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("site", p.site)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/power-outlets/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1111,41 +990,38 @@ pub struct PowerPortsListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn power_ports_list(
     client: &NetboxClient,
     p: PowerPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/power-ports/", &params).await
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("site", p.site)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/power-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1164,35 +1040,26 @@ pub struct RackReservationsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn rack_reservations_list(
     client: &NetboxClient,
     p: RackReservationsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.rack_id {
-        params.push(("rack_id", v.to_string()));
-    }
-    for v in p.site.unwrap_or_default() {
-        params.push(("site", v));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/rack-reservations/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .opt("rack_id", p.rack_id)
+        .many("site", p.site)
+        .many("tenant", p.tenant)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/rack-reservations/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1209,32 +1076,25 @@ pub struct RackRolesListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn rack_roles_list(
     client: &NetboxClient,
     p: RackRolesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/rack-roles/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("slug", p.slug)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/rack-roles/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1251,32 +1111,25 @@ pub struct RackTypesListParams {
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn rack_types_list(
     client: &NetboxClient,
     p: RackTypesListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    for v in p.manufacturer.unwrap_or_default() {
-        params.push(("manufacturer", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/rack-types/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("slug", p.slug)
+        .many("manufacturer", p.manufacturer)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/rack-types/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1291,29 +1144,24 @@ pub struct RearPortsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn rear_ports_list(
     client: &NetboxClient,
     p: RearPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/rear-ports/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/rear-ports/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1330,32 +1178,25 @@ pub struct SiteGroupsListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn site_groups_list(
     client: &NetboxClient,
     p: SiteGroupsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    for v in p.name.unwrap_or_default() {
-        params.push(("name", v));
-    }
-    for v in p.slug.unwrap_or_default() {
-        params.push(("slug", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client.list("/api/dcim/site-groups/", &params).await
+    let qb = QueryBuilder::new()
+        .opt("q", p.q)
+        .many("name", p.name)
+        .many("slug", p.slug)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/site-groups/", qb.into_params(), p.limit, p.offset, p.fetch_all)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1366,38 +1207,35 @@ pub async fn site_groups_list(
 pub struct VirtualDeviceContextsListParams {
     #[schemars(description = "Free-text search")]
     pub q: Option<String>,
-    #[schemars(description = "Filter by device ID")]
+    #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
+    #[schemars(description = "Filter by device name — resolves to ID automatically (preferred over device_id)")]
+    pub device: Option<String>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(description = "Maximum number of results (default 50, max 1000)")]
+    #[schemars(description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true")]
     pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset")]
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
     pub offset: Option<i32>,
+    #[schemars(description = "Fetch all matching results automatically, ignoring limit and offset")]
+    pub fetch_all: Option<bool>,
 }
 
 pub async fn virtual_device_contexts_list(
     client: &NetboxClient,
     p: VirtualDeviceContextsListParams,
 ) -> Result<Value, NetboxError> {
-    let mut params: Vec<(&str, String)> = vec![];
-    if let Some(q) = p.q {
-        params.push(("q", q));
-    }
-    if let Some(v) = p.device_id {
-        params.push(("device_id", v.to_string()));
-    }
-    for v in p.tenant.unwrap_or_default() {
-        params.push(("tenant", v));
-    }
-    if let Some(v) = p.ordering {
-        params.push(("ordering", v));
-    }
-    params.push(("limit", clamp_limit(p.limit).to_string()));
-    params.push(("offset", p.offset.unwrap_or(0).to_string()));
-    client
-        .list("/api/dcim/virtual-device-contexts/", &params)
+    let device_id = match p.device {
+        Some(name) => Some(resolve_device_id(client, &name).await?),
+        None => p.device_id,
+    };
+    let qb = QueryBuilder::new()
+        .opt("device_id", device_id)
+        .opt("q", p.q)
+        .many("tenant", p.tenant)
+        .opt("ordering", p.ordering);
+    paginate(client, "/api/dcim/virtual-device-contexts/", qb.into_params(), p.limit, p.offset, p.fetch_all)
         .await
 }
