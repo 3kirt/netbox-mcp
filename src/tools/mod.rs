@@ -798,7 +798,7 @@ impl NetboxMcpServer {
 
     // ---- IPAM ----
 
-    #[tool(description = "List IP addresses. Filters: address, vrf (slug), status, role, tenant, tag. Use fetch_all=true for all results.")]
+    #[tool(description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, tenant, tag. Use fetch_all=true for all results.")]
     async fn netbox_ipam_ip_addresses_list(
         &self,
         Parameters(p): Parameters<ipam::IpAddressesListParams>,
@@ -813,7 +813,7 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/ip-addresses/", p.id, "IP address")
     }
 
-    #[tool(description = "List prefixes. Filters: prefix, vrf (slug), status, role, site, tenant, family (4/6), tag. Use fetch_all=true for all results.")]
+    #[tool(description = "List prefixes. Filters: prefix, vrf (rd, e.g. 65000:100), status, role, site, tenant, family (4/6), tag. Use fetch_all=true for all results.")]
     async fn netbox_ipam_prefixes_list(
         &self,
         Parameters(p): Parameters<ipam::PrefixesListParams>,

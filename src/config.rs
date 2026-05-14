@@ -114,8 +114,18 @@ fn enforce_https(url: &str) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use std::io::Write;
+    use std::sync::{Mutex, MutexGuard};
 
     use super::*;
+
+    // Cargo runs unit tests on multiple threads in one process. Tests that touch
+    // NETBOX_URL/NETBOX_TOKEN must serialize, or one test's set_var leaks into
+    // another's resolve_url. Hold this guard for the whole test body.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn lock_env() -> MutexGuard<'static, ()> {
+        ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
 
     fn write_config(dir: &Path, content: &str) -> PathBuf {
         let path = dir.join("config.json");
@@ -157,13 +167,14 @@ mod tests {
 
     #[test]
     fn env_url_overrides_file() {
+        let _guard = lock_env();
         let dir = tempfile::tempdir().unwrap();
         let path = write_config(
             dir.path(),
             r#"{"url":"https://file.example.com","token":"t"}"#,
         );
         let cfg = Config::load(Some(&path)).unwrap();
-        // SAFETY: test-only, no concurrent threads touch this env var
+        // SAFETY: ENV_LOCK serializes all env-touching tests in this module
         unsafe {
             std::env::set_var("NETBOX_URL", "https://env.example.com");
         }
@@ -176,13 +187,14 @@ mod tests {
 
     #[test]
     fn env_token_overrides_file() {
+        let _guard = lock_env();
         let dir = tempfile::tempdir().unwrap();
         let path = write_config(
             dir.path(),
             r#"{"url":"https://nb.example.com","token":"file-token"}"#,
         );
         let cfg = Config::load(Some(&path)).unwrap();
-        // SAFETY: test-only, no concurrent threads touch this env var
+        // SAFETY: ENV_LOCK serializes all env-touching tests in this module
         unsafe {
             std::env::set_var("NETBOX_TOKEN", "env-token");
         }
@@ -195,6 +207,11 @@ mod tests {
 
     #[test]
     fn rejects_http_url() {
+        let _guard = lock_env();
+        // SAFETY: ENV_LOCK serializes all env-touching tests in this module
+        unsafe {
+            std::env::remove_var("NETBOX_URL");
+        }
         let dir = tempfile::tempdir().unwrap();
         let path = write_config(dir.path(), r#"{"url":"http://nb.example.com","token":"t"}"#);
         let cfg = Config::load(Some(&path)).unwrap();
@@ -203,11 +220,12 @@ mod tests {
 
     #[test]
     fn missing_url_is_error() {
+        let _guard = lock_env();
         let cfg = Config {
             file_url: None,
             file_token: Some("t".into()),
         };
-        // SAFETY: test-only, no concurrent threads touch this env var
+        // SAFETY: ENV_LOCK serializes all env-touching tests in this module
         unsafe {
             std::env::remove_var("NETBOX_URL");
         }
@@ -216,11 +234,12 @@ mod tests {
 
     #[test]
     fn missing_token_is_error() {
+        let _guard = lock_env();
         let cfg = Config {
             file_url: Some("https://nb.example.com".into()),
             file_token: None,
         };
-        // SAFETY: test-only, no concurrent threads touch this env var
+        // SAFETY: ENV_LOCK serializes all env-touching tests in this module
         unsafe {
             std::env::remove_var("NETBOX_TOKEN");
         }

@@ -13,7 +13,7 @@ pub struct IpAddressesListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by IP address (e.g. 192.0.2.1/24)")]
     pub address: Option<Vec<String>>,
-    #[schemars(description = "Filter by VRF slug (preferred over vrf_id)")]
+    #[schemars(description = "Filter by VRF route distinguisher / rd (e.g. 65000:100) — preferred over vrf_id")]
     pub vrf: Option<Vec<String>>,
     #[schemars(description = "Filter by VRF ID")]
     pub vrf_id: Option<i32>,
@@ -69,7 +69,7 @@ pub struct PrefixesListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by prefix (e.g. 192.0.2.0/24)")]
     pub prefix: Option<Vec<String>>,
-    #[schemars(description = "Filter by VRF slug (preferred over vrf_id)")]
+    #[schemars(description = "Filter by VRF route distinguisher / rd (e.g. 65000:100) — preferred over vrf_id")]
     pub vrf: Option<Vec<String>>,
     #[schemars(description = "Filter by VRF ID")]
     pub vrf_id: Option<i32>,
@@ -272,7 +272,7 @@ pub struct IpRangesListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by role slug")]
     pub role: Option<Vec<String>>,
-    #[schemars(description = "Filter by VRF slug (preferred over vrf_id)")]
+    #[schemars(description = "Filter by VRF route distinguisher / rd (e.g. 65000:100) — preferred over vrf_id")]
     pub vrf: Option<Vec<String>>,
     #[schemars(description = "Filter by VRF ID")]
     pub vrf_id: Option<i32>,
