@@ -58,22 +58,66 @@ const STRIP_KEYS: &[&str] = &[
     "local_context_data",
     // Convenience alias for primary_ip4/primary_ip6; always duplicates one of them.
     "primary_ip",
+    // Web UI deep-link — not useful to an AI.
+    "display_url",
+    // Tree-rendering depth hint used by the NetBox UI.
+    "_depth",
 ];
+
+/// Fields kept when collapsing a tag object embedded in another object's `tags` array.
+const TAG_KEEP_KEYS: &[&str] = &["id", "name", "slug"];
 
 /// Recursively remove null-valued fields and noise keys from a JSON value.
 /// Cuts typical NetBox response sizes by 50–70%.
 fn slim_value(v: Value) -> Value {
     match v {
         Value::Object(map) => {
-            let map: serde_json::Map<_, _> = map
+            let mut map: serde_json::Map<_, _> = map
                 .into_iter()
                 .filter(|(k, v)| !v.is_null() && !STRIP_KEYS.contains(&k.as_str()))
-                .map(|(k, v)| (k, slim_value(v)))
+                .map(|(k, v)| {
+                    if k == "tags" {
+                        (k, slim_tag_array(v))
+                    } else {
+                        (k, slim_value(v))
+                    }
+                })
                 .collect();
+            // Choice-field objects carry {"value": <any>, "label": <str>} where label
+            // is always just a human-readable capitalisation of value.
+            if is_choice_object(&map) {
+                map.remove("label");
+            }
             Value::Object(map)
         }
         Value::Array(arr) => Value::Array(arr.into_iter().map(slim_value).collect()),
         other => other,
+    }
+}
+
+/// Returns true when `map` matches the NetBox choice-field pattern:
+/// contains both a `value` key (any type) and a `label` key (string).
+fn is_choice_object(map: &serde_json::Map<String, Value>) -> bool {
+    map.contains_key("value") && matches!(map.get("label"), Some(Value::String(_)))
+}
+
+/// Collapses a `tags` array so each element retains only {id, name, slug}.
+/// The top-level tags-list endpoint uses `results`, not `tags`, so it is unaffected.
+fn slim_tag_array(v: Value) -> Value {
+    match v {
+        Value::Array(arr) => Value::Array(
+            arr.into_iter()
+                .map(|tag| match tag {
+                    Value::Object(map) => Value::Object(
+                        map.into_iter()
+                            .filter(|(k, _)| TAG_KEEP_KEYS.contains(&k.as_str()))
+                            .collect(),
+                    ),
+                    other => other,
+                })
+                .collect(),
+        ),
+        other => slim_value(other),
     }
 }
 
@@ -2106,6 +2150,106 @@ mod tests {
             "custom_fields": {"owner": "neteng"},
         });
         assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_strips_display_url() {
+        let input = json!({
+            "id": 1,
+            "name": "NYC",
+            "url": "https://netbox/api/dcim/sites/1/",
+            "display_url": "https://netbox/dcim/sites/1/",
+        });
+        let expected = json!({"id": 1, "name": "NYC", "url": "https://netbox/api/dcim/sites/1/"});
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_strips_depth() {
+        let input = json!({"id": 3, "name": "Row A", "_depth": 2});
+        let expected = json!({"id": 3, "name": "Row A"});
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_strips_choice_label_string_value() {
+        // status, type, and similar choice fields
+        let input = json!({"value": "active", "label": "Active"});
+        let expected = json!({"value": "active"});
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_strips_choice_label_integer_value() {
+        // IP family: value is 4 or 6, label is "IPv4" / "IPv6"
+        let input = json!({"value": 4, "label": "IPv4"});
+        let expected = json!({"value": 4});
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_does_not_strip_label_without_value_key() {
+        // Only strip label when the NetBox choice-field pattern is present.
+        let input = json!({"label": "important", "description": "something"});
+        assert_eq!(slim_value(input.clone()), input);
+    }
+
+    #[test]
+    fn slim_value_strips_choice_label_nested() {
+        let input = json!({
+            "id": 1,
+            "status": {"value": "active", "label": "Active"},
+            "family": {"value": 4, "label": "IPv4"},
+        });
+        let expected = json!({
+            "id": 1,
+            "status": {"value": "active"},
+            "family": {"value": 4},
+        });
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_collapses_nested_tags() {
+        let input = json!({
+            "id": 1,
+            "name": "vm-01",
+            "tags": [
+                {
+                    "id": 10,
+                    "name": "prod",
+                    "slug": "prod",
+                    "color": "ff0000",
+                    "display_url": "https://netbox/extras/tags/10/",
+                    "weight": 1000,
+                    "tagged_items": 42,
+                },
+                {
+                    "id": 11,
+                    "name": "edge",
+                    "slug": "edge",
+                    "color": "00bcd4",
+                    "display_url": "https://netbox/extras/tags/11/",
+                    "weight": 1000,
+                    "tagged_items": 7,
+                },
+            ],
+        });
+        let expected = json!({
+            "id": 1,
+            "name": "vm-01",
+            "tags": [
+                {"id": 10, "name": "prod", "slug": "prod"},
+                {"id": 11, "name": "edge", "slug": "edge"},
+            ],
+        });
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_collapses_empty_tags_array() {
+        let input = json!({"id": 1, "tags": []});
+        assert_eq!(slim_value(input.clone()), input);
     }
 
     // ------------------------------------------------------------------
