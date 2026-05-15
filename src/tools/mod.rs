@@ -9,6 +9,7 @@ use rmcp::{
     service::RequestContext,
     tool, tool_handler, tool_router,
 };
+use serde::Deserialize;
 use serde_json::Value;
 use std::sync::{Arc, OnceLock};
 
@@ -28,6 +29,22 @@ pub mod wireless;
 // --------------------------------------------------------------------------
 // Shared helpers
 // --------------------------------------------------------------------------
+
+/// Pagination fields shared by every list-params struct.
+/// Flatten this into a domain params struct with `#[serde(flatten)]`.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct PaginationParams {
+    #[schemars(
+        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
+    )]
+    pub limit: Option<i32>,
+    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
+    pub offset: Option<i32>,
+    #[schemars(
+        description = "Fetch all matching results automatically, ignoring limit and offset"
+    )]
+    pub fetch_all: Option<bool>,
+}
 
 const DEFAULT_LIMIT: i32 = 50;
 const MAX_LIMIT: i32 = 1000;

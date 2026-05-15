@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -23,16 +23,8 @@ pub struct LansListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn lans_list(client: &NetboxClient, p: LansListParams) -> Result<Value, NetboxError> {
@@ -48,9 +40,9 @@ pub async fn lans_list(client: &NetboxClient, p: LansListParams) -> Result<Value
         client,
         "/api/wireless/wireless-lans/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -69,16 +61,8 @@ pub struct LanGroupsListParams {
     pub parent: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn lan_groups_list(
@@ -94,9 +78,9 @@ pub async fn lan_groups_list(
         client,
         "/api/wireless/wireless-lan-groups/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -117,16 +101,8 @@ pub struct LinksListParams {
     pub ssid: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn links_list(client: &NetboxClient, p: LinksListParams) -> Result<Value, NetboxError> {
@@ -140,9 +116,9 @@ pub async fn links_list(client: &NetboxClient, p: LinksListParams) -> Result<Val
         client,
         "/api/wireless/wireless-links/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }

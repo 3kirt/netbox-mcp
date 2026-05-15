@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -17,16 +17,8 @@ pub struct DataSourcesListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn data_sources_list(
@@ -42,9 +34,9 @@ pub async fn data_sources_list(
         client,
         "/api/core/data-sources/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -65,16 +57,8 @@ pub struct JobsListParams {
     pub object_type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value, NetboxError> {
@@ -87,9 +71,9 @@ pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value
         client,
         "/api/core/jobs/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -110,16 +94,8 @@ pub struct ObjectChangesListParams {
     pub changed_object_type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn object_changes_list(
@@ -136,9 +112,9 @@ pub async fn object_changes_list(
         client,
         "/api/core/object-changes/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }

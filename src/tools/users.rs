@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -19,16 +19,8 @@ pub struct UsersListParams {
     pub is_staff: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn users_list(client: &NetboxClient, p: UsersListParams) -> Result<Value, NetboxError> {
@@ -42,9 +34,9 @@ pub async fn users_list(client: &NetboxClient, p: UsersListParams) -> Result<Val
         client,
         "/api/users/users/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -61,16 +53,8 @@ pub struct GroupsListParams {
     pub name: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn groups_list(client: &NetboxClient, p: GroupsListParams) -> Result<Value, NetboxError> {
@@ -82,9 +66,9 @@ pub async fn groups_list(client: &NetboxClient, p: GroupsListParams) -> Result<V
         client,
         "/api/users/groups/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -105,16 +89,8 @@ pub struct TokensListParams {
     pub is_active: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn tokens_list(client: &NetboxClient, p: TokensListParams) -> Result<Value, NetboxError> {
@@ -128,9 +104,9 @@ pub async fn tokens_list(client: &NetboxClient, p: TokensListParams) -> Result<V
         client,
         "/api/users/tokens/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }

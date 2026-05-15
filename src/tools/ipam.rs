@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -41,16 +41,8 @@ pub struct IpAddressesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn ip_addresses_list(
@@ -76,9 +68,9 @@ pub async fn ip_addresses_list(
         client,
         "/api/ipam/ip-addresses/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -113,16 +105,8 @@ pub struct PrefixesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn prefixes_list(
@@ -145,9 +129,9 @@ pub async fn prefixes_list(
         client,
         "/api/ipam/prefixes/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -170,16 +154,8 @@ pub struct VrfsListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn vrfs_list(client: &NetboxClient, p: VrfsListParams) -> Result<Value, NetboxError> {
@@ -194,9 +170,9 @@ pub async fn vrfs_list(client: &NetboxClient, p: VrfsListParams) -> Result<Value
         client,
         "/api/ipam/vrfs/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -227,16 +203,8 @@ pub struct VlansListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn vlans_list(client: &NetboxClient, p: VlansListParams) -> Result<Value, NetboxError> {
@@ -255,9 +223,9 @@ pub async fn vlans_list(client: &NetboxClient, p: VlansListParams) -> Result<Val
         client,
         "/api/ipam/vlans/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -280,16 +248,8 @@ pub struct AggregatesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn aggregates_list(
@@ -307,9 +267,9 @@ pub async fn aggregates_list(
         client,
         "/api/ipam/aggregates/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -338,16 +298,8 @@ pub struct IpRangesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn ip_ranges_list(
@@ -367,9 +319,9 @@ pub async fn ip_ranges_list(
         client,
         "/api/ipam/ip-ranges/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -388,16 +340,8 @@ pub struct RouteTargetsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn route_targets_list(
@@ -413,9 +357,9 @@ pub async fn route_targets_list(
         client,
         "/api/ipam/route-targets/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -434,16 +378,8 @@ pub struct RirsListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn rirs_list(client: &NetboxClient, p: RirsListParams) -> Result<Value, NetboxError> {
@@ -456,9 +392,9 @@ pub async fn rirs_list(client: &NetboxClient, p: RirsListParams) -> Result<Value
         client,
         "/api/ipam/rirs/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -477,16 +413,8 @@ pub struct VlanGroupsListParams {
     pub site_id: Option<i32>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn vlan_groups_list(
@@ -502,9 +430,9 @@ pub async fn vlan_groups_list(
         client,
         "/api/ipam/vlan-groups/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -527,16 +455,8 @@ pub struct ServicesListParams {
     pub protocol: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn services_list(
@@ -554,9 +474,9 @@ pub async fn services_list(
         client,
         "/api/ipam/services/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -577,16 +497,8 @@ pub struct AsnsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn asns_list(client: &NetboxClient, p: AsnsListParams) -> Result<Value, NetboxError> {
@@ -600,9 +512,9 @@ pub async fn asns_list(client: &NetboxClient, p: AsnsListParams) -> Result<Value
         client,
         "/api/ipam/asns/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -623,16 +535,8 @@ pub struct FhrpGroupsListParams {
     pub group_id: Option<i32>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn fhrp_groups_list(
@@ -648,9 +552,9 @@ pub async fn fhrp_groups_list(
         client,
         "/api/ipam/fhrp-groups/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -667,16 +571,8 @@ pub struct FhrpGroupAssignmentsListParams {
     pub interface_type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn fhrp_group_assignments_list(
@@ -691,9 +587,9 @@ pub async fn fhrp_group_assignments_list(
         client,
         "/api/ipam/fhrp-group-assignments/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -712,16 +608,8 @@ pub struct RolesListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn roles_list(client: &NetboxClient, p: RolesListParams) -> Result<Value, NetboxError> {
@@ -734,9 +622,9 @@ pub async fn roles_list(client: &NetboxClient, p: RolesListParams) -> Result<Val
         client,
         "/api/ipam/roles/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }

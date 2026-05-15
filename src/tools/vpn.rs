@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder, paginate};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -25,16 +25,8 @@ pub struct TunnelsListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn tunnels_list(
@@ -53,9 +45,9 @@ pub async fn tunnels_list(
         client,
         "/api/vpn/tunnels/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -74,16 +66,8 @@ pub struct TunnelGroupsListParams {
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn tunnel_groups_list(
@@ -99,9 +83,9 @@ pub async fn tunnel_groups_list(
         client,
         "/api/vpn/tunnel-groups/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -126,16 +110,8 @@ pub struct L2vpnsListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn l2vpns_list(client: &NetboxClient, p: L2vpnsListParams) -> Result<Value, NetboxError> {
@@ -150,9 +126,9 @@ pub async fn l2vpns_list(client: &NetboxClient, p: L2vpnsListParams) -> Result<V
         client,
         "/api/vpn/l2vpns/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -171,16 +147,8 @@ pub struct IkePoliciesListParams {
     pub version: Option<i32>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn ike_policies_list(
@@ -196,9 +164,9 @@ pub async fn ike_policies_list(
         client,
         "/api/vpn/ike-policies/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -217,16 +185,8 @@ pub struct IpsecPoliciesListParams {
     pub pfs_group: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn ipsec_policies_list(
@@ -242,9 +202,9 @@ pub async fn ipsec_policies_list(
         client,
         "/api/vpn/ipsec-policies/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
@@ -263,16 +223,8 @@ pub struct TunnelTerminationsListParams {
     pub role: Option<Vec<String>>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
-    #[schemars(
-        description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
-    )]
-    pub limit: Option<i32>,
-    #[schemars(description = "Pagination offset; ignored when fetch_all is true")]
-    pub offset: Option<i32>,
-    #[schemars(
-        description = "Fetch all matching results automatically, ignoring limit and offset"
-    )]
-    pub fetch_all: Option<bool>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
 }
 
 pub async fn tunnel_terminations_list(
@@ -288,9 +240,9 @@ pub async fn tunnel_terminations_list(
         client,
         "/api/vpn/tunnel-terminations/",
         qb.into_params(),
-        p.limit,
-        p.offset,
-        p.fetch_all,
+        p.pagination.limit,
+        p.pagination.offset,
+        p.pagination.fetch_all,
     )
     .await
 }
