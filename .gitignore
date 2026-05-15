@@ -2,6 +2,7 @@
 .claude/
 .mcp.json
 .mcp.*.json
+/todo.md
 
 # Added by cargo
 

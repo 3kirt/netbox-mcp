@@ -184,9 +184,10 @@ fn clean_page_response(mut resp: Value, offset: u64, limit: u64) -> Value {
         obj.remove("next");
         obj.remove("previous");
         obj.insert("has_more".to_string(), serde_json::json!(has_more));
-        if has_more {
-            obj.insert("next_offset".to_string(), serde_json::json!(next_offset));
-        }
+        obj.insert(
+            "next_offset".to_string(),
+            serde_json::json!(if has_more { next_offset } else { count }),
+        );
     }
     resp
 }
@@ -206,7 +207,15 @@ pub async fn paginate(
     let finalized = finalize_params(params, limit, offset, fetch_all);
     let p: Vec<(&str, String)> = finalized.into_iter().collect();
     if want_all {
-        client.list_all(path, &p).await
+        let mut resp = client.list_all(path, &p).await?;
+        if let Some(obj) = resp.as_object_mut() {
+            let count = obj.get("count").and_then(|v| v.as_u64()).unwrap_or(0);
+            obj.remove("next");
+            obj.remove("previous");
+            obj.insert("has_more".to_string(), serde_json::json!(false));
+            obj.insert("next_offset".to_string(), serde_json::json!(count));
+        }
+        Ok(resp)
     } else {
         let effective_limit = clamp_limit(limit) as u64;
         let effective_offset = offset.unwrap_or(0).max(0) as u64;
@@ -2276,7 +2285,7 @@ mod tests {
         let resp = json!({"count": 10, "next": null, "previous": "...", "results": []});
         let out = clean_page_response(resp, 5, 5);
         assert_eq!(out["has_more"], json!(false));
-        assert!(out.get("next_offset").is_none());
+        assert_eq!(out["next_offset"], json!(10u64));
     }
 
     #[test]
@@ -2284,7 +2293,7 @@ mod tests {
         let resp = json!({"count": 0, "next": null, "previous": null, "results": []});
         let out = clean_page_response(resp, 0, 50);
         assert_eq!(out["has_more"], json!(false));
-        assert!(out.get("next_offset").is_none());
+        assert_eq!(out["next_offset"], json!(0u64));
     }
 
     #[test]
@@ -2293,7 +2302,7 @@ mod tests {
         let resp = json!({"count": 3, "next": null, "previous": "...", "results": []});
         let out = clean_page_response(resp, 10, 5);
         assert_eq!(out["has_more"], json!(false));
-        assert!(out.get("next_offset").is_none());
+        assert_eq!(out["next_offset"], json!(3u64));
     }
 
     #[test]
