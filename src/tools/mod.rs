@@ -1789,10 +1789,7 @@ impl NetboxMcpServer {
         Parameters(p): Parameters<LookupHostParams>,
     ) -> Result<CallToolResult, McpError> {
         let client = self.get_client()?;
-        let params = vec![
-            ("name__ic", p.name),
-            ("limit", DEFAULT_LIMIT.to_string()),
-        ];
+        let params = vec![("name__ic", p.name), ("limit", DEFAULT_LIMIT.to_string())];
         let (devices_result, vms_result) = tokio::join!(
             client.list("/api/dcim/devices/", &params),
             client.list("/api/virtualization/virtual-machines/", &params),
@@ -1813,8 +1810,7 @@ impl NetboxMcpServer {
             }
             Err(e) => return tool_error(&format!("looking up virtual machines: {e}")),
         };
-        let has_more =
-            device_total > devices.len() as u64 || vm_total > vms.len() as u64;
+        let has_more = device_total > devices.len() as u64 || vm_total > vms.len() as u64;
         let combined = serde_json::json!({
             "devices": devices,
             "virtual_machines": vms,

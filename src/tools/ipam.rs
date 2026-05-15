@@ -25,9 +25,7 @@ pub struct IpAddressesListParams {
         description = "Filter by role (loopback, secondary, anycast, vip, vrrp, hsrp, glbp, carp)"
     )]
     pub role: Option<Vec<String>>,
-    #[schemars(
-        description = "Return IPs within this prefix (e.g. 10.254.2.144/30)"
-    )]
+    #[schemars(description = "Return IPs within this prefix (e.g. 10.254.2.144/30)")]
     pub parent: Option<String>,
     #[schemars(description = "Filter by device name (multi-value)")]
     pub device: Option<Vec<String>>,
