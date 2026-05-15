@@ -26,13 +26,9 @@ pub struct IpAddressesListParams {
     )]
     pub role: Option<Vec<String>>,
     #[schemars(
-        description = "Return IPs within this prefix, inclusive of network/broadcast (e.g. 10.254.2.144/30)"
+        description = "Return IPs within this prefix (e.g. 10.254.2.144/30)"
     )]
     pub parent: Option<String>,
-    #[schemars(
-        description = "Return IPs strictly within this prefix, excluding network/broadcast addresses (e.g. 10.254.2.144/30)"
-    )]
-    pub within: Option<String>,
     #[schemars(description = "Filter by device name (multi-value)")]
     pub device: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID")]
@@ -71,7 +67,6 @@ pub async fn ip_addresses_list(
         .many("status", p.status)
         .many("role", p.role)
         .opt("parent", p.parent)
-        .opt("within", p.within)
         .many("device", p.device)
         .opt("device_id", p.device_id)
         .many("virtual_machine", p.virtual_machine)
