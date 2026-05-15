@@ -13,6 +13,8 @@ pub struct DevicesListParams {
     pub q: Option<String>,
     #[schemars(description = "Filter by exact device name (multi-value)")]
     pub name: Option<Vec<String>>,
+    #[schemars(description = "Filter by name contains, case-insensitive (partial match)")]
+    pub name_ic: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by device role slug")]
@@ -46,6 +48,7 @@ pub async fn devices_list(
     let qb = QueryBuilder::new()
         .opt("q", p.q)
         .many("name", p.name)
+        .opt("name__ic", p.name_ic)
         .many("site", p.site)
         .many("role", p.role)
         .many("status", p.status)

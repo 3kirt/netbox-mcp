@@ -352,7 +352,7 @@ impl NetboxMcpServer {
 impl NetboxMcpServer {
     // DCIM — devices
     #[tool(
-        description = "List devices. Filters: name, site, role, status, tenant, rack_id, tag. Use fetch_all=true to retrieve all results beyond the default 50-item limit."
+        description = "List devices. Filters: name (exact, multi-value), name_ic (case-insensitive contains), site, role, status, tenant, rack_id, tag. Use fetch_all=true to retrieve all results beyond the default 50-item limit."
     )]
     async fn netbox_dcim_devices_list(
         &self,
