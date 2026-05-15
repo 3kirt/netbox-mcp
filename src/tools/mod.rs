@@ -2269,6 +2269,126 @@ mod tests {
         assert_eq!(slim_value(input.clone()), input);
     }
 
+    #[test]
+    fn slim_value_collapses_tags_in_nested_objects() {
+        // Tags inside a nested object (e.g. device.site.tags) are also collapsed.
+        let input = json!({
+            "id": 1,
+            "site": {
+                "id": 5,
+                "name": "NYC",
+                "tags": [
+                    {"id": 1, "name": "prod", "slug": "prod", "color": "ff0000"},
+                ],
+            },
+        });
+        let expected = json!({
+            "id": 1,
+            "site": {
+                "id": 5,
+                "name": "NYC",
+                "tags": [{"id": 1, "name": "prod", "slug": "prod"}],
+            },
+        });
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
+    fn slim_value_handles_non_array_tags_gracefully() {
+        // Malformed payload: tags is a scalar — should not panic, pass through slim_value.
+        let input = json!({"id": 1, "tags": "unexpected"});
+        let result = slim_value(input);
+        assert_eq!(result["tags"], json!("unexpected"));
+    }
+
+    #[test]
+    fn slim_value_preserves_non_object_elements_in_tag_array() {
+        // Non-object elements inside a tags array (malformed) pass through unchanged.
+        let input = json!({"id": 1, "tags": [null, 42]});
+        let result = slim_value(input);
+        assert_eq!(result["tags"], json!([null, 42]));
+    }
+
+    #[test]
+    fn slim_value_does_not_strip_label_when_label_is_not_string() {
+        // label must be a string to trigger the choice-field heuristic.
+        let input = json!({"value": "active", "label": 42});
+        assert_eq!(slim_value(input.clone()), input);
+    }
+
+    #[test]
+    fn slim_value_comprehensive() {
+        // Single regression test covering all slimming behaviours together.
+        let input = json!({
+            "id": 1,
+            "name": "vm-web01",
+            "display_url": "https://netbox/virtualization/virtual-machines/1/",
+            "_depth": 2,
+            "local_context_data": {"env": "prod"},
+            "primary_ip": {"id": 10, "address": "10.0.0.1/24"},
+            "primary_ip4": {"id": 10, "address": "10.0.0.1/24"},
+            "tenant": null,
+            "status": {"value": "active", "label": "Active"},
+            "config_context": {"env": "prod"},
+            "tags": [
+                {"id": 1, "name": "prod", "slug": "prod", "color": "ff0000", "weight": 1000},
+            ],
+            "site": {
+                "id": 5,
+                "name": "NYC",
+                "display_url": "https://netbox/dcim/sites/5/",
+                "status": {"value": "active", "label": "Active"},
+            },
+        });
+        let expected = json!({
+            "id": 1,
+            "name": "vm-web01",
+            "primary_ip4": {"id": 10, "address": "10.0.0.1/24"},
+            "status": {"value": "active"},
+            "config_context": {"env": "prod"},
+            "tags": [{"id": 1, "name": "prod", "slug": "prod"}],
+            "site": {
+                "id": 5,
+                "name": "NYC",
+                "status": {"value": "active"},
+            },
+        });
+        assert_eq!(slim_value(input), expected);
+    }
+
+    // ------------------------------------------------------------------
+    // PaginationParams — serde flatten
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn pagination_params_flattens_into_parent_struct() {
+        #[derive(Deserialize)]
+        struct TestParams {
+            pub name: Option<String>,
+            #[serde(flatten)]
+            pub pagination: PaginationParams,
+        }
+        let json = json!({"name": "rtr-01", "limit": 10, "offset": 5, "fetch_all": false});
+        let p: TestParams = serde_json::from_value(json).unwrap();
+        assert_eq!(p.name.as_deref(), Some("rtr-01"));
+        assert_eq!(p.pagination.limit, Some(10));
+        assert_eq!(p.pagination.offset, Some(5));
+        assert_eq!(p.pagination.fetch_all, Some(false));
+    }
+
+    #[test]
+    fn pagination_params_all_fields_optional() {
+        #[derive(Deserialize)]
+        struct TestParams {
+            #[serde(flatten)]
+            pub pagination: PaginationParams,
+        }
+        let p: TestParams = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(p.pagination.limit, None);
+        assert_eq!(p.pagination.offset, None);
+        assert_eq!(p.pagination.fetch_all, None);
+    }
+
     // ------------------------------------------------------------------
     // QueryBuilder
     // ------------------------------------------------------------------
