@@ -52,14 +52,22 @@ pub fn tool_error(msg: &str) -> Result<CallToolResult, McpError> {
     Ok(CallToolResult::error(vec![Content::text(msg)]))
 }
 
-/// Recursively remove all null-valued fields from a JSON value.
+/// Fields unconditionally removed from every object in a NetBox response.
+const STRIP_KEYS: &[&str] = &[
+    // Raw per-object config context; config_context is the resolved value the AI needs.
+    "local_context_data",
+    // Convenience alias for primary_ip4/primary_ip6; always duplicates one of them.
+    "primary_ip",
+];
+
+/// Recursively remove null-valued fields and noise keys from a JSON value.
 /// Cuts typical NetBox response sizes by 50–70%.
 fn slim_value(v: Value) -> Value {
     match v {
         Value::Object(map) => {
             let map: serde_json::Map<_, _> = map
                 .into_iter()
-                .filter(|(_, v)| !v.is_null())
+                .filter(|(k, v)| !v.is_null() && !STRIP_KEYS.contains(&k.as_str()))
                 .map(|(k, v)| (k, slim_value(v)))
                 .collect();
             Value::Object(map)
@@ -99,6 +107,14 @@ pub async fn resolve_vm_id(client: &NetboxClient, name: &str) -> Result<i32, Net
 pub struct GetByIdParams {
     #[schemars(description = "NetBox ID of the object to retrieve")]
     pub id: i32,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct LookupHostParams {
+    #[schemars(
+        description = "Hostname or FQDN to search for. Case-insensitive, partial match — 'web01' matches 'web01.example.com'."
+    )]
+    pub name: String,
 }
 
 // --------------------------------------------------------------------------
@@ -155,6 +171,26 @@ fn finalize_params(
     params
 }
 
+/// Replace raw NetBox pagination URLs with structured paging hints.
+///
+/// Strips `next`/`previous` (internal hostnames, unusable by the AI) and
+/// adds `has_more: bool` plus `next_offset: u64` (only when `has_more` is
+/// true) so the caller can page by incrementing `offset`.
+fn clean_page_response(mut resp: Value, offset: u64, limit: u64) -> Value {
+    if let Some(obj) = resp.as_object_mut() {
+        let count = obj.get("count").and_then(|v| v.as_u64()).unwrap_or(0);
+        let next_offset = offset + limit;
+        let has_more = next_offset < count;
+        obj.remove("next");
+        obj.remove("previous");
+        obj.insert("has_more".to_string(), serde_json::json!(has_more));
+        if has_more {
+            obj.insert("next_offset".to_string(), serde_json::json!(next_offset));
+        }
+    }
+    resp
+}
+
 /// Issue a paginated GET. With `fetch_all=Some(true)` this calls `list_all`
 /// and ignores `limit`/`offset`; otherwise it honors them with default
 /// clamping.
@@ -172,7 +208,10 @@ pub async fn paginate(
     if want_all {
         client.list_all(path, &p).await
     } else {
-        client.list(path, &p).await
+        let effective_limit = clamp_limit(limit) as u64;
+        let effective_offset = offset.unwrap_or(0).max(0) as u64;
+        let resp = client.list(path, &p).await?;
+        Ok(clean_page_response(resp, effective_offset, effective_limit))
     }
 }
 
@@ -835,7 +874,7 @@ impl NetboxMcpServer {
     // ---- IPAM ----
 
     #[tool(
-        description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, tenant, tag. Use fetch_all=true for all results."
+        description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, parent (IPs within prefix incl. network/broadcast), within (IPs strictly within prefix), device, device_id, virtual_machine, virtual_machine_id, tenant, tag. Use fetch_all=true for all results."
     )]
     async fn netbox_ipam_ip_addresses_list(
         &self,
@@ -1726,6 +1765,42 @@ impl NetboxMcpServer {
     ) -> Result<CallToolResult, McpError> {
         delegate_get!(self, "/api/users/tokens/", p.id, "token")
     }
+
+    #[tool(
+        description = "Look up a host by name across both physical devices and virtual machines. \
+        Searches dcim/devices and virtualization/virtual-machines in parallel. \
+        Accepts a hostname or FQDN — partial, case-insensitive match is used so 'web01' matches 'web01.example.com'. \
+        Returns { devices: [...], virtual_machines: [...], total_matches: N }."
+    )]
+    async fn netbox_lookup_host(
+        &self,
+        Parameters(p): Parameters<LookupHostParams>,
+    ) -> Result<CallToolResult, McpError> {
+        let client = self.get_client()?;
+        let params = vec![
+            ("name__ic", p.name),
+            ("limit", DEFAULT_LIMIT.to_string()),
+        ];
+        let (devices_result, vms_result) = tokio::join!(
+            client.list("/api/dcim/devices/", &params),
+            client.list("/api/virtualization/virtual-machines/", &params),
+        );
+        let devices = match devices_result {
+            Ok(v) => v["results"].as_array().cloned().unwrap_or_default(),
+            Err(e) => return tool_error(&format!("looking up devices: {e}")),
+        };
+        let vms = match vms_result {
+            Ok(v) => v["results"].as_array().cloned().unwrap_or_default(),
+            Err(e) => return tool_error(&format!("looking up virtual machines: {e}")),
+        };
+        let total = devices.len() + vms.len();
+        let combined = serde_json::json!({
+            "devices": devices,
+            "virtual_machines": vms,
+            "total_matches": total,
+        });
+        json_result(combined)
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -1976,6 +2051,25 @@ mod tests {
     }
 
     #[test]
+    fn slim_value_strips_deny_listed_keys() {
+        let input = json!({
+            "id": 1,
+            "name": "vm-01",
+            "config_context": {"env": "prod"},
+            "local_context_data": {"env": "prod"},
+            "primary_ip": {"id": 10, "address": "10.0.0.1/24"},
+            "primary_ip4": {"id": 10, "address": "10.0.0.1/24"},
+        });
+        let expected = json!({
+            "id": 1,
+            "name": "vm-01",
+            "config_context": {"env": "prod"},
+            "primary_ip4": {"id": 10, "address": "10.0.0.1/24"},
+        });
+        assert_eq!(slim_value(input), expected);
+    }
+
+    #[test]
     fn slim_value_matches_real_netbox_response_shape() {
         // Sketch of a NetBox device payload: many nullable nested objects.
         let input = json!({
@@ -2150,5 +2244,68 @@ mod tests {
                 ("offset", "5".to_string()),
             ]
         );
+    }
+
+    // ------------------------------------------------------------------
+    // clean_page_response
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn clean_page_response_strips_next_and_previous() {
+        let resp = json!({
+            "count": 3,
+            "next": "https://netbox.example.com/api/dcim/sites/?limit=2&offset=2",
+            "previous": null,
+            "results": [{"id": 1}, {"id": 2}],
+        });
+        let out = clean_page_response(resp, 0, 2);
+        assert!(out.get("next").is_none());
+        assert!(out.get("previous").is_none());
+    }
+
+    #[test]
+    fn clean_page_response_has_more_true_when_results_remain() {
+        let resp = json!({"count": 10, "next": "...", "previous": null, "results": []});
+        let out = clean_page_response(resp, 0, 5);
+        assert_eq!(out["has_more"], json!(true));
+        assert_eq!(out["next_offset"], json!(5u64));
+    }
+
+    #[test]
+    fn clean_page_response_has_more_false_on_last_page() {
+        let resp = json!({"count": 10, "next": null, "previous": "...", "results": []});
+        let out = clean_page_response(resp, 5, 5);
+        assert_eq!(out["has_more"], json!(false));
+        assert!(out.get("next_offset").is_none());
+    }
+
+    #[test]
+    fn clean_page_response_has_more_false_when_count_is_zero() {
+        let resp = json!({"count": 0, "next": null, "previous": null, "results": []});
+        let out = clean_page_response(resp, 0, 50);
+        assert_eq!(out["has_more"], json!(false));
+        assert!(out.get("next_offset").is_none());
+    }
+
+    #[test]
+    fn clean_page_response_has_more_false_when_offset_past_count() {
+        // Defensive: if offset has somehow advanced beyond count, no more pages.
+        let resp = json!({"count": 3, "next": null, "previous": "...", "results": []});
+        let out = clean_page_response(resp, 10, 5);
+        assert_eq!(out["has_more"], json!(false));
+        assert!(out.get("next_offset").is_none());
+    }
+
+    #[test]
+    fn clean_page_response_preserves_count_and_results() {
+        let resp = json!({
+            "count": 2,
+            "next": null,
+            "previous": null,
+            "results": [{"id": 1}, {"id": 2}],
+        });
+        let out = clean_page_response(resp, 0, 50);
+        assert_eq!(out["count"], json!(2));
+        assert_eq!(out["results"], json!([{"id": 1}, {"id": 2}]));
     }
 }

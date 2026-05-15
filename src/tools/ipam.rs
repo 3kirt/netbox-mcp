@@ -25,6 +25,22 @@ pub struct IpAddressesListParams {
         description = "Filter by role (loopback, secondary, anycast, vip, vrrp, hsrp, glbp, carp)"
     )]
     pub role: Option<Vec<String>>,
+    #[schemars(
+        description = "Return IPs within this prefix, inclusive of network/broadcast (e.g. 10.254.2.144/30)"
+    )]
+    pub parent: Option<String>,
+    #[schemars(
+        description = "Return IPs strictly within this prefix, excluding network/broadcast addresses (e.g. 10.254.2.144/30)"
+    )]
+    pub within: Option<String>,
+    #[schemars(description = "Filter by device name (multi-value)")]
+    pub device: Option<Vec<String>>,
+    #[schemars(description = "Filter by device ID")]
+    pub device_id: Option<i32>,
+    #[schemars(description = "Filter by virtual machine name (multi-value)")]
+    pub virtual_machine: Option<Vec<String>>,
+    #[schemars(description = "Filter by virtual machine ID")]
+    pub virtual_machine_id: Option<i32>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
@@ -54,6 +70,12 @@ pub async fn ip_addresses_list(
         .opt("vrf_id", p.vrf_id)
         .many("status", p.status)
         .many("role", p.role)
+        .opt("parent", p.parent)
+        .opt("within", p.within)
+        .many("device", p.device)
+        .opt("device_id", p.device_id)
+        .many("virtual_machine", p.virtual_machine)
+        .opt("virtual_machine_id", p.virtual_machine_id)
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
