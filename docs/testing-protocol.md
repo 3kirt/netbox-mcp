@@ -16,6 +16,7 @@ Every response from every tool must satisfy these properties. Check them on ever
 | No `next`/`previous` URLs | List responses must not contain bare NetBox pagination URLs |
 | Pagination shape | List responses must have `{ count, has_more, next_offset, results }` |
 | `has_more` accuracy | `has_more: true` iff `next_offset < count`; `has_more: false` when on last page |
+| `next_offset` always present | `next_offset` must always be present — equals `count` when `has_more: false` |
 
 ---
 
@@ -23,39 +24,127 @@ Every response from every tool must satisfy these properties. Check them on ever
 
 The seed script creates the following objects. Use these as ground truth for filter assertions.
 
-### Sites
+### Regions and Sites
 | Name | Slug | Region |
 |---|---|---|
-| London DC | london-dc | Europe |
-| Frankfurt DC | frankfurt-dc | Europe |
+| New York DC | nyc-dc | North America |
+| London DC | lon-dc | Europe |
+| Frankfurt DC | fra-dc | Europe |
 
-### Devices (per site)
-London DC has: `lon-core-sw-01` (Cisco Catalyst 9300, Core Switch), `lon-edge-fw-01` (Palo Alto PA-3220, Firewall), `lon-leaf-sw-01..04` (Cisco Nexus 93180YC-EX, Leaf Switch), `lon-spine-sw-01..02` (Cisco Nexus 9364C, Spine Switch), `lon-compute-01..04` (Dell PowerEdge R750, Server), `lon-mgmt-01` (Dell PowerEdge R640, Server)
+### Racks
+| Name | Site |
+|---|---|
+| NYC-A01 | nyc-dc |
+| NYC-A02 | nyc-dc |
+| LON-A01 | lon-dc |
+| FRA-A01 | fra-dc |
 
-Frankfurt DC has: `fra-core-sw-01`, `fra-edge-fw-01`, `fra-leaf-sw-01..02`, `fra-compute-01..02`, `fra-mgmt-01`
+### Devices (12 total)
+| Name | Type | Role | Site |
+|---|---|---|---|
+| nyc-spine-01 | Cisco Nexus 9300 | Spine Switch | nyc-dc |
+| nyc-spine-02 | Cisco Nexus 9300 | Spine Switch | nyc-dc |
+| nyc-leaf-01 | Juniper QFX5100 | Leaf Switch | nyc-dc |
+| nyc-leaf-02 | Juniper QFX5100 | Leaf Switch | nyc-dc |
+| nyc-router-01 | Cisco ASR 1001-X | Core Router | nyc-dc |
+| nyc-server-01 | Dell PowerEdge R750 | Server | nyc-dc |
+| nyc-server-02 | Dell PowerEdge R750 | Server | nyc-dc |
+| lon-spine-01 | Cisco Nexus 9300 | Spine Switch | lon-dc |
+| lon-leaf-01 | Juniper QFX5100 | Leaf Switch | lon-dc |
+| lon-router-01 | Juniper MX204 | Core Router | lon-dc |
+| fra-spine-01 | Cisco Nexus 9300 | Spine Switch | fra-dc |
+| fra-server-01 | Dell PowerEdge R750 | Server | fra-dc |
 
-### Virtual Machines
-Two VMware clusters: `lon-vmware-cluster-01` (London), `fra-vmware-cluster-01` (Frankfurt)
+### Device Interfaces (examples)
+- **Spine switches** (`nyc-spine-01/02`, `lon-spine-01`, `fra-spine-01`): `mgmt0` (1000base-t, mgmt_only), `Loopback0`, `Ethernet1/1` – `Ethernet1/4`
+- **Leaf switches** (`nyc-leaf-01/02`, `lon-leaf-01`): `em0` (1000base-t, mgmt_only), `lo0`, `xe-0/0/0` – `xe-0/0/3`
+- **nyc-router-01** (IOS-XE): `GigabitEthernet0/0/0` (mgmt), `Loopback0`, `GigabitEthernet0/1/0`, `GigabitEthernet0/1/1`
+- **lon-router-01** (Junos): `em0` (mgmt), `lo0`, `xe-0/0/0`, `xe-0/0/1`
+- **Servers** (`nyc-server-01/02`, `fra-server-01`): `idrac` (mgmt_only), `bond0` (lag), `eth0`, `eth1`
 
-VMs: `lon-web-01..03`, `lon-db-01`, `lon-cache-01`, `fra-web-01`, `fra-db-01`
+### VRFs
+| Name | Route Distinguisher |
+|---|---|
+| Global | 65000:0 |
+| Management | 65000:100 |
+
+### Prefixes (14 total)
+| Prefix | VRF | Site | Description |
+|---|---|---|---|
+| 10.0.0.0/8 | — | — | Global private space (container) |
+| 10.0.0.0/16 | Global | nyc-dc | NYC DC block |
+| 10.1.0.0/16 | Global | lon-dc | LON DC block |
+| 10.2.0.0/16 | Global | fra-dc | FRA DC block |
+| 10.0.0.0/24 | Management | nyc-dc | NYC management |
+| 10.0.1.0/24 | Global | nyc-dc | NYC servers |
+| 10.0.2.0/24 | Global | nyc-dc | NYC VMs |
+| 10.0.10.0/24 | Global | nyc-dc | NYC loopbacks |
+| 10.1.0.0/24 | Management | lon-dc | LON management |
+| 10.1.1.0/24 | Global | lon-dc | LON servers |
+| 10.1.10.0/24 | Global | lon-dc | LON loopbacks |
+| 10.2.0.0/24 | Management | fra-dc | FRA management |
+| 10.2.1.0/24 | Global | fra-dc | FRA servers |
+| 10.2.10.0/24 | Global | fra-dc | FRA loopbacks |
+
+### IP Addresses (31 total)
+Each device has 2 IPs (management + loopback/data). Servers have management (idrac) + data (bond0):
+
+| Device/VM | Interface | Address | VRF |
+|---|---|---|---|
+| nyc-spine-01 | mgmt0 | 10.0.0.1/24 | Management |
+| nyc-spine-01 | Loopback0 | 10.0.10.1/32 | Global |
+| nyc-spine-02 | mgmt0 | 10.0.0.2/24 | Management |
+| nyc-spine-02 | Loopback0 | 10.0.10.2/32 | Global |
+| nyc-leaf-01 | em0 | 10.0.0.3/24 | Management |
+| nyc-leaf-01 | lo0 | 10.0.10.3/32 | Global |
+| nyc-leaf-02 | em0 | 10.0.0.4/24 | Management |
+| nyc-leaf-02 | lo0 | 10.0.10.4/32 | Global |
+| nyc-router-01 | GigabitEthernet0/0/0 | 10.0.0.5/24 | Management |
+| nyc-router-01 | Loopback0 | 10.0.10.5/32 | Global |
+| nyc-server-01 | idrac | 10.0.0.6/24 | Management |
+| nyc-server-01 | bond0 | 10.0.1.10/24 | Global |
+| nyc-server-02 | idrac | 10.0.0.7/24 | Management |
+| nyc-server-02 | bond0 | 10.0.1.11/24 | Global |
+| lon-spine-01 | mgmt0 | 10.1.0.1/24 | Management |
+| lon-spine-01 | Loopback0 | 10.1.10.1/32 | Global |
+| lon-leaf-01 | em0 | 10.1.0.2/24 | Management |
+| lon-leaf-01 | lo0 | 10.1.10.2/32 | Global |
+| lon-router-01 | em0 | 10.1.0.3/24 | Management |
+| lon-router-01 | lo0 | 10.1.10.3/32 | Global |
+| fra-spine-01 | mgmt0 | 10.2.0.1/24 | Management |
+| fra-spine-01 | Loopback0 | 10.2.10.1/32 | Global |
+| fra-server-01 | idrac | 10.2.0.2/24 | Management |
+| fra-server-01 | bond0 | 10.2.1.10/24 | Global |
+| web-prod-01 | eth0 | 10.0.2.10/24 | Global |
+| web-prod-02 | eth0 | 10.0.2.11/24 | Global |
+| db-prod-01 | eth0 | 10.0.2.20/24 | Global |
+| cache-prod-01 | eth0 | 10.0.2.30/24 | Global |
+| mon-prod-01 | eth0 | 10.0.2.40/24 | Global |
+| web-lon-01 | eth0 | 10.1.1.10/24 | Global |
+| web-lon-02 | eth0 | 10.1.1.11/24 | Global |
+
+### Clusters and Virtual Machines
+| Cluster | Site | VMs |
+|---|---|---|
+| NYC-PROD | nyc-dc | web-prod-01, web-prod-02, db-prod-01, cache-prod-01, mon-prod-01 |
+| LON-PROD | lon-dc | web-lon-01, web-lon-02 |
 
 All VMs have `local_context_data` set — this must never appear in any response.
 
-### Prefixes
-| Prefix | VRF | Description |
-|---|---|---|
-| 10.0.0.0/8 | — | Global RFC1918 aggregate |
-| 172.16.0.0/12 | — | Global RFC1918 aggregate |
-| 10.10.0.0/16 | MGMT | London management |
-| 10.20.0.0/16 | MGMT | Frankfurt management |
-| 10.100.0.0/16 | PROD | London production |
-| 10.200.0.0/16 | PROD | Frankfurt production |
-| 10.10.1.0/24 | MGMT | London OOB management |
-| 10.20.1.0/24 | MGMT | Frankfurt OOB management |
-| 10.100.10.0/24 | PROD | London compute servers |
-| 10.100.20.0/24 | PROD | London network devices |
-| 10.200.10.0/24 | PROD | Frankfurt compute servers |
-| 10.200.20.0/24 | PROD | Frankfurt network devices |
+### Services (11 total)
+| Object | Service | Protocol | Port |
+|---|---|---|---|
+| nyc-server-01 | ssh | tcp | 22 |
+| nyc-server-02 | ssh | tcp | 22 |
+| web-prod-01 | https | tcp | 443 |
+| web-prod-01 | http | tcp | 80 |
+| web-prod-02 | https | tcp | 443 |
+| web-prod-02 | http | tcp | 80 |
+| db-prod-01 | postgresql | tcp | 5432 |
+| cache-prod-01 | redis | tcp | 6379 |
+| mon-prod-01 | prometheus | tcp | 9090 |
+| web-lon-01 | https | tcp | 443 |
+| web-lon-02 | https | tcp | 443 |
 
 ---
 
@@ -65,40 +154,40 @@ All VMs have `local_context_data` set — this must never appear in any response
 ```
 netbox_dcim_devices_list()
 ```
-- `count` ≥ 20
-- `has_more: false` (we have ~20 devices total)
+- `count == 12`
+- `has_more: false`
 - No `primary_ip` field in any result
 - No `null` fields
 
 ### 1.2 Filter by site
 ```
-netbox_dcim_devices_list(site="london-dc")
+netbox_dcim_devices_list(site="lon-dc")
 ```
-- All results have `site.slug == "london-dc"`
-- Includes `lon-core-sw-01`, `lon-edge-fw-01`, etc.
+- All results have `site.slug == "lon-dc"`
+- Includes `lon-spine-01`, `lon-leaf-01`, `lon-router-01` (3 devices)
 
 ### 1.3 Filter by role
 ```
 netbox_dcim_devices_list(role="server")
 ```
 - Returns only server-role devices
-- Includes `lon-compute-01`, `fra-compute-01`, etc.
+- Includes `nyc-server-01`, `nyc-server-02`, `fra-server-01`
 
 ### 1.4 Filter by name (exact)
 ```
-netbox_dcim_devices_list(name="lon-core-sw-01")
+netbox_dcim_devices_list(name="nyc-spine-01")
 ```
 - Returns exactly 1 result
-- `results[0].name == "lon-core-sw-01"`
+- `results[0].name == "nyc-spine-01"`
 
 ### 1.5 Get device by ID
 ```
 netbox_dcim_devices_get(id=<id from 1.4>)
 ```
-- Same device; `primary_ip` absent; `primary_ip4` present if assigned
+- Same device; `primary_ip` absent; `primary_ip4` present (set to `10.0.0.1/24`)
 
 ### 1.6 Check primary IP
-Compute servers (`lon-compute-01..04`, `fra-compute-01..02`) have primary IPs assigned. Verify:
+Servers (`nyc-server-01`, `nyc-server-02`, `fra-server-01`) and network devices all have `primary_ip4` assigned. Verify:
 - `primary_ip4` present and contains an address string
 - No `primary_ip` field
 
@@ -108,12 +197,18 @@ Compute servers (`lon-compute-01..04`, `fra-compute-01..02`) have primary IPs as
 
 ### 2.1 List interfaces for a device
 ```
-netbox_dcim_interfaces_list(device="lon-core-sw-01")
+netbox_dcim_interfaces_list(device="lon-spine-01")
 ```
-- Returns interfaces for that device only
-- Should include `Management0`, `GigabitEthernet1/0/1`, etc.
+- Returns interfaces for `lon-spine-01` only
+- Should include `mgmt0`, `Loopback0`, `Ethernet1/1`, `Ethernet1/2`, `Ethernet1/3`, `Ethernet1/4`
 
-### 2.2 Get interface by ID
+### 2.2 Filter management-only interfaces
+```
+netbox_dcim_interfaces_list(device="nyc-server-01", mgmt_only=true)
+```
+- Returns only the `idrac` interface
+
+### 2.3 Get interface by ID
 ```
 netbox_dcim_interfaces_get(id=<id>)
 ```
@@ -127,20 +222,21 @@ netbox_dcim_interfaces_get(id=<id>)
 ```
 netbox_dcim_sites_list()
 ```
-- Includes `london-dc` and `frankfurt-dc`
-- Both have `status.value == "active"`
+- Includes `nyc-dc`, `lon-dc`, and `fra-dc`
+- All have `status.value == "active"`
 
 ### 3.2 List regions
 ```
 netbox_dcim_regions_list()
 ```
-- Includes `Europe`; both sites roll up to it
+- Includes `North America` and `Europe`
+- London DC and Frankfurt DC roll up to `Europe`
 
 ### 3.3 List racks
 ```
-netbox_dcim_racks_list(site="london-dc")
+netbox_dcim_racks_list(site="lon-dc")
 ```
-- Returns racks at London site
+- Returns `LON-A01`
 
 ---
 
@@ -150,27 +246,28 @@ netbox_dcim_racks_list(site="london-dc")
 ```
 netbox_virtualization_vms_list()
 ```
-- `count` ≥ 7
+- `count == 7`
+- `has_more: false`
 - No `local_context_data` field in any result — **critical invariant**
 - No `primary_ip` field
 
 ### 4.2 Filter by cluster
 ```
-netbox_virtualization_vms_list(cluster="lon-vmware-cluster-01")
+netbox_virtualization_vms_list(cluster="LON-PROD")
 ```
-- Returns only London VMs: `lon-web-01`, `lon-web-02`, `lon-web-03`, `lon-db-01`, `lon-cache-01`
+- Returns only London VMs: `web-lon-01`, `web-lon-02`
 
 ### 4.3 Filter by site
 ```
-netbox_virtualization_vms_list(site="frankfurt-dc")
+netbox_virtualization_vms_list(site="nyc-dc")
 ```
-- Returns `fra-web-01`, `fra-db-01`
+- Returns 5 VMs: `web-prod-01`, `web-prod-02`, `db-prod-01`, `cache-prod-01`, `mon-prod-01`
 
 ### 4.4 Filter by status
 ```
 netbox_virtualization_vms_list(status="active")
 ```
-- Returns all active VMs
+- Returns all 7 VMs
 
 ### 4.5 Get VM by ID
 ```
@@ -188,48 +285,46 @@ netbox_virtualization_vms_get(id=<id>)
 ```
 netbox_ipam_ip_addresses_list()
 ```
-- `count` ≥ 30 (devices + VMs all have assigned IPs)
+- `count == 31` (24 device IPs + 7 VM IPs)
+- `has_more: false` (31 < 50 default limit)
 - Pagination shape correct
 
 ### 5.2 Filter by device name
 ```
-netbox_ipam_ip_addresses_list(device="lon-compute-01")
+netbox_ipam_ip_addresses_list(device="nyc-server-01")
 ```
-- Returns only IPs assigned to `lon-compute-01`'s interfaces
-- Result should include the management IP (10.10.1.x) and production IP (10.100.10.x)
+- Returns 2 IPs: `10.0.0.6/24` (Management, idrac) and `10.0.1.10/24` (Global, bond0)
 
 ### 5.3 Filter by device ID
 ```
-netbox_ipam_ip_addresses_list(device_id=<id of lon-compute-01>)
+netbox_ipam_ip_addresses_list(device_id=<id of nyc-server-01>)
 ```
-- Same results as 5.2
+- Same 2 results as 5.2
 
 ### 5.4 Filter by virtual machine name
 ```
-netbox_ipam_ip_addresses_list(virtual_machine="lon-web-01")
+netbox_ipam_ip_addresses_list(virtual_machine="web-prod-01")
 ```
-- Returns IPs assigned to `lon-web-01`'s VM interface
-- Should include its 10.100.x.x production IP
+- Returns 1 IP: `10.0.2.10/24` (Global, eth0)
 
 ### 5.5 Filter by virtual machine ID
 ```
-netbox_ipam_ip_addresses_list(virtual_machine_id=<id of lon-web-01>)
+netbox_ipam_ip_addresses_list(virtual_machine_id=<id of web-prod-01>)
 ```
-- Same results as 5.4
+- Same result as 5.4
 
 ### 5.6 Filter by parent prefix (containment)
 ```
-netbox_ipam_ip_addresses_list(parent="10.100.10.0/24")
+netbox_ipam_ip_addresses_list(parent="10.0.1.0/24")
 ```
-- Returns all IPs within the London compute subnet
-- Should include IPs for `lon-compute-01..04`
-- Should NOT include Frankfurt or management IPs
+- Returns IPs within NYC servers subnet: `10.0.1.10/24` (nyc-server-01) and `10.0.1.11/24` (nyc-server-02)
+- Should NOT include Management or loopback IPs
 
 ### 5.7 Filter by VRF
 ```
-netbox_ipam_ip_addresses_list(vrf_id=<PROD VRF id>)
+netbox_ipam_ip_addresses_list(vrf_id=<Management VRF id>)
 ```
-- Returns only IPs in the PROD VRF
+- Returns only management IPs (10.x.0.x/24 addresses across all sites)
 
 ### 5.8 Filter by status
 ```
@@ -251,25 +346,25 @@ netbox_ipam_ip_addresses_get(id=<id>)
 ```
 netbox_ipam_prefixes_list()
 ```
-- `count` ≥ 12 (see seed data reference)
+- `count == 14`
 
 ### 6.2 Filter by VRF
 ```
-netbox_ipam_prefixes_list(vrf_id=<PROD VRF id>)
+netbox_ipam_prefixes_list(vrf_id=<Global VRF id>)
 ```
-- Returns only PROD prefixes
+- Returns Global VRF prefixes (10 results: the three /16 site blocks plus all non-management /24s)
 
 ### 6.3 Filter by site
 ```
-netbox_ipam_prefixes_list(site="london-dc")
+netbox_ipam_prefixes_list(site="lon-dc")
 ```
-- Returns London-scoped prefixes
+- Returns London-scoped prefixes: `10.1.0.0/16`, `10.1.0.0/24`, `10.1.1.0/24`, `10.1.10.0/24`
 
 ### 6.4 Filter by prefix exact
 ```
-netbox_ipam_prefixes_list(prefix="10.100.10.0/24")
+netbox_ipam_prefixes_list(prefix="10.1.0.0/24")
 ```
-- Returns exactly 1 result matching that prefix
+- Returns exactly 1 result: London management prefix
 
 ### 6.5 Get prefix by ID
 ```
@@ -285,11 +380,12 @@ netbox_ipam_prefixes_get(id=<id>)
 ```
 netbox_ipam_vrfs_list()
 ```
-- Includes `MGMT` and `PROD` VRFs
+- `count == 2`
+- Includes `Global` (rd: 65000:0) and `Management` (rd: 65000:100)
 
 ### 7.2 Filter by name
 ```
-netbox_ipam_vrfs_list(name="PROD")
+netbox_ipam_vrfs_list(name="Global")
 ```
 - Returns exactly 1 result
 
@@ -307,13 +403,14 @@ netbox_ipam_vrfs_get(id=<id>)
 ```
 netbox_ipam_services_list()
 ```
-- Includes services like `http`, `https`, `ssh`, `postgres`, `redis`
+- `count == 11`
+- Includes services: `ssh`, `http`, `https`, `postgresql`, `redis`, `prometheus`
 
-### 8.2 Filter by device (if supported)
+### 8.2 Filter by device ID
 ```
-netbox_ipam_services_list(device_id=<id>)
+netbox_ipam_services_list(device_id=<id of nyc-server-01>)
 ```
-- Returns services attached to that device
+- Returns `ssh` service on port 22
 
 ### 8.3 Get service by ID
 ```
@@ -329,13 +426,14 @@ netbox_ipam_services_get(id=<id>)
 ```
 netbox_virtualization_clusters_list()
 ```
-- Includes `lon-vmware-cluster-01` and `fra-vmware-cluster-01`
+- `count == 2`
+- Includes `NYC-PROD` and `LON-PROD`
 
 ### 9.2 Filter by site
 ```
-netbox_virtualization_clusters_list(site="london-dc")
+netbox_virtualization_clusters_list(site="lon-dc")
 ```
-- Returns only London cluster
+- Returns only `LON-PROD`
 
 ### 9.3 Get cluster by ID
 ```
@@ -372,32 +470,33 @@ netbox_core_object_changes_get(id=<id>)
 
 ### 11.1 Lookup a device by name
 ```
-netbox_lookup_host(name="lon-core-sw-01")
+netbox_lookup_host(name="lon-spine-01")
 ```
-- Response shape: `{ devices: [...], virtual_machines: [...], total_matches: N }`
+- Response shape: `{ devices: [...], virtual_machines: [...], total_matches: N, has_more: bool }`
 - `devices` has 1 result; `virtual_machines` is empty
-- `total_matches == 1`
+- `total_matches == 1`, `has_more: false`
 
 ### 11.2 Lookup a VM by name
 ```
-netbox_lookup_host(name="lon-web-01")
+netbox_lookup_host(name="web-prod-01")
 ```
 - `devices` is empty; `virtual_machines` has 1 result
-- `total_matches == 1`
+- `total_matches == 1`, `has_more: false`
 - No `local_context_data` in the VM result
 
 ### 11.3 Lookup with no match
 ```
 netbox_lookup_host(name="nonexistent-host-xyz")
 ```
-- `total_matches == 0`
+- `total_matches == 0`, `has_more: false`
 - Both `devices` and `virtual_machines` are empty arrays
 
 ### 11.4 Lookup with ambiguous/partial name
 ```
-netbox_lookup_host(name="lon-compute")
+netbox_lookup_host(name="nyc-server")
 ```
-- May return multiple devices matching the prefix
+- Returns 2 devices: `nyc-server-01` and `nyc-server-02`
+- `total_matches == 2`, `has_more: false`
 - All returned objects must satisfy universal invariants
 
 ---
@@ -408,43 +507,43 @@ netbox_lookup_host(name="lon-compute")
 ```
 netbox_ipam_ip_addresses_list(limit=5, offset=0)
 ```
-- `results` has ≤ 5 items
-- `has_more: true` (we have ≥ 30 IPs)
-- `next_offset` == 5
+- `results` has exactly 5 items
+- `has_more: true` (we have 31 IPs total)
+- `next_offset == 5`
 - No `next`/`previous` URL fields
 
 ### 12.2 Walk pages
 Continue fetching with `offset=5`, `offset=10`, etc. until `has_more: false`.
 - Each page: `results` non-empty, correct `next_offset`
-- Last page: `has_more: false`, `next_offset` == `count`
+- Last page: `has_more: false`, `next_offset == count` (== 31)
 - Total items across all pages == `count` from first response
 
 ### 12.3 Fetch all at once
 ```
 netbox_ipam_ip_addresses_list(fetch_all=true)
 ```
-- `results` length == `count`
+- `results` length == `count` == 31
 - `has_more: false`
-- `next_offset` == `count`
+- `next_offset == 31`
 
 ---
 
 ## Cross-Tool Workflows
 
 ### Workflow A: Device IP discovery
-1. `netbox_lookup_host(name="lon-compute-01")` — get device ID
-2. `netbox_ipam_ip_addresses_list(device_id=<id>)` — get all IPs
-3. `netbox_ipam_prefixes_list(prefix="10.100.10.0/24")` — verify subnet membership
+1. `netbox_lookup_host(name="nyc-server-01")` — get device ID
+2. `netbox_ipam_ip_addresses_list(device_id=<id>)` — get both IPs (management + data)
+3. `netbox_ipam_prefixes_list(prefix="10.0.1.0/24")` — verify the data IP falls in the NYC servers subnet
 
 ### Workflow B: VM configuration audit
-1. `netbox_virtualization_vms_list(cluster="lon-vmware-cluster-01")` — list cluster VMs
+1. `netbox_virtualization_vms_list(cluster="LON-PROD")` — list cluster VMs (`web-lon-01`, `web-lon-02`)
 2. For each VM: `netbox_ipam_ip_addresses_list(virtual_machine_id=<id>)` — verify IPs present
 3. Verify no `local_context_data` in any VM response
 
 ### Workflow C: Prefix-based IP inventory
-1. `netbox_ipam_vrfs_list(name="PROD")` — get PROD VRF ID
-2. `netbox_ipam_prefixes_list(vrf_id=<id>)` — list all PROD prefixes
-3. `netbox_ipam_ip_addresses_list(parent="10.100.10.0/24")` — get IPs in compute subnet
+1. `netbox_ipam_vrfs_list(name="Global")` — get Global VRF ID
+2. `netbox_ipam_prefixes_list(vrf_id=<id>)` — list all Global prefixes
+3. `netbox_ipam_ip_addresses_list(parent="10.0.1.0/24")` — get IPs in NYC servers subnet
 
 ### Workflow D: Change audit
 1. `netbox_core_object_changes_list(limit=10)` — recent changes
@@ -459,7 +558,7 @@ netbox_ipam_ip_addresses_list(fetch_all=true)
 |---|---|
 | `netbox_dcim_devices_get(id=999999)` | Tool returns error or empty; no crash |
 | `netbox_ipam_ip_addresses_list(device="nonexistent-device")` | `count: 0`, `results: []` |
-| `netbox_lookup_host(name="")` | Error or empty result; no crash |
+| `netbox_lookup_host(name="")` | Empty result or broad dump (no guard — see open issue); no crash |
 | Invalid filter value | NetBox 400 surfaced cleanly; no stack trace |
 
 ---
@@ -468,18 +567,18 @@ netbox_ipam_ip_addresses_list(fetch_all=true)
 
 Run through these in order for a complete regression pass:
 
-- [ ] Universal invariants (no nulls, no `local_context_data`, no `primary_ip`, pagination shape)
+- [ ] Universal invariants (no nulls, no `local_context_data`, no `primary_ip`, pagination shape, `next_offset` always present)
 - [ ] Section 1: Devices list, site filter, role filter, name filter, get by ID, primary IP check
-- [ ] Section 2: Interfaces list by device, get by ID
+- [ ] Section 2: Interfaces list by device, mgmt_only filter, get by ID
 - [ ] Section 3: Sites, regions, racks
 - [ ] Section 4: VMs list, cluster filter, site filter, get by ID — confirm no `local_context_data`
-- [ ] Section 5: IP list, device filter, device_id filter, VM filter, VM_id filter, parent filter
-- [ ] Section 6: Prefixes list, VRF filter, prefix exact filter
+- [ ] Section 5: IP list, device filter, device_id filter, VM filter, VM_id filter, parent filter, VRF filter
+- [ ] Section 6: Prefixes list, VRF filter, site filter, prefix exact filter
 - [ ] Section 7: VRFs list and get
-- [ ] Section 8: Services list and get
+- [ ] Section 8: Services list, device_id filter, get
 - [ ] Section 9: Clusters list, site filter, get
 - [ ] Section 10: Object changes list and get
-- [ ] Section 11: `netbox_lookup_host` — device, VM, no match, ambiguous
-- [ ] Section 12: Pagination — first page, walk pages, fetch_all
+- [ ] Section 11: `netbox_lookup_host` — device, VM, no match, ambiguous; verify `has_more` field present
+- [ ] Section 12: Pagination — first page, walk pages, fetch_all; verify `next_offset` on last page == `count`
 - [ ] Cross-tool workflows A, B, C, D
 - [ ] Error handling scenarios

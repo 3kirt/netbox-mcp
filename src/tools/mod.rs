@@ -883,7 +883,7 @@ impl NetboxMcpServer {
     // ---- IPAM ----
 
     #[tool(
-        description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, parent (IPs within prefix incl. network/broadcast), within (IPs strictly within prefix), device, device_id, virtual_machine, virtual_machine_id, tenant, tag. Use fetch_all=true for all results."
+        description = "List IP addresses. Filters: address, vrf (rd, e.g. 65000:100), status, role, parent (IPs within prefix incl. network/broadcast), device, device_id, virtual_machine, virtual_machine_id, tenant, tag. Use fetch_all=true for all results."
     )]
     async fn netbox_ipam_ip_addresses_list(
         &self,
@@ -1779,7 +1779,10 @@ impl NetboxMcpServer {
         description = "Look up a host by name across both physical devices and virtual machines. \
         Searches dcim/devices and virtualization/virtual-machines in parallel. \
         Accepts a hostname or FQDN — partial, case-insensitive match is used so 'web01' matches 'web01.example.com'. \
-        Returns { devices: [...], virtual_machines: [...], total_matches: N }."
+        Results are capped at 50 per resource type. \
+        Returns { devices: [...], virtual_machines: [...], total_matches: N, has_more: bool }. \
+        total_matches is the true NetBox count (may exceed returned results). \
+        has_more: true means at least one result list was truncated — use the dedicated list tools with specific filters to retrieve all."
     )]
     async fn netbox_lookup_host(
         &self,
@@ -1794,19 +1797,29 @@ impl NetboxMcpServer {
             client.list("/api/dcim/devices/", &params),
             client.list("/api/virtualization/virtual-machines/", &params),
         );
-        let devices = match devices_result {
-            Ok(v) => v["results"].as_array().cloned().unwrap_or_default(),
+        let (devices, device_total) = match devices_result {
+            Ok(v) => {
+                let total = v["count"].as_u64().unwrap_or(0);
+                let results = v["results"].as_array().cloned().unwrap_or_default();
+                (results, total)
+            }
             Err(e) => return tool_error(&format!("looking up devices: {e}")),
         };
-        let vms = match vms_result {
-            Ok(v) => v["results"].as_array().cloned().unwrap_or_default(),
+        let (vms, vm_total) = match vms_result {
+            Ok(v) => {
+                let total = v["count"].as_u64().unwrap_or(0);
+                let results = v["results"].as_array().cloned().unwrap_or_default();
+                (results, total)
+            }
             Err(e) => return tool_error(&format!("looking up virtual machines: {e}")),
         };
-        let total = devices.len() + vms.len();
+        let has_more =
+            device_total > devices.len() as u64 || vm_total > vms.len() as u64;
         let combined = serde_json::json!({
             "devices": devices,
             "virtual_machines": vms,
-            "total_matches": total,
+            "total_matches": device_total + vm_total,
+            "has_more": has_more,
         });
         json_result(combined)
     }
