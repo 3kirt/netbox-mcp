@@ -33,7 +33,7 @@ pub mod wireless;
 /// Pagination fields shared by every list-params struct.
 /// Flatten this into a domain params struct with `#[serde(flatten)]`.
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
-pub struct PaginationParams {
+pub(crate) struct PaginationParams {
     #[schemars(
         description = "Maximum number of results (default 50, max 1000); ignored when fetch_all is true"
     )]

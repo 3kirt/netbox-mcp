@@ -59,7 +59,13 @@ The `#[tool_router]` macro on `impl NetboxMcpServer` in `tools/mod.rs` generates
 All list tools share `paginate()` in `tools/mod.rs`. It calls `client.list()` (single page) or `client.list_all()` (all pages) based on `fetch_all`. Responses go through `clean_page_response()` which strips `next`/`previous` URLs and injects `{ has_more, next_offset }`. Default page size is 50; max is 1000.
 
 **Response slimming:**
-`slim_value()` strips `null` fields and the keys in `STRIP_KEYS` (`local_context_data`, `primary_ip`) from every response before it is sent to the client. This cuts typical NetBox payloads by 50–70%.
+`slim_value()` is applied to every response before it is sent to the client. It:
+- Strips `null`-valued fields from every object.
+- Strips keys in `STRIP_KEYS`: `local_context_data`, `primary_ip`, `display_url`, `_depth`.
+- Strips `label` from NetBox choice-field objects `{"value": …, "label": …}` — `label` is always just a human-readable capitalisation of `value`.
+- Collapses embedded `tags` arrays to `{id, name, slug}` only, dropping `color`, `weight`, `tagged_items`, etc. (the top-level tags-list endpoint is unaffected — it uses `results`, not `tags`).
+
+This cuts typical NetBox payloads by 50–70%.
 
 **Config resolution order:** `NETBOX_URL`/`NETBOX_TOKEN` env vars → `~/.netbox_mcp.json` → error. HTTP (non-localhost) URLs are rejected to prevent token exposure.
 
@@ -73,4 +79,4 @@ For live integration testing, seed a local NetBox with `scripts/seed_data.py` an
 
 ## Response invariants
 
-Every list response must have `{ count, has_more, next_offset, results }`. `has_more` is `true` iff `next_offset < count`. `next_offset` is always present (equals `count` when `has_more` is `false`). No `null` values, no `local_context_data`, no `primary_ip` alias, no `next`/`previous` URL fields.
+Every list response must have `{ count, has_more, next_offset, results }`. `has_more` is `true` iff `next_offset < count`. `next_offset` is always present (equals `count` when `has_more` is `false`). No `null` values, no `local_context_data`, no `primary_ip` alias, no `display_url`, no `_depth`, no bare `label` on choice fields, no `next`/`previous` URL fields.
