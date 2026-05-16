@@ -164,6 +164,8 @@ pub struct InterfacesListParams {
     pub r#type: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
+    #[schemars(description = "Return only management interfaces when true")]
+    pub mgmt_only: Option<bool>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
     #[serde(flatten)]
@@ -181,6 +183,7 @@ pub async fn interfaces_list(
         .many("name", p.name)
         .many("type", p.r#type)
         .many("tag", p.tag)
+        .opt("mgmt_only", p.mgmt_only)
         .opt("ordering", p.ordering);
     paginate(
         client,

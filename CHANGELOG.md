@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - **`name__ic` filter on `devices_list`** — case-insensitive partial match (e.g. `"web01"` matches `"web01.example.com"`). The existing `name` filter remains for exact matches.
 - **`cluster_id` filter on `devices_list`** — enumerate physical nodes belonging to a cluster.
 - **IP address filters** — `ip_addresses_list` gains `device`, `device_id`, `virtual_machine`, `virtual_machine_id`, `dns_name`, and `parent` (prefix containment). Enables device-scoped and subnet-scoped IP lookups without multi-hop queries.
+- **`mgmt_only` filter on `interfaces_list`** — pass `mgmt_only: true` to return only management interfaces for a device.
 - **Response slimming** — `slim_value()` now strips additional noise from every response:
   - `local_context_data` (duplicates resolved `config_context`)
   - `primary_ip` alias (duplicates `primary_ip4` / `primary_ip6`)
