@@ -37,7 +37,11 @@ impl NetboxError {
     pub fn to_tool_message(&self) -> String {
         match self {
             NetboxError::Api { status, body } => {
-                let cut = body.char_indices().nth(300).map(|(i, _)| i).unwrap_or(body.len());
+                let cut = body
+                    .char_indices()
+                    .nth(300)
+                    .map(|(i, _)| i)
+                    .unwrap_or(body.len());
                 if cut < body.len() {
                     format!("NetBox API error {status}: {}… (truncated)", &body[..cut])
                 } else {
@@ -151,5 +155,60 @@ impl NetboxClient {
             return Err(NetboxError::Api { status, body });
         }
         Ok(resp.json().await?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn to_tool_message_short_body_passes_through() {
+        let e = NetboxError::Api {
+            status: StatusCode::BAD_REQUEST,
+            body: "short error".to_string(),
+        };
+        assert_eq!(
+            e.to_tool_message(),
+            "NetBox API error 400 Bad Request: short error"
+        );
+    }
+
+    #[test]
+    fn to_tool_message_long_ascii_body_is_truncated() {
+        let e = NetboxError::Api {
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+            body: "x".repeat(500),
+        };
+        let msg = e.to_tool_message();
+        assert!(
+            msg.ends_with("… (truncated)"),
+            "expected truncated suffix, got: {msg}"
+        );
+        assert!(msg.contains(&"x".repeat(300)));
+        assert!(!msg.contains(&"x".repeat(301)));
+    }
+
+    #[test]
+    fn to_tool_message_multibyte_at_boundary_does_not_panic() {
+        // 299 ASCII bytes then multi-byte '€' (3 bytes each). A byte slice at
+        // position 300 would land inside the '€' and panic; char_indices must
+        // find the safe boundary instead.
+        let body = "a".repeat(299) + &"€".repeat(100);
+        let e = NetboxError::Api {
+            status: StatusCode::BAD_REQUEST,
+            body,
+        };
+        let msg = e.to_tool_message();
+        assert!(msg.ends_with("… (truncated)"));
+    }
+
+    #[test]
+    fn to_tool_message_non_api_errors_use_display() {
+        let e = NetboxError::NotFound {
+            kind: "device",
+            name: "rtr-01".to_string(),
+        };
+        assert_eq!(e.to_tool_message(), "device 'rtr-01' not found");
     }
 }

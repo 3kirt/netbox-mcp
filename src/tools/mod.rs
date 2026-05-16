@@ -210,7 +210,7 @@ pub(crate) fn finalize_params(
 ) -> Vec<(&'static str, String)> {
     if !fetch_all.unwrap_or(false) {
         params.push(("limit", clamp_limit(limit).to_string()));
-        params.push(("offset", offset.unwrap_or(0).to_string()));
+        params.push(("offset", offset.unwrap_or(0).max(0).to_string()));
     }
     params
 }
@@ -394,7 +394,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — racks
-    #[tool(description = "List racks in NetBox, optionally filtered by site, location, or status. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List racks in NetBox, optionally filtered by site, location, or status. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_racks_list(
         &self,
         Parameters(p): Parameters<dcim::RacksListParams>,
@@ -428,7 +430,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — cables
-    #[tool(description = "List cables in NetBox, optionally filtered by site or status. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List cables in NetBox, optionally filtered by site or status. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_cables_list(
         &self,
         Parameters(p): Parameters<dcim::CablesListParams>,
@@ -444,7 +448,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — regions
-    #[tool(description = "List regions in NetBox, optionally filtered by name, slug, or parent. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List regions in NetBox, optionally filtered by name, slug, or parent. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_regions_list(
         &self,
         Parameters(p): Parameters<dcim::RegionsListParams>,
@@ -478,7 +484,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — manufacturers
-    #[tool(description = "List manufacturers in NetBox, optionally filtered by name or slug. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List manufacturers in NetBox, optionally filtered by name or slug. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_manufacturers_list(
         &self,
         Parameters(p): Parameters<dcim::ManufacturersListParams>,
@@ -530,7 +538,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — platforms
-    #[tool(description = "List platforms in NetBox, optionally filtered by name or manufacturer. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List platforms in NetBox, optionally filtered by name or manufacturer. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_platforms_list(
         &self,
         Parameters(p): Parameters<dcim::PlatformsListParams>,
@@ -546,7 +556,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — power panels
-    #[tool(description = "List power panels in NetBox, optionally filtered by site. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List power panels in NetBox, optionally filtered by site. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_power_panels_list(
         &self,
         Parameters(p): Parameters<dcim::PowerPanelsListParams>,
@@ -580,7 +592,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — virtual chassis
-    #[tool(description = "List virtual chassis in NetBox, optionally filtered by site or tenant. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List virtual chassis in NetBox, optionally filtered by site or tenant. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_virtual_chassis_list(
         &self,
         Parameters(p): Parameters<dcim::VirtualChassisListParams>,
@@ -614,7 +628,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — cable terminations
-    #[tool(description = "List cable terminations in NetBox, optionally filtered by cable ID. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List cable terminations in NetBox, optionally filtered by cable ID. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_cable_terminations_list(
         &self,
         Parameters(p): Parameters<dcim::CableTerminationsListParams>,
@@ -699,7 +715,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — front ports
-    #[tool(description = "List front ports in NetBox, optionally filtered by name. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List front ports in NetBox, optionally filtered by name. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_front_ports_list(
         &self,
         Parameters(p): Parameters<dcim::FrontPortsListParams>,
@@ -715,7 +733,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — MAC addresses
-    #[tool(description = "List MAC addresses in NetBox, optionally filtered by device ID. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List MAC addresses in NetBox, optionally filtered by device ID. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_mac_addresses_list(
         &self,
         Parameters(p): Parameters<dcim::MacAddressesListParams>,
@@ -731,7 +751,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — modules
-    #[tool(description = "List modules in NetBox, optionally filtered by device, site, or status. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List modules in NetBox, optionally filtered by device, site, or status. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_modules_list(
         &self,
         Parameters(p): Parameters<dcim::ModulesListParams>,
@@ -747,7 +769,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — module bays
-    #[tool(description = "List module bays in NetBox, optionally filtered by device ID. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List module bays in NetBox, optionally filtered by device ID. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_module_bays_list(
         &self,
         Parameters(p): Parameters<dcim::ModuleBaysListParams>,
@@ -763,7 +787,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — module types
-    #[tool(description = "List module types in NetBox, optionally filtered by manufacturer. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List module types in NetBox, optionally filtered by manufacturer. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_module_types_list(
         &self,
         Parameters(p): Parameters<dcim::ModuleTypesListParams>,
@@ -838,7 +864,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — rack roles
-    #[tool(description = "List rack roles in NetBox, optionally filtered by name or slug. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List rack roles in NetBox, optionally filtered by name or slug. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_rack_roles_list(
         &self,
         Parameters(p): Parameters<dcim::RackRolesListParams>,
@@ -854,7 +882,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — rack types
-    #[tool(description = "List rack types in NetBox, optionally filtered by slug or manufacturer. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List rack types in NetBox, optionally filtered by slug or manufacturer. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_rack_types_list(
         &self,
         Parameters(p): Parameters<dcim::RackTypesListParams>,
@@ -870,7 +900,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — rear ports
-    #[tool(description = "List rear ports in NetBox, optionally filtered by name. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List rear ports in NetBox, optionally filtered by name. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_rear_ports_list(
         &self,
         Parameters(p): Parameters<dcim::RearPortsListParams>,
@@ -886,7 +918,9 @@ impl NetboxMcpServer {
     }
 
     // DCIM — site groups
-    #[tool(description = "List site groups in NetBox, optionally filtered by name or slug. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List site groups in NetBox, optionally filtered by name or slug. Use fetch_all=true for all results."
+    )]
     async fn netbox_dcim_site_groups_list(
         &self,
         Parameters(p): Parameters<dcim::SiteGroupsListParams>,
@@ -965,7 +999,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/prefixes/", p.id, "prefix")
     }
 
-    #[tool(description = "List VRFs (filter: q, name, rd, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List VRFs (filter: q, name, rd, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_vrfs_list(
         &self,
         Parameters(p): Parameters<ipam::VrfsListParams>,
@@ -980,7 +1016,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/vrfs/", p.id, "VRF")
     }
 
-    #[tool(description = "List VLANs (filter: q, vid, name, site, group, status). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List VLANs (filter: q, vid, name, site, group, status). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_vlans_list(
         &self,
         Parameters(p): Parameters<ipam::VlansListParams>,
@@ -995,7 +1033,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/vlans/", p.id, "VLAN")
     }
 
-    #[tool(description = "List aggregates (filter: q, family, rir, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List aggregates (filter: q, family, rir, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_aggregates_list(
         &self,
         Parameters(p): Parameters<ipam::AggregatesListParams>,
@@ -1010,7 +1050,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/aggregates/", p.id, "aggregate")
     }
 
-    #[tool(description = "List IP ranges (filter: q, vrf, status, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List IP ranges (filter: q, vrf, status, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_ip_ranges_list(
         &self,
         Parameters(p): Parameters<ipam::IpRangesListParams>,
@@ -1025,7 +1067,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/ip-ranges/", p.id, "IP range")
     }
 
-    #[tool(description = "List route targets (filter: q, name, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List route targets (filter: q, name, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_route_targets_list(
         &self,
         Parameters(p): Parameters<ipam::RouteTargetsListParams>,
@@ -1070,7 +1114,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/vlan-groups/", p.id, "VLAN group")
     }
 
-    #[tool(description = "List services (filter: q, device, virtual machine, protocol). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List services (filter: q, device, virtual machine, protocol). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_services_list(
         &self,
         Parameters(p): Parameters<ipam::ServicesListParams>,
@@ -1085,7 +1131,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/services/", p.id, "service")
     }
 
-    #[tool(description = "List ASNs (filter: q, site, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List ASNs (filter: q, site, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_asns_list(
         &self,
         Parameters(p): Parameters<ipam::AsnsListParams>,
@@ -1100,7 +1148,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/asns/", p.id, "ASN")
     }
 
-    #[tool(description = "List FHRP groups (filter: q, name, protocol). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List FHRP groups (filter: q, name, protocol). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_fhrp_groups_list(
         &self,
         Parameters(p): Parameters<ipam::FhrpGroupsListParams>,
@@ -1115,7 +1165,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/ipam/fhrp-groups/", p.id, "FHRP group")
     }
 
-    #[tool(description = "List FHRP group assignments (filter: group_id, device_id). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List FHRP group assignments (filter: group_id, device_id). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_fhrp_group_assignments_list(
         &self,
         Parameters(p): Parameters<ipam::FhrpGroupAssignmentsListParams>,
@@ -1140,7 +1192,9 @@ impl NetboxMcpServer {
         )
     }
 
-    #[tool(description = "List IP roles (filter: q, name, slug). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List IP roles (filter: q, name, slug). Use fetch_all=true for all results."
+    )]
     async fn netbox_ipam_roles_list(
         &self,
         Parameters(p): Parameters<ipam::RolesListParams>,
@@ -1174,7 +1228,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/circuits/circuits/", p.id, "circuit")
     }
 
-    #[tool(description = "List circuit providers (filter: q, name). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List circuit providers (filter: q, name). Use fetch_all=true for all results."
+    )]
     async fn netbox_circuits_providers_list(
         &self,
         Parameters(p): Parameters<circuits::ProvidersListParams>,
@@ -1189,7 +1245,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/circuits/providers/", p.id, "provider")
     }
 
-    #[tool(description = "List circuit types (filter: q, name, slug). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List circuit types (filter: q, name, slug). Use fetch_all=true for all results."
+    )]
     async fn netbox_circuits_circuit_types_list(
         &self,
         Parameters(p): Parameters<circuits::CircuitTypesListParams>,
@@ -1204,7 +1262,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/circuits/circuit-types/", p.id, "circuit type")
     }
 
-    #[tool(description = "List circuit terminations (filter: q, circuit, site). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List circuit terminations (filter: q, circuit, site). Use fetch_all=true for all results."
+    )]
     async fn netbox_circuits_circuit_terminations_list(
         &self,
         Parameters(p): Parameters<circuits::CircuitTerminationsListParams>,
@@ -1229,7 +1289,9 @@ impl NetboxMcpServer {
         )
     }
 
-    #[tool(description = "List provider accounts (filter: q, provider). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List provider accounts (filter: q, provider). Use fetch_all=true for all results."
+    )]
     async fn netbox_circuits_provider_accounts_list(
         &self,
         Parameters(p): Parameters<circuits::ProviderAccountsListParams>,
@@ -1254,7 +1316,9 @@ impl NetboxMcpServer {
         )
     }
 
-    #[tool(description = "List provider networks (filter: q, provider). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List provider networks (filter: q, provider). Use fetch_all=true for all results."
+    )]
     async fn netbox_circuits_provider_networks_list(
         &self,
         Parameters(p): Parameters<circuits::ProviderNetworksListParams>,
@@ -1281,7 +1345,9 @@ impl NetboxMcpServer {
 
     // ---- Tenancy ----
 
-    #[tool(description = "List tenants (filter: q, name, group). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List tenants (filter: q, name, group). Use fetch_all=true for all results."
+    )]
     async fn netbox_tenancy_tenants_list(
         &self,
         Parameters(p): Parameters<tenancy::TenantsListParams>,
@@ -1296,7 +1362,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/tenancy/tenants/", p.id, "tenant")
     }
 
-    #[tool(description = "List tenant groups (filter: q, name, parent). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List tenant groups (filter: q, name, parent). Use fetch_all=true for all results."
+    )]
     async fn netbox_tenancy_tenant_groups_list(
         &self,
         Parameters(p): Parameters<tenancy::TenantGroupsListParams>,
@@ -1311,7 +1379,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/tenancy/tenant-groups/", p.id, "tenant group")
     }
 
-    #[tool(description = "List contacts (filter: q, name, group). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List contacts (filter: q, name, group). Use fetch_all=true for all results."
+    )]
     async fn netbox_tenancy_contacts_list(
         &self,
         Parameters(p): Parameters<tenancy::ContactsListParams>,
@@ -1326,7 +1396,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/tenancy/contacts/", p.id, "contact")
     }
 
-    #[tool(description = "List contact groups (filter: q, name, parent). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List contact groups (filter: q, name, parent). Use fetch_all=true for all results."
+    )]
     async fn netbox_tenancy_contact_groups_list(
         &self,
         Parameters(p): Parameters<tenancy::ContactGroupsListParams>,
@@ -1341,7 +1413,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/tenancy/contact-groups/", p.id, "contact group")
     }
 
-    #[tool(description = "List contact roles (filter: q, name, slug). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List contact roles (filter: q, name, slug). Use fetch_all=true for all results."
+    )]
     async fn netbox_tenancy_contact_roles_list(
         &self,
         Parameters(p): Parameters<tenancy::ContactRolesListParams>,
@@ -1375,7 +1449,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/virtualization/virtual-machines/", p.id, "VM")
     }
 
-    #[tool(description = "List clusters (filter: q, name, type, site). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List clusters (filter: q, name, type, site). Use fetch_all=true for all results."
+    )]
     async fn netbox_virtualization_clusters_list(
         &self,
         Parameters(p): Parameters<virtualization::ClustersListParams>,
@@ -1390,7 +1466,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/virtualization/clusters/", p.id, "cluster")
     }
 
-    #[tool(description = "List cluster groups (filter: q, name). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List cluster groups (filter: q, name). Use fetch_all=true for all results."
+    )]
     async fn netbox_virtualization_cluster_groups_list(
         &self,
         Parameters(p): Parameters<virtualization::ClusterGroupsListParams>,
@@ -1415,7 +1493,9 @@ impl NetboxMcpServer {
         )
     }
 
-    #[tool(description = "List cluster types (filter: q, name). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List cluster types (filter: q, name). Use fetch_all=true for all results."
+    )]
     async fn netbox_virtualization_cluster_types_list(
         &self,
         Parameters(p): Parameters<virtualization::ClusterTypesListParams>,
@@ -1457,7 +1537,9 @@ impl NetboxMcpServer {
         )
     }
 
-    #[tool(description = "List virtual disks (filter: q, virtual machine, name). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List virtual disks (filter: q, virtual machine, name). Use fetch_all=true for all results."
+    )]
     async fn netbox_virtualization_virtual_disks_list(
         &self,
         Parameters(p): Parameters<virtualization::VirtualDisksListParams>,
@@ -1494,7 +1576,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/extras/tags/", p.id, "tag")
     }
 
-    #[tool(description = "List config contexts (filter: q, name, is_active, site, role). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List config contexts (filter: q, name, is_active, site, role). Use fetch_all=true for all results."
+    )]
     async fn netbox_extras_config_contexts_list(
         &self,
         Parameters(p): Parameters<extras::ConfigContextsListParams>,
@@ -1526,7 +1610,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/extras/journal-entries/", p.id, "journal entry")
     }
 
-    #[tool(description = "List custom fields (filter: q, name, type, object_type). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List custom fields (filter: q, name, type, object_type). Use fetch_all=true for all results."
+    )]
     async fn netbox_extras_custom_fields_list(
         &self,
         Parameters(p): Parameters<extras::CustomFieldsListParams>,
@@ -1541,7 +1627,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/extras/custom-fields/", p.id, "custom field")
     }
 
-    #[tool(description = "List export templates (filter: q, name, object_type). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List export templates (filter: q, name, object_type). Use fetch_all=true for all results."
+    )]
     async fn netbox_extras_export_templates_list(
         &self,
         Parameters(p): Parameters<extras::ExportTemplatesListParams>,
@@ -1578,7 +1666,9 @@ impl NetboxMcpServer {
 
     // ---- VPN ----
 
-    #[tool(description = "List VPN tunnels (filter: q, status, group, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List VPN tunnels (filter: q, status, group, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_vpn_tunnels_list(
         &self,
         Parameters(p): Parameters<vpn::TunnelsListParams>,
@@ -1593,7 +1683,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/vpn/tunnels/", p.id, "VPN tunnel")
     }
 
-    #[tool(description = "List VPN tunnel groups (filter: q, name, slug). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List VPN tunnel groups (filter: q, name, slug). Use fetch_all=true for all results."
+    )]
     async fn netbox_vpn_tunnel_groups_list(
         &self,
         Parameters(p): Parameters<vpn::TunnelGroupsListParams>,
@@ -1608,7 +1700,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/vpn/tunnel-groups/", p.id, "VPN tunnel group")
     }
 
-    #[tool(description = "List L2VPNs (filter: q, type, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List L2VPNs (filter: q, type, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_vpn_l2vpns_list(
         &self,
         Parameters(p): Parameters<vpn::L2vpnsListParams>,
@@ -1623,7 +1717,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/vpn/l2vpns/", p.id, "L2VPN")
     }
 
-    #[tool(description = "List IKE policies (filter: q, name). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List IKE policies (filter: q, name). Use fetch_all=true for all results."
+    )]
     async fn netbox_vpn_ike_policies_list(
         &self,
         Parameters(p): Parameters<vpn::IkePoliciesListParams>,
@@ -1638,7 +1734,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/vpn/ike-policies/", p.id, "IKE policy")
     }
 
-    #[tool(description = "List IPSec policies (filter: q, name). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List IPSec policies (filter: q, name). Use fetch_all=true for all results."
+    )]
     async fn netbox_vpn_ipsec_policies_list(
         &self,
         Parameters(p): Parameters<vpn::IpsecPoliciesListParams>,
@@ -1653,7 +1751,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/vpn/ipsec-policies/", p.id, "IPSec policy")
     }
 
-    #[tool(description = "List VPN tunnel terminations (filter: q, tunnel_id, role). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List VPN tunnel terminations (filter: q, tunnel_id, role). Use fetch_all=true for all results."
+    )]
     async fn netbox_vpn_tunnel_terminations_list(
         &self,
         Parameters(p): Parameters<vpn::TunnelTerminationsListParams>,
@@ -1680,7 +1780,9 @@ impl NetboxMcpServer {
 
     // ---- Wireless ----
 
-    #[tool(description = "List wireless LANs (filter: q, ssid, group, status, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List wireless LANs (filter: q, ssid, group, status, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_wireless_lans_list(
         &self,
         Parameters(p): Parameters<wireless::LansListParams>,
@@ -1695,7 +1797,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/wireless/wireless-lans/", p.id, "wireless LAN")
     }
 
-    #[tool(description = "List wireless LAN groups (filter: q, name, parent). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List wireless LAN groups (filter: q, name, parent). Use fetch_all=true for all results."
+    )]
     async fn netbox_wireless_lan_groups_list(
         &self,
         Parameters(p): Parameters<wireless::LanGroupsListParams>,
@@ -1715,7 +1819,9 @@ impl NetboxMcpServer {
         )
     }
 
-    #[tool(description = "List wireless links (filter: q, status, tenant). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List wireless links (filter: q, status, tenant). Use fetch_all=true for all results."
+    )]
     async fn netbox_wireless_links_list(
         &self,
         Parameters(p): Parameters<wireless::LinksListParams>,
@@ -1732,7 +1838,9 @@ impl NetboxMcpServer {
 
     // ---- Core ----
 
-    #[tool(description = "List data sources (filter: q, name, status). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List data sources (filter: q, name, status). Use fetch_all=true for all results."
+    )]
     async fn netbox_core_data_sources_list(
         &self,
         Parameters(p): Parameters<core::DataSourcesListParams>,
@@ -1747,7 +1855,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/core/data-sources/", p.id, "data source")
     }
 
-    #[tool(description = "List background jobs (filter: q, status). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List background jobs (filter: q, status). Use fetch_all=true for all results."
+    )]
     async fn netbox_core_jobs_list(
         &self,
         Parameters(p): Parameters<core::JobsListParams>,
@@ -1762,7 +1872,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/core/jobs/", p.id, "job")
     }
 
-    #[tool(description = "List object changes / audit log (filter: q, user, action, changed_object_type). Set diff_only=true to return only the keys that changed between prechange_data and postchange_data — strongly recommended for update-heavy logs. Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List object changes / audit log (filter: q, user, action, changed_object_type). Set diff_only=true to return only the keys that changed between prechange_data and postchange_data — strongly recommended for update-heavy logs. Use fetch_all=true for all results."
+    )]
     async fn netbox_core_object_changes_list(
         &self,
         Parameters(p): Parameters<core::ObjectChangesListParams>,
@@ -1779,7 +1891,9 @@ impl NetboxMcpServer {
 
     // ---- Users ----
 
-    #[tool(description = "List users (filter: q, username, is_active). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List users (filter: q, username, is_active). Use fetch_all=true for all results."
+    )]
     async fn netbox_users_users_list(
         &self,
         Parameters(p): Parameters<users::UsersListParams>,
@@ -1809,7 +1923,9 @@ impl NetboxMcpServer {
         delegate_get!(self, "/api/users/groups/", p.id, "user group")
     }
 
-    #[tool(description = "List API tokens (filter: q, user_id). Use fetch_all=true for all results.")]
+    #[tool(
+        description = "List API tokens (filter: q, user_id). Use fetch_all=true for all results."
+    )]
     async fn netbox_users_tokens_list(
         &self,
         Parameters(p): Parameters<users::TokensListParams>,
@@ -1837,6 +1953,9 @@ impl NetboxMcpServer {
         &self,
         Parameters(p): Parameters<LookupHostParams>,
     ) -> Result<CallToolResult, McpError> {
+        if p.name.trim().is_empty() {
+            return tool_error("name must not be empty");
+        }
         let client = self.get_client()?;
         let params = vec![("name__ic", p.name), ("limit", DEFAULT_LIMIT.to_string())];
         let (devices_result, vms_result) = tokio::join!(
@@ -2414,7 +2533,10 @@ mod tests {
     fn key_absent(v: &serde_json::Value, key: &str, ctx: &str) {
         match v {
             serde_json::Value::Object(m) => {
-                assert!(!m.contains_key(key), "key {key:?} unexpectedly present at {ctx}");
+                assert!(
+                    !m.contains_key(key),
+                    "key {key:?} unexpectedly present at {ctx}"
+                );
                 for (k, v) in m {
                     key_absent(v, key, &format!("{ctx}.{k}"));
                 }
@@ -2462,10 +2584,22 @@ mod tests {
 
         let client = mock_client(&server.uri());
         let p = crate::tools::dcim::DevicesListParams {
-            q: None, name: None, name_ic: None, site: None, role: None,
-            status: None, tenant: None, rack_id: None, cluster_id: None,
-            tag: None, ordering: None,
-            pagination: PaginationParams { limit: None, offset: None, fetch_all: None },
+            q: None,
+            name: None,
+            name_ic: None,
+            site: None,
+            role: None,
+            status: None,
+            tenant: None,
+            rack_id: None,
+            cluster_id: None,
+            tag: None,
+            ordering: None,
+            pagination: PaginationParams {
+                limit: None,
+                offset: None,
+                fetch_all: None,
+            },
         };
         let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
 
@@ -2505,10 +2639,22 @@ mod tests {
 
         let client = mock_client(&server.uri());
         let p = crate::tools::dcim::DevicesListParams {
-            q: None, name: None, name_ic: None, site: None, role: None,
-            status: None, tenant: None, rack_id: None, cluster_id: None,
-            tag: None, ordering: None,
-            pagination: PaginationParams { limit: None, offset: None, fetch_all: None },
+            q: None,
+            name: None,
+            name_ic: None,
+            site: None,
+            role: None,
+            status: None,
+            tenant: None,
+            rack_id: None,
+            cluster_id: None,
+            tag: None,
+            ordering: None,
+            pagination: PaginationParams {
+                limit: None,
+                offset: None,
+                fetch_all: None,
+            },
         };
         let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
         let device = &result["results"][0];
@@ -2550,10 +2696,22 @@ mod tests {
 
         let client = mock_client(&server.uri());
         let p = crate::tools::dcim::DevicesListParams {
-            q: None, name: None, name_ic: None, site: None, role: None,
-            status: None, tenant: None, rack_id: None, cluster_id: None,
-            tag: None, ordering: None,
-            pagination: PaginationParams { limit: None, offset: None, fetch_all: None },
+            q: None,
+            name: None,
+            name_ic: None,
+            site: None,
+            role: None,
+            status: None,
+            tenant: None,
+            rack_id: None,
+            cluster_id: None,
+            tag: None,
+            ordering: None,
+            pagination: PaginationParams {
+                limit: None,
+                offset: None,
+                fetch_all: None,
+            },
         };
         let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
         let tag = &result["results"][0]["tags"][0];
@@ -2614,9 +2772,16 @@ mod tests {
             .await;
 
         let client = mock_client(&server.uri());
-        let result = paginate(&client, "/api/dcim/devices/", vec![], Some(1), Some(0), None)
-            .await
-            .unwrap();
+        let result = paginate(
+            &client,
+            "/api/dcim/devices/",
+            vec![],
+            Some(1),
+            Some(0),
+            None,
+        )
+        .await
+        .unwrap();
 
         assert_eq!(result["has_more"], json!(true));
         assert_eq!(result["next_offset"], json!(1u64));
@@ -2654,9 +2819,16 @@ mod tests {
             .await;
 
         let client = mock_client(&server.uri());
-        let result = paginate(&client, "/api/dcim/devices/", vec![], None, None, Some(true))
-            .await
-            .unwrap();
+        let result = paginate(
+            &client,
+            "/api/dcim/devices/",
+            vec![],
+            None,
+            None,
+            Some(true),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(result["results"].as_array().unwrap().len(), 3);
         assert_eq!(result["has_more"], json!(false));
@@ -2821,6 +2993,18 @@ mod tests {
         );
     }
 
+    #[test]
+    fn finalize_clamps_negative_offset_to_zero() {
+        let params = finalize_params(vec![], None, Some(-5), Some(false));
+        assert_eq!(
+            params,
+            vec![
+                ("limit", DEFAULT_LIMIT.to_string()),
+                ("offset", "0".to_string()),
+            ]
+        );
+    }
+
     // ------------------------------------------------------------------
     // clean_page_response
     // ------------------------------------------------------------------
@@ -2882,5 +3066,192 @@ mod tests {
         let out = clean_page_response(resp, 0, 50);
         assert_eq!(out["count"], json!(2));
         assert_eq!(out["results"], json!([{"id": 1}, {"id": 2}]));
+    }
+
+    // ------------------------------------------------------------------
+    // resolve_device_id / resolve_vm_id
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn resolve_device_id_returns_id_on_single_match() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .and(query_param("name", "rtr-01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 1, "next": null, "previous": null,
+                "results": [{"id": 42, "name": "rtr-01"}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let id = resolve_device_id(&client, "rtr-01").await.unwrap();
+        assert_eq!(id, 42);
+    }
+
+    #[tokio::test]
+    async fn resolve_device_id_returns_ambiguous_on_multiple_matches() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .and(query_param("name", "rtr-01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 2, "next": null, "previous": null,
+                "results": [{"id": 1, "name": "rtr-01"}, {"id": 2, "name": "rtr-01"}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let err = resolve_device_id(&client, "rtr-01").await.unwrap_err();
+        assert!(matches!(
+            err,
+            crate::client::NetboxError::Ambiguous {
+                kind: "device",
+                count: 2,
+                ..
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn resolve_device_id_returns_not_found_on_no_match() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .and(query_param("name", "nope"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 0, "next": null, "previous": null,
+                "results": [],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let err = resolve_device_id(&client, "nope").await.unwrap_err();
+        assert!(matches!(
+            err,
+            crate::client::NetboxError::NotFound { kind: "device", .. }
+        ));
+    }
+
+    #[tokio::test]
+    async fn resolve_vm_id_returns_id_on_single_match() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/virtualization/virtual-machines/"))
+            .and(query_param("name", "web-01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 1, "next": null, "previous": null,
+                "results": [{"id": 99, "name": "web-01"}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let id = resolve_vm_id(&client, "web-01").await.unwrap();
+        assert_eq!(id, 99);
+    }
+
+    #[tokio::test]
+    async fn resolve_vm_id_returns_ambiguous_on_multiple_matches() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/virtualization/virtual-machines/"))
+            .and(query_param("name", "web-01"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 3, "next": null, "previous": null,
+                "results": [{"id": 1}, {"id": 2}, {"id": 3}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let err = resolve_vm_id(&client, "web-01").await.unwrap_err();
+        assert!(matches!(
+            err,
+            crate::client::NetboxError::Ambiguous {
+                kind: "virtual machine",
+                count: 3,
+                ..
+            }
+        ));
+    }
+
+    #[tokio::test]
+    async fn resolve_vm_id_returns_not_found_on_no_match() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/virtualization/virtual-machines/"))
+            .and(query_param("name", "nope"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 0, "next": null, "previous": null,
+                "results": [],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let err = resolve_vm_id(&client, "nope").await.unwrap_err();
+        assert!(matches!(
+            err,
+            crate::client::NetboxError::NotFound {
+                kind: "virtual machine",
+                ..
+            }
+        ));
+    }
+
+    // ------------------------------------------------------------------
+    // list_all MAX_PAGES guard
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn list_all_returns_page_limit_exceeded_on_runaway_dataset() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        // Always-non-empty response with a count far beyond 200 pages × 1000.
+        // list_all will loop until pages_fetched hits MAX_PAGES (200).
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 999_999,
+                "next": "http://...",
+                "previous": null,
+                "results": [{"id": 1, "name": "dev-01"}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let err = client
+            .list_all("/api/dcim/devices/", &[])
+            .await
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            crate::client::NetboxError::PageLimitExceeded { max_pages: 200 }
+        ));
     }
 }

@@ -122,10 +122,8 @@ pub async fn object_changes_list(
         p.pagination.fetch_all,
     )
     .await?;
-    if diff_only {
-        if let Some(results) = resp.get_mut("results") {
-            apply_change_diff(results);
-        }
+    if diff_only && let Some(results) = resp.get_mut("results") {
+        apply_change_diff(results);
     }
     Ok(resp)
 }
@@ -133,7 +131,7 @@ pub async fn object_changes_list(
 /// Replace `prechange_data` / `postchange_data` on each update record with
 /// only the keys whose values differ between the two snapshots.
 /// Create/delete records (where one side is null) are left untouched.
-fn apply_change_diff(results: &mut Value) {
+pub(crate) fn apply_change_diff(results: &mut Value) {
     let arr = match results.as_array_mut() {
         Some(a) => a,
         None => return,
@@ -151,8 +149,7 @@ fn apply_change_diff(results: &mut Value) {
             Some(Value::Object(m)) => m,
             _ => continue,
         };
-        let all_keys: std::collections::HashSet<&String> =
-            pre.keys().chain(post.keys()).collect();
+        let all_keys: std::collections::HashSet<&String> = pre.keys().chain(post.keys()).collect();
         let mut diff_pre = serde_json::Map::new();
         let mut diff_post = serde_json::Map::new();
         for k in all_keys {
@@ -165,5 +162,71 @@ fn apply_change_diff(results: &mut Value) {
         }
         obj.insert("prechange_data".to_string(), Value::Object(diff_pre));
         obj.insert("postchange_data".to_string(), Value::Object(diff_post));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::apply_change_diff;
+    use serde_json::json;
+
+    #[test]
+    fn diff_keeps_only_divergent_fields() {
+        let mut results = json!([{
+            "action": {"value": "update"},
+            "prechange_data": {"name": "old", "status": "planned", "vcpus": 2},
+            "postchange_data": {"name": "new", "status": "active", "vcpus": 2},
+        }]);
+        apply_change_diff(&mut results);
+        assert_eq!(
+            results[0]["prechange_data"],
+            json!({"name": "old", "status": "planned"})
+        );
+        assert_eq!(
+            results[0]["postchange_data"],
+            json!({"name": "new", "status": "active"})
+        );
+    }
+
+    #[test]
+    fn diff_both_empty_when_nothing_changed() {
+        let mut results = json!([{
+            "action": {"value": "update"},
+            "prechange_data": {"name": "same", "status": "active"},
+            "postchange_data": {"name": "same", "status": "active"},
+        }]);
+        apply_change_diff(&mut results);
+        assert_eq!(results[0]["prechange_data"], json!({}));
+        assert_eq!(results[0]["postchange_data"], json!({}));
+    }
+
+    #[test]
+    fn diff_skips_create_records() {
+        let mut results = json!([{
+            "action": {"value": "create"},
+            "prechange_data": null,
+            "postchange_data": {"name": "new-vm", "status": "active"},
+        }]);
+        apply_change_diff(&mut results);
+        assert_eq!(results[0]["prechange_data"], json!(null));
+        assert_eq!(
+            results[0]["postchange_data"],
+            json!({"name": "new-vm", "status": "active"})
+        );
+    }
+
+    #[test]
+    fn diff_skips_delete_records() {
+        let mut results = json!([{
+            "action": {"value": "delete"},
+            "prechange_data": {"name": "old-vm", "status": "active"},
+            "postchange_data": null,
+        }]);
+        apply_change_diff(&mut results);
+        assert_eq!(
+            results[0]["prechange_data"],
+            json!({"name": "old-vm", "status": "active"})
+        );
+        assert_eq!(results[0]["postchange_data"], json!(null));
     }
 }

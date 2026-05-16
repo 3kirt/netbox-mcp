@@ -246,4 +246,32 @@ mod tests {
         }
         assert!(cfg.resolve_token().is_err());
     }
+
+    #[test]
+    fn enforce_https_accepts_https() {
+        assert!(enforce_https("https://nb.example.com").is_ok());
+        assert!(enforce_https("https://nb.example.com/").is_ok());
+    }
+
+    #[test]
+    fn enforce_https_accepts_http_localhost_and_loopback() {
+        assert!(enforce_https("http://localhost").is_ok());
+        assert!(enforce_https("http://localhost:8080").is_ok());
+        assert!(enforce_https("http://127.0.0.1").is_ok());
+        assert!(enforce_https("http://127.0.0.1:8080").is_ok());
+    }
+
+    #[test]
+    fn enforce_https_rejects_http_non_local() {
+        assert!(enforce_https("http://nb.example.com").is_err());
+        assert!(enforce_https("http://192.168.1.1").is_err());
+        assert!(enforce_https("http://10.0.0.1:8080").is_err());
+    }
+
+    #[test]
+    fn enforce_https_rejects_non_http_schemes() {
+        assert!(enforce_https("ftp://nb.example.com").is_err());
+        assert!(enforce_https("gopher://nb.example.com").is_err());
+        assert!(enforce_https("").is_err());
+    }
 }
