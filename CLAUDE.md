@@ -36,7 +36,8 @@ src/
   server/
     http.rs       — Axum router: /healthz, /readyz, /mcp (Bearer middleware)
   tools/
-    mod.rs        — NetboxMcpServer struct, shared helpers, all tool shims
+    mod.rs        — NetboxMcpServer struct, paginate(), clean_page_response(), all tool shims, unit + integration tests
+    slim.rs       — slim_value(), STRIP_KEYS, TAG_KEEP_KEYS (response slimming logic)
     dcim.rs       — DCIM domain functions + param structs
     ipam.rs       — IPAM domain functions + param structs
     virtualization.rs / circuits.rs / vpn.rs / wireless.rs
@@ -73,9 +74,11 @@ This cuts typical NetBox payloads by 50–70%.
 
 ## Testing
 
-Unit tests live in `src/config.rs` (config loading, env override, HTTPS enforcement). There are no mock HTTP tests — integration testing against a real NetBox is described in `docs/testing-protocol.md`.
+Unit tests live in two places:
+- `src/config.rs` — config loading, env override, HTTPS enforcement.
+- `src/tools/mod.rs` — `slim_value()`, `clean_page_response()`, `PaginationParams`, and wiremock-based pipeline integration tests that fire requests through the full `paginate()` path against a mock server.
 
-For live integration testing, seed a local NetBox with `scripts/seed_data.py` and use the MCP tools directly. The testing protocol defines invariants every tool response must satisfy (no nulls, no bare pagination URLs, correct `has_more`/`next_offset` shape).
+For live integration testing, seed a local NetBox with `scripts/seed_data.py` and use the MCP tools directly. The testing protocol defines invariants every tool response must satisfy (no nulls, no bare pagination URLs, correct `has_more`/`next_offset` shape), described in `docs/testing-protocol.md`.
 
 ## Response invariants
 
