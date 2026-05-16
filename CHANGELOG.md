@@ -1,0 +1,198 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [0.2.0] - 2026-05-16
+
+### Added
+
+- **`netbox_lookup_host` meta-tool** — searches `dcim/devices/` and `virtualization/virtual-machines/` in parallel by name (case-insensitive partial match) and returns a merged result with `total_matches` and `has_more`. Eliminates the need to know which endpoint to query first.
+- **`diff_only` mode on `object_changes_list`** — when `diff_only: true`, replaces `prechange_data`/`postchange_data` with only the keys that differ between the two snapshots. Create and delete records (where one side is null) are left untouched. Significantly reduces response size for update-heavy audit logs.
+- **`name__ic` filter on `devices_list`** — case-insensitive partial match (e.g. `"web01"` matches `"web01.example.com"`). The existing `name` filter remains for exact matches.
+- **`cluster_id` filter on `devices_list`** — enumerate physical nodes belonging to a cluster.
+- **IP address filters** — `ip_addresses_list` gains `device`, `device_id`, `virtual_machine`, `virtual_machine_id`, `dns_name`, and `parent` (prefix containment). Enables device-scoped and subnet-scoped IP lookups without multi-hop queries.
+- **Response slimming** — `slim_value()` now strips additional noise from every response:
+  - `local_context_data` (duplicates resolved `config_context`)
+  - `primary_ip` alias (duplicates `primary_ip4` / `primary_ip6`)
+  - `display_url` (web UI deep-links)
+  - `_depth` (tree-rendering hint)
+  - `label` from choice-field objects (`{"value": "active", "label": "Active"}` → `{"value": "active"}`)
+  - Embedded tag objects collapsed to `{id, name, slug}`, dropping `color`, `weight`, `tagged_items`, etc.
+
+### Robustness
+
+- HTTP connect timeout (10 s) and total request timeout (30 s) added to `NetboxClient`.
+- `list_all()` capped at 200 pages — returns `PageLimitExceeded` rather than looping indefinitely on large datasets.
+- `resolve_device_id` / `resolve_vm_id` return a typed `Ambiguous` error (with match count) when more than one record shares a name, instead of silently returning the first.
+- NetBox API error bodies truncated to 300 characters before forwarding to the client, preventing large filter-echo responses from flooding the assistant's context.
+- Typed error variants — `NotFound`, `Ambiguous`, and `PageLimitExceeded` replace the former catch-all generic error string.
+- `enforce_https()` rewritten to require `https://` explicitly; `http://localhost` and `http://127.0.0.1` are the only plain-HTTP exceptions.
+- Negative `offset` values clamped to 0 in `finalize_params` before the outbound NetBox request is made.
+- Empty or whitespace-only `name` argument to `netbox_lookup_host` is rejected immediately with a clear error.
+- `require_bearer` 401 response now includes `WWW-Authenticate: Bearer` header.
+- `NetboxClient::new()` returns `anyhow::Result` instead of panicking on a token containing non-ASCII characters.
+
+### Internals
+
+- `PaginationParams` struct flattened into every `*ListParams` via `#[serde(flatten)]`, removing ~655 lines of duplicated `limit`/`offset`/`fetch_all` field declarations.
+- `resolve_device_id_or` / `resolve_vm_id_or` helpers replace 13 repeated name-to-ID resolution patterns across `dcim.rs` and `virtualization.rs`.
+- `slim_value` and related constants extracted from `tools/mod.rs` into `tools/slim.rs`.
+- `finalize_params` and `clean_page_response` split out of `paginate()` to be unit-testable without an HTTP client.
+- 82 tests (up from 34) including wiremock-based pipeline tests covering the full `client.list()` → `paginate()` → `slim_value()` chain, `apply_change_diff` branches, `to_tool_message` UTF-8 boundary safety, `enforce_https` edge cases, `resolve_device_id`/`resolve_vm_id` ambiguous/not-found paths, and the `list_all` MAX_PAGES guard.
+
+---
+
+## [0.1.2] - 2026-05-14
+
+### Fixed
+
+- Removed invalid `within` IP address filter from `ip_addresses_list` (NetBox does not support this parameter; `parent` is the correct containment filter).
+- `netbox_lookup_host` now reports the true NetBox total counts in `total_matches` and correctly sets `has_more` when results are truncated.
+- `list_all` response now always includes `has_more: false` and `next_offset` equal to the total count, matching the shape of regular paginated responses.
+- `next_offset` is always present in paginated responses (previously absent on the last page).
+
+---
+
+## [0.1.1] - 2026-05-13
+
+### Added
+
+- `fetch_all` parameter on all list tools — set `fetch_all: true` to retrieve all matching results automatically across as many pages as needed.
+- Per-session HTTP Bearer token authentication — the token supplied in the `Authorization: Bearer` header is forwarded to NetBox; no server-side token is configured or compared.
+- `tag` filter on all list tools.
+- Device-name and VM-name resolution on interface and related list tools — supply a name string directly instead of looking up the numeric ID first.
+- `http://localhost` and `http://127.0.0.1` bypasses for the HTTPS enforcement check (for local development).
+
+### Changed
+
+- All 84 list endpoint handler bodies collapsed to a single `delegate_list!` macro call; all 84 get handlers collapsed to `delegate_get!`. `QueryBuilder` and `paginate()` shared across every domain module.
+- VRF filter on IPAM tools corrected: parameter is the route distinguisher (`rd`, e.g. `65000:100`), not the VRF name.
+
+### Fixed
+
+- Env-mutating config tests serialized via a module-level `Mutex` to prevent `NETBOX_URL`/`NETBOX_TOKEN` leakage across parallel test threads.
+
+---
+
+## [0.1.0] - 2026-05-13
+
+Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation.
+
+### Changed
+
+- **Language**: Go → Rust (single binary, no runtime dependencies).
+- **Transports**: stdio (token at startup) and HTTP (per-session Bearer token via `initialize()`), both driven by the `rmcp` crate.
+- **Response format**: all list responses return `{ count, has_more, next_offset, results }` — no raw `next`/`previous` NetBox URLs exposed to the client.
+- **Config**: `~/.netbox_mcp.json` with `NETBOX_URL` / `NETBOX_TOKEN` env var overrides; HTTP (non-localhost) URLs rejected.
+- All tools from the Go era re-implemented across ten domain modules: `dcim`, `ipam`, `virtualization`, `circuits`, `vpn`, `wireless`, `tenancy`, `extras`, `core`, `users`.
+
+---
+
+## [0.0.11] - 2026-03-16
+
+### Added
+
+- Helm chart published to GHCR (`oci://ghcr.io/3kirt/charts`) on every release tag.
+- Helm values for toggling ingress, metrics service, and Prometheus `ServiceMonitor`.
+
+---
+
+## [0.0.10] - 2026-03-15
+
+### Added
+
+- Prometheus `ServiceMonitor` for Prometheus Operator environments.
+- Cluster-internal metrics `Service` exposing the `/metrics` endpoint.
+- Documentation for health endpoints, structured logging, and graceful shutdown behavior.
+
+---
+
+## [0.0.9] - 2026-03-15
+
+### Fixed
+
+- NetBox response body now explicitly closed in the token verifier, resolving a potential resource leak flagged by the linter.
+
+---
+
+## [0.0.8] - 2026-03-15
+
+### Added
+
+- Dockerfile and `docker-build` / `docker-run` Makefile targets.
+- HTTP transport with Bearer-token authentication for remote MCP deployments.
+- Example Kubernetes manifests for remote MCP deployment.
+
+---
+
+## [0.0.7] - 2026-03-15
+
+### Added
+
+- MCP prompts for common NetBox workflows (site inventory, device report, prefix utilization, tenant summary).
+- 46 additional tools covering gaps across all domains.
+
+### Fixed
+
+- Server test updated to account for all registered tools.
+
+---
+
+## [0.0.6] - 2026-03-15
+
+### Changed
+
+- ~62 individual GET handlers consolidated into a shared `addGetTool` helper, removing significant repetition.
+
+---
+
+## [0.0.5] - 2026-03-13
+
+### Added
+
+- `extras`, `vpn`, `wireless`, `core`, and `users` domain modules.
+- `q` (free-text search) and `ordering` filters added to all list tools.
+- Additional resources in existing modules (Phase C/D gap-fill).
+
+### Fixed
+
+- Two code-quality issues identified in review.
+
+---
+
+## [0.0.4] - 2026-03-13
+
+### Added
+
+- GET tools for interfaces and cables.
+
+---
+
+## [0.0.3] - 2026-03-13
+
+### Added
+
+- Security hardening: HTTPS enforcement, config file permission check, pagination limit cap.
+- Pinned GitHub Actions versions.
+
+---
+
+## [0.0.2] - 2026-03-13
+
+### Added
+
+- GitHub Actions CI workflow and GoReleaser-based release workflow.
+
+---
+
+## [0.0.1] - 2026-03-12
+
+Initial release (Go implementation).
+
+### Added
+
+- MCP server with stdio transport.
+- DCIM and IPAM list/get tools covering devices, sites, racks, interfaces, cables, prefixes, IP addresses, VLANs, and VRFs.
+- `circuits` and `tenancy` domain modules.
+- `~/.netbox_mcp.json` configuration with `NETBOX_URL` / `NETBOX_TOKEN` env var overrides.
+- Unit tests for config loading, helpers, and tool registration.
