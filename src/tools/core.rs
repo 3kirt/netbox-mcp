@@ -94,6 +94,10 @@ pub struct ObjectChangesListParams {
     pub changed_object_type: Option<String>,
     #[schemars(description = "Field to order results by")]
     pub ordering: Option<String>,
+    #[schemars(
+        description = "When true, replace prechange_data/postchange_data with only the keys that differ between them. Has no effect on create/delete records (one side is null). Reduces response size significantly for update-heavy logs."
+    )]
+    pub diff_only: Option<bool>,
     #[serde(flatten)]
     pub pagination: PaginationParams,
 }
@@ -102,13 +106,14 @@ pub async fn object_changes_list(
     client: &NetboxClient,
     p: ObjectChangesListParams,
 ) -> Result<Value, NetboxError> {
+    let diff_only = p.diff_only.unwrap_or(false);
     let qb = QueryBuilder::new()
         .opt("q", p.q)
         .many("user", p.user)
         .many("action", p.action)
         .opt("changed_object_type", p.changed_object_type)
         .opt("ordering", p.ordering);
-    paginate(
+    let mut resp = paginate(
         client,
         "/api/core/object-changes/",
         qb.into_params(),
@@ -116,5 +121,49 @@ pub async fn object_changes_list(
         p.pagination.offset,
         p.pagination.fetch_all,
     )
-    .await
+    .await?;
+    if diff_only {
+        if let Some(results) = resp.get_mut("results") {
+            apply_change_diff(results);
+        }
+    }
+    Ok(resp)
+}
+
+/// Replace `prechange_data` / `postchange_data` on each update record with
+/// only the keys whose values differ between the two snapshots.
+/// Create/delete records (where one side is null) are left untouched.
+fn apply_change_diff(results: &mut Value) {
+    let arr = match results.as_array_mut() {
+        Some(a) => a,
+        None => return,
+    };
+    for item in arr.iter_mut() {
+        let obj = match item.as_object_mut() {
+            Some(o) => o,
+            None => continue,
+        };
+        let pre = match obj.get("prechange_data").cloned() {
+            Some(Value::Object(m)) => m,
+            _ => continue,
+        };
+        let post = match obj.get("postchange_data").cloned() {
+            Some(Value::Object(m)) => m,
+            _ => continue,
+        };
+        let all_keys: std::collections::HashSet<&String> =
+            pre.keys().chain(post.keys()).collect();
+        let mut diff_pre = serde_json::Map::new();
+        let mut diff_post = serde_json::Map::new();
+        for k in all_keys {
+            let pre_v = pre.get(k).unwrap_or(&Value::Null);
+            let post_v = post.get(k).unwrap_or(&Value::Null);
+            if pre_v != post_v {
+                diff_pre.insert(k.clone(), pre_v.clone());
+                diff_post.insert(k.clone(), post_v.clone());
+            }
+        }
+        obj.insert("prechange_data".to_string(), Value::Object(diff_pre));
+        obj.insert("postchange_data".to_string(), Value::Object(diff_post));
+    }
 }

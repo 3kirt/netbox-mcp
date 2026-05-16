@@ -86,7 +86,11 @@ async fn require_bearer(req: Request, next: Next) -> impl IntoResponse {
     if has_bearer {
         next.run(req).await
     } else {
-        StatusCode::UNAUTHORIZED.into_response()
+        (
+            StatusCode::UNAUTHORIZED,
+            [(header::WWW_AUTHENTICATE, "Bearer")],
+        )
+            .into_response()
     }
 }
 

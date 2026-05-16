@@ -1,6 +1,12 @@
+use std::time::Duration;
+
 use reqwest::{Client, StatusCode, header};
 use serde_json::Value;
 use thiserror::Error;
+
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_PAGES: usize = 200;
 
 #[derive(Debug, Error)]
 pub enum NetboxError {
@@ -8,8 +14,39 @@ pub enum NetboxError {
     Api { status: StatusCode, body: String },
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
-    #[error("{0}")]
-    Generic(String),
+    #[error("{kind} '{name}' not found")]
+    NotFound { kind: &'static str, name: String },
+    #[error(
+        "ambiguous lookup: '{name}' matched {count} {kind} records; add site= or tenant= to narrow"
+    )]
+    Ambiguous {
+        kind: &'static str,
+        name: String,
+        count: u64,
+    },
+    #[error(
+        "fetch_all stopped after {max_pages} pages; dataset is very large — narrow your filter or page manually with offset="
+    )]
+    PageLimitExceeded { max_pages: usize },
+}
+
+impl NetboxError {
+    /// Returns a message safe to forward to the MCP client.
+    /// Truncates the NetBox API error body to 300 bytes so filter values
+    /// echoed in 4xx responses don't blow up the assistant's context window.
+    pub fn to_tool_message(&self) -> String {
+        match self {
+            NetboxError::Api { status, body } => {
+                let cut = body.char_indices().nth(300).map(|(i, _)| i).unwrap_or(body.len());
+                if cut < body.len() {
+                    format!("NetBox API error {status}: {}… (truncated)", &body[..cut])
+                } else {
+                    format!("NetBox API error {status}: {body}")
+                }
+            }
+            other => other.to_string(),
+        }
+    }
 }
 
 /// Thin HTTP client for the NetBox REST API.
@@ -23,24 +60,28 @@ pub struct NetboxClient {
 }
 
 impl NetboxClient {
-    pub fn new(base_url: impl Into<String>, token: impl AsRef<str>) -> Self {
+    pub fn new(base_url: impl Into<String>, token: impl AsRef<str>) -> anyhow::Result<Self> {
+        let auth = format!("Token {}", token.as_ref());
+        let auth_value = header::HeaderValue::from_str(&auth).map_err(|_| {
+            anyhow::anyhow!(
+                "NetBox token contains characters not valid in HTTP headers (must be visible ASCII)"
+            )
+        })?;
+
         let mut headers = header::HeaderMap::new();
         // NetBox uses "Token <token>", not "Bearer <token>".
-        let auth = format!("Token {}", token.as_ref());
-        headers.insert(
-            header::AUTHORIZATION,
-            header::HeaderValue::from_str(&auth).expect("token is valid header value"),
-        );
+        headers.insert(header::AUTHORIZATION, auth_value);
 
         let http = Client::builder()
+            .connect_timeout(CONNECT_TIMEOUT)
+            .timeout(REQUEST_TIMEOUT)
             .default_headers(headers)
-            .build()
-            .expect("failed to build reqwest client");
+            .build()?;
 
-        NetboxClient {
+        Ok(NetboxClient {
             http,
             base_url: base_url.into(),
-        }
+        })
     }
 
     /// GET /api/{path}?{params} — returns the full paginated JSON response.
@@ -59,6 +100,7 @@ impl NetboxClient {
 
     /// Repeatedly GET all pages at 1000 items each and merge into one response.
     /// Returns `{"count": N, "results": [...]}` with all results combined.
+    /// Fails with `PageLimitExceeded` if more than `MAX_PAGES` pages are fetched.
     pub async fn list_all(
         &self,
         path: &str,
@@ -66,13 +108,21 @@ impl NetboxClient {
     ) -> Result<Value, NetboxError> {
         let mut all_results: Vec<Value> = vec![];
         let mut offset = 0usize;
+        let mut pages_fetched = 0usize;
 
         loop {
+            if pages_fetched >= MAX_PAGES {
+                return Err(NetboxError::PageLimitExceeded {
+                    max_pages: MAX_PAGES,
+                });
+            }
+
             let mut params = base_params.to_vec();
             params.push(("limit", "1000".to_string()));
             params.push(("offset", offset.to_string()));
 
             let resp = self.list(path, &params).await?;
+            pages_fetched += 1;
             let total = resp["count"].as_u64().unwrap_or(0) as usize;
 
             match resp["results"].as_array() {

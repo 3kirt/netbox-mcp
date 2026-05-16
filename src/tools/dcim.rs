@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate, resolve_device_id};
+use crate::tools::{PaginationParams, QueryBuilder, paginate, resolve_device_id_or};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -25,6 +25,8 @@ pub struct DevicesListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by rack ID")]
     pub rack_id: Option<i32>,
+    #[schemars(description = "Filter by cluster ID")]
+    pub cluster_id: Option<i32>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Field to order results by (prefix with - for descending)")]
@@ -46,6 +48,7 @@ pub async fn devices_list(
         .many("status", p.status)
         .many("tenant", p.tenant)
         .opt("rack_id", p.rack_id)
+        .opt("cluster_id", p.cluster_id)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
     paginate(
@@ -171,10 +174,7 @@ pub async fn interfaces_list(
     client: &NetboxClient,
     p: InterfacesListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -622,10 +622,7 @@ pub async fn inventory_items_list(
     client: &NetboxClient,
     p: InventoryItemsListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -703,10 +700,7 @@ pub async fn console_ports_list(
     client: &NetboxClient,
     p: ConsolePortsListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -752,10 +746,7 @@ pub async fn console_server_ports_list(
     client: &NetboxClient,
     p: ConsoleServerPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -801,10 +792,7 @@ pub async fn device_bays_list(
     client: &NetboxClient,
     p: DeviceBaysListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -881,10 +869,7 @@ pub async fn mac_addresses_list(
     client: &NetboxClient,
     p: MacAddressesListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -928,10 +913,7 @@ pub async fn modules_list(
     client: &NetboxClient,
     p: ModulesListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -973,10 +955,7 @@ pub async fn module_bays_list(
     client: &NetboxClient,
     p: ModuleBaysListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -1055,10 +1034,7 @@ pub async fn power_outlets_list(
     client: &NetboxClient,
     p: PowerOutletsListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -1104,10 +1080,7 @@ pub async fn power_ports_list(
     client: &NetboxClient,
     p: PowerPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)
@@ -1341,10 +1314,7 @@ pub async fn virtual_device_contexts_list(
     client: &NetboxClient,
     p: VirtualDeviceContextsListParams,
 ) -> Result<Value, NetboxError> {
-    let device_id = match p.device {
-        Some(name) => Some(resolve_device_id(client, &name).await?),
-        None => p.device_id,
-    };
+    let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
         .opt("q", p.q)

@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate, resolve_vm_id};
+use crate::tools::{PaginationParams, QueryBuilder, paginate, resolve_vm_id_or};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -219,10 +219,8 @@ pub async fn interfaces_list(
     client: &NetboxClient,
     p: InterfacesListParams,
 ) -> Result<Value, NetboxError> {
-    let virtual_machine_id = match p.virtual_machine {
-        Some(name) => Some(resolve_vm_id(client, &name).await?),
-        None => p.virtual_machine_id,
-    };
+    let virtual_machine_id =
+        resolve_vm_id_or(client, p.virtual_machine, p.virtual_machine_id).await?;
     let qb = QueryBuilder::new()
         .opt("virtual_machine_id", virtual_machine_id)
         .opt("q", p.q)
@@ -266,10 +264,8 @@ pub async fn virtual_disks_list(
     client: &NetboxClient,
     p: VirtualDisksListParams,
 ) -> Result<Value, NetboxError> {
-    let virtual_machine_id = match p.virtual_machine {
-        Some(name) => Some(resolve_vm_id(client, &name).await?),
-        None => p.virtual_machine_id,
-    };
+    let virtual_machine_id =
+        resolve_vm_id_or(client, p.virtual_machine, p.virtual_machine_id).await?;
     let qb = QueryBuilder::new()
         .opt("virtual_machine_id", virtual_machine_id)
         .opt("q", p.q)

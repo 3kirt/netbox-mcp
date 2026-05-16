@@ -45,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
     } else {
         let token = cfg.resolve_token()?;
         info!(mode = "stdio", netbox_url = %url, "starting netbox-mcp");
-        let server = tools::NetboxMcpServer::new_stdio(url, token);
+        let server = tools::NetboxMcpServer::new_stdio(url, token)?;
         server
             .serve(rmcp::transport::io::stdio())
             .await?

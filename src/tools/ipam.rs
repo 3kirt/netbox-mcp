@@ -35,6 +35,8 @@ pub struct IpAddressesListParams {
     pub virtual_machine: Option<Vec<String>>,
     #[schemars(description = "Filter by virtual machine ID")]
     pub virtual_machine_id: Option<i32>,
+    #[schemars(description = "Filter by DNS name (exact match, e.g. host.example.com)")]
+    pub dns_name: Option<String>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
@@ -61,6 +63,7 @@ pub async fn ip_addresses_list(
         .opt("device_id", p.device_id)
         .many("virtual_machine", p.virtual_machine)
         .opt("virtual_machine_id", p.virtual_machine_id)
+        .opt("dns_name", p.dns_name)
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
