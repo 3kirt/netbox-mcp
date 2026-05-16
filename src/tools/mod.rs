@@ -2386,6 +2386,286 @@ mod tests {
     }
 
     // ------------------------------------------------------------------
+    // Pipeline integration tests (wiremock)
+    //
+    // Drive the full client.list() → paginate() → slim_value() chain
+    // against a local HTTP mock and assert the documented response
+    // invariants. Unit tests cover the pure functions in isolation; these
+    // cover their composition so regressions in wiring are caught too.
+    // ------------------------------------------------------------------
+
+    fn no_nulls(v: &serde_json::Value, ctx: &str) {
+        match v {
+            serde_json::Value::Null => panic!("unexpected null at {ctx}"),
+            serde_json::Value::Object(m) => {
+                for (k, v) in m {
+                    no_nulls(v, &format!("{ctx}.{k}"));
+                }
+            }
+            serde_json::Value::Array(a) => {
+                for (i, v) in a.iter().enumerate() {
+                    no_nulls(v, &format!("{ctx}[{i}]"));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn key_absent(v: &serde_json::Value, key: &str, ctx: &str) {
+        match v {
+            serde_json::Value::Object(m) => {
+                assert!(!m.contains_key(key), "key {key:?} unexpectedly present at {ctx}");
+                for (k, v) in m {
+                    key_absent(v, key, &format!("{ctx}.{k}"));
+                }
+            }
+            serde_json::Value::Array(a) => {
+                for (i, v) in a.iter().enumerate() {
+                    key_absent(v, key, &format!("{ctx}[{i}]"));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn mock_client(uri: &str) -> crate::client::NetboxClient {
+        crate::client::NetboxClient::new(uri, "test-token").unwrap()
+    }
+
+    #[tokio::test]
+    async fn pipeline_strips_nulls_and_noise_keys() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [{
+                    "id": 1,
+                    "name": "nyc-spine-01",
+                    "display_url": "https://netbox.example.com/dcim/devices/1/",
+                    "_depth": 0,
+                    "local_context_data": null,
+                    "primary_ip": null,
+                    "primary_ip4": {"id": 5, "address": "10.0.0.1/24"},
+                    "primary_ip6": null,
+                    "tenant": null,
+                    "status": {"value": "active", "label": "Active"},
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let p = crate::tools::dcim::DevicesListParams {
+            q: None, name: None, name_ic: None, site: None, role: None,
+            status: None, tenant: None, rack_id: None, cluster_id: None,
+            tag: None, ordering: None,
+            pagination: PaginationParams { limit: None, offset: None, fetch_all: None },
+        };
+        let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
+
+        no_nulls(&result, "root");
+        key_absent(&result, "display_url", "root");
+        key_absent(&result, "primary_ip", "root");
+        key_absent(&result, "local_context_data", "root");
+        key_absent(&result, "_depth", "root");
+    }
+
+    #[tokio::test]
+    async fn pipeline_strips_choice_field_labels() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [{
+                    "id": 1,
+                    "name": "nyc-spine-01",
+                    "status": {"value": "active", "label": "Active"},
+                    "airflow": {"value": "front-to-rear", "label": "Front to rear"},
+                    "site": {
+                        "id": 3,
+                        "name": "NYC",
+                        "status": {"value": "active", "label": "Active"},
+                    },
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let p = crate::tools::dcim::DevicesListParams {
+            q: None, name: None, name_ic: None, site: None, role: None,
+            status: None, tenant: None, rack_id: None, cluster_id: None,
+            tag: None, ordering: None,
+            pagination: PaginationParams { limit: None, offset: None, fetch_all: None },
+        };
+        let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
+        let device = &result["results"][0];
+
+        assert_eq!(device["status"], json!({"value": "active"}));
+        assert_eq!(device["airflow"], json!({"value": "front-to-rear"}));
+        assert_eq!(device["site"]["status"], json!({"value": "active"}));
+        key_absent(&result, "label", "root");
+    }
+
+    #[tokio::test]
+    async fn pipeline_collapses_embedded_tags() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [{
+                    "id": 1,
+                    "name": "nyc-spine-01",
+                    "tags": [{
+                        "id": 10,
+                        "name": "prod",
+                        "slug": "prod",
+                        "color": "ff0000",
+                        "display_url": "https://netbox.example.com/extras/tags/10/",
+                        "weight": 1000,
+                        "tagged_items": 42,
+                    }],
+                }]
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let p = crate::tools::dcim::DevicesListParams {
+            q: None, name: None, name_ic: None, site: None, role: None,
+            status: None, tenant: None, rack_id: None, cluster_id: None,
+            tag: None, ordering: None,
+            pagination: PaginationParams { limit: None, offset: None, fetch_all: None },
+        };
+        let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
+        let tag = &result["results"][0]["tags"][0];
+
+        assert_eq!(tag["id"], json!(10));
+        assert_eq!(tag["name"], json!("prod"));
+        assert_eq!(tag["slug"], json!("prod"));
+        assert!(tag.get("color").is_none());
+        assert!(tag.get("weight").is_none());
+        assert!(tag.get("tagged_items").is_none());
+        assert!(tag.get("display_url").is_none());
+    }
+
+    #[tokio::test]
+    async fn pipeline_pagination_shape_last_page() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 2,
+                "next": null,
+                "previous": "http://netbox.example.com/api/dcim/devices/?limit=1&offset=0",
+                "results": [{"id": 1}, {"id": 2}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let result = paginate(&client, "/api/dcim/devices/", vec![], None, None, None)
+            .await
+            .unwrap();
+
+        assert_eq!(result["count"], json!(2));
+        assert_eq!(result["has_more"], json!(false));
+        assert_eq!(result["next_offset"], json!(2u64));
+        assert!(result.get("next").is_none());
+        assert!(result.get("previous").is_none());
+    }
+
+    #[tokio::test]
+    async fn pipeline_pagination_has_more() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 10,
+                "next": "http://netbox.example.com/api/dcim/devices/?limit=1&offset=1",
+                "previous": null,
+                "results": [{"id": 1}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let result = paginate(&client, "/api/dcim/devices/", vec![], Some(1), Some(0), None)
+            .await
+            .unwrap();
+
+        assert_eq!(result["has_more"], json!(true));
+        assert_eq!(result["next_offset"], json!(1u64));
+        assert!(result.get("next").is_none());
+        assert!(result.get("previous").is_none());
+    }
+
+    #[tokio::test]
+    async fn pipeline_fetch_all_merges_pages() {
+        use wiremock::matchers::{method, path, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .and(query_param("offset", "0"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 3,
+                "next": "http://...",
+                "previous": null,
+                "results": [{"id": 1, "name": "dev-01"}, {"id": 2, "name": "dev-02"}],
+            })))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/api/dcim/devices/"))
+            .and(query_param("offset", "2"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+                "count": 3,
+                "next": null,
+                "previous": "http://...",
+                "results": [{"id": 3, "name": "dev-03"}],
+            })))
+            .mount(&server)
+            .await;
+
+        let client = mock_client(&server.uri());
+        let result = paginate(&client, "/api/dcim/devices/", vec![], None, None, Some(true))
+            .await
+            .unwrap();
+
+        assert_eq!(result["results"].as_array().unwrap().len(), 3);
+        assert_eq!(result["has_more"], json!(false));
+        assert_eq!(result["next_offset"], json!(3u64));
+        assert!(result.get("next").is_none());
+        assert!(result.get("previous").is_none());
+    }
+
+    // ------------------------------------------------------------------
     // QueryBuilder
     // ------------------------------------------------------------------
 
