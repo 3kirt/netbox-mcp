@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: netbox-mcp
-data:
-  # Base URL of your NetBox instance. Must use HTTPS.
-  NETBOX_URL: "https://netbox.example.com"
