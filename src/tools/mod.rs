@@ -1,3 +1,4 @@
+use crate::client::{NetboxClient, NetboxError};
 use rmcp::{
     ErrorData as McpError, RoleServer, ServerHandler,
     handler::server::{
@@ -11,7 +12,6 @@ use rmcp::{
 };
 use serde::Deserialize;
 use serde_json::Value;
-use crate::client::{NetboxClient, NetboxError};
 
 mod slim;
 use slim::slim_value;
@@ -2440,7 +2440,6 @@ impl ServerHandler for NetboxMcpServer {
         )
         .with_server_info(Implementation::new("netbox-mcp", env!("CARGO_PKG_VERSION")))
     }
-
 }
 
 // --------------------------------------------------------------------------
