@@ -20,7 +20,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /src/target/release/netbox-mcp /usr/local/bin/netbox-mcp
 
-EXPOSE 8080
-
 ENTRYPOINT ["netbox-mcp"]
-CMD ["--listen", "0.0.0.0:8080"]

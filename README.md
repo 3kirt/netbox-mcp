@@ -5,7 +5,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that co
 Ask questions like *"Which devices in the NYC site are currently in maintenance?"* or *"Show me all IPs assigned to web01 and their VRFs"* — the server translates them into real-time NetBox API queries and returns structured results.
 
 - **Read-only** — all 169 tools query NetBox but make no changes
-- **Two transports** — stdio (local subprocess) or HTTP (remote/shared)
+- **stdio transport** — runs as a local subprocess managed by your MCP client
 - **Token-efficient** — responses are slimmed before delivery, cutting typical NetBox payloads by 50–70%
 
 ---
@@ -18,11 +18,6 @@ Ask questions like *"Which devices in the NYC site are currently in maintenance?
 - [Client setup](#client-setup)
   - [Claude Desktop](#claude-desktop)
   - [Claude Code](#claude-code)
-- [Remote MCP (HTTP transport)](#remote-mcp-http-transport)
-  - [Running with Docker](#running-with-docker)
-  - [Running from the binary](#running-from-the-binary)
-  - [Deploying to Kubernetes](#deploying-to-kubernetes)
-  - [Operations](#operations)
 - [Available tools](#available-tools)
 - [Development](#development)
 
@@ -142,95 +137,6 @@ claude mcp add --transport stdio --scope project \
 
 ---
 
-## Remote MCP (HTTP transport)
-
-netbox-mcp can run as a remote MCP server over the Streamable HTTP transport. Each session authenticates with its own NetBox API token via an `Authorization: Bearer` header — no server-side token is configured.
-
-### Running with Docker
-
-```sh
-docker build -t netbox-mcp .
-docker run --rm -p 8080:8080 \
-  -e NETBOX_URL=https://netbox.example.com \
-  netbox-mcp
-```
-
-Or with `make`:
-
-```sh
-NETBOX_URL=https://netbox.example.com make docker-build docker-run
-```
-
-### Running from the binary
-
-```sh
-NETBOX_URL=https://netbox.example.com netbox-mcp --listen :8080
-```
-
-### Deploying to Kubernetes
-
-Example manifests are provided in [deploy/kubernetes/](deploy/kubernetes/).
-
-| File | Purpose |
-|---|---|
-| `configmap.yaml` | `NETBOX_URL` environment variable |
-| `deployment.yaml` | Deployment with liveness/readiness probes, non-root security context |
-| `service.yaml` | ClusterIP Service for MCP traffic |
-| `ingress.yaml` | nginx Ingress with extended SSE proxy timeouts |
-| `service-metrics.yaml` | Cluster-internal Service for Prometheus scraping |
-| `service-monitor.yaml` | Prometheus Operator `ServiceMonitor` |
-
-1. Edit `configmap.yaml` to set your NetBox URL.
-2. Edit `deployment.yaml` to reference your image.
-3. Edit `ingress.yaml` to set your hostname and TLS configuration.
-
-```sh
-kubectl apply -f deploy/kubernetes/
-```
-
-The Ingress routes only `/mcp` and is pre-configured for nginx with extended proxy timeouts to keep SSE streams alive.
-
-### Operations
-
-**Health endpoints**
-
-| Endpoint | Purpose | Success response |
-|---|---|---|
-| `GET /healthz` | Liveness — server is running | `{"status":"ok","version":"v..."}` |
-| `GET /readyz` | Readiness — NetBox hostname resolves | `{"status":"ok"}` |
-
-`/readyz` returns `503` when the NetBox hostname cannot be resolved, preventing Kubernetes from routing traffic to a pod that cannot reach NetBox.
-
-**Structured logging**
-
-The server writes JSON log lines to stderr. Startup:
-
-```json
-{"time":"2026-01-15T10:00:00Z","level":"INFO","msg":"netbox-mcp starting","addr":":8080","netbox_url":"https://netbox.example.com","version":"v0.1.1"}
-```
-
-Per-request:
-
-```json
-{"time":"2026-01-15T10:00:01Z","level":"INFO","msg":"request","method":"POST","path":"/mcp","status":200,"duration_ms":42,"remote_addr":"10.0.0.1:54321"}
-```
-
-**Graceful shutdown**
-
-On `SIGTERM` or `SIGINT` the server stops accepting new connections and gives in-flight requests up to 30 seconds to complete, matching the Kubernetes default `terminationGracePeriodSeconds`.
-
-**Registering with Claude Code (HTTP)**
-
-```sh
-claude mcp add --transport http \
-  --header "Authorization: Bearer your-netbox-token" \
-  netbox https://netbox-mcp.example.com/mcp
-```
-
-> **TLS note:** The HTTP listener does not terminate TLS. In production, place it behind a reverse proxy (nginx, Caddy) or a platform like Fly.io or Railway that provides HTTPS.
-
----
-
 ## Available tools
 
 169 read-only tools spanning ten NetBox API areas:
@@ -260,7 +166,6 @@ make test          # cargo test --all
 make lint          # cargo clippy -- -D warnings && cargo fmt --check
 make clean         # remove build artifacts
 make docker-build  # build Docker image
-make docker-run    # run HTTP server on :8080 (requires NETBOX_URL=...)
 ```
 
 ---
