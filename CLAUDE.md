@@ -15,11 +15,8 @@ make clean       # remove build artifacts
 cargo test <test_name>               # e.g. cargo test parses_valid_json
 cargo test -p netbox-mcp <test_name> # same, scoped to the crate
 
-# HTTP mode (requires NETBOX_URL set)
-NETBOX_URL=https://netbox.example.com cargo run -- --listen :8080
-
 # Docker
-NETBOX_URL=https://netbox.example.com make docker-build docker-run
+NETBOX_URL=https://netbox.example.com make docker-build
 ```
 
 Formatting and lint must be clean before every commit. Run `cargo fmt` to fix formatting; `cargo clippy -- -D warnings` to check for warnings treated as errors.
@@ -30,11 +27,9 @@ The codebase is a single Rust binary with four modules:
 
 ```
 src/
-  main.rs         — CLI (clap), transport selection, startup logging
+  main.rs         — CLI (clap), startup logging
   config.rs       — Config loading: ~/.netbox_mcp.json + env var override
   client.rs       — Thin reqwest wrapper: list(), get(), list_all()
-  server/
-    http.rs       — Axum router: /healthz, /readyz, /mcp (Bearer middleware)
   tools/
     mod.rs        — NetboxMcpServer struct, paginate(), clean_page_response(), all tool shims, unit + integration tests
     slim.rs       — slim_value(), STRIP_KEYS, TAG_KEEP_KEYS (response slimming logic)
@@ -44,9 +39,7 @@ src/
     tenancy.rs / extras.rs / core.rs / users.rs
 ```
 
-**Two transport modes:**
-- **stdio** — `new_stdio(url, token)`: token known at startup, `NetboxClient` populated immediately via `OnceLock`.
-- **HTTP** — `new_http(url)`: token comes from per-session `Authorization: Bearer` header, extracted in `initialize()` and injected into the `OnceLock` on first use. The `require_bearer` middleware enforces that all non-health requests carry a Bearer token.
+**Transport:** stdio only. The binary runs as a subprocess managed by the MCP client; credentials are read from config at startup via `NetboxMcpServer::new(url, token)`.
 
 **Tool registration flow:**
 The `#[tool_router]` macro on `impl NetboxMcpServer` in `tools/mod.rs` generates the MCP tool registry. Each shim is a thin `#[tool]`-annotated async method that calls a domain function (e.g. `dcim::devices_list`) via the `delegate_list!` or `delegate_get!` macros.
