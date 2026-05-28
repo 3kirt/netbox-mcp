@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-05-28
+
+### Changed
+
+- **TLS root store** — `reqwest` is now built with the `rustls` feature only, dropping the bundled `webpki-roots` Mozilla CA list. Certificate verification is delegated to `rustls-platform-verifier`, which uses the operating system's native certificate store. The OS-managed roots stay current with system updates and respect enterprise PKI configurations, eliminating the maintenance window where a stale bundled root list could shadow a fresh OS update.
+
+### Internals
+
+- **rmcp 1.5 → 1.7** — upgraded the MCP server crate to its current minor release. No behavioural changes in the tool surface; the bump pulls in upstream protocol fixes and macro improvements.
+- **CI: Helm chart job removed** from the release workflow, completing the deploy/ cleanup that began in v0.3.0.
+
+---
+
 ## [0.2.0] - 2026-05-16
 
 ### Added
