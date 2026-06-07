@@ -70,16 +70,20 @@ pub fn tool_error(msg: &str) -> Result<CallToolResult, McpError> {
     Ok(CallToolResult::error(vec![Content::text(msg)]))
 }
 
-/// Resolve a device name to its NetBox numeric ID.
-/// Returns `Ambiguous` if more than one device shares the name (add site= or tenant= to disambiguate).
-pub async fn resolve_device_id(client: &NetboxClient, name: &str) -> Result<i32, NetboxError> {
-    let resp = client
-        .list("/api/dcim/devices/", &[("name", name.to_string())])
-        .await?;
+/// Resolve a `name`-filtered list endpoint to a single numeric ID.
+/// Returns `NotFound` when nothing matches and `Ambiguous` when more than one
+/// record shares the name (the error's disambiguation hint is generic).
+async fn resolve_named_id(
+    client: &NetboxClient,
+    path: &str,
+    kind: &'static str,
+    name: &str,
+) -> Result<i32, NetboxError> {
+    let resp = client.list(path, &[("name", name.to_string())]).await?;
     let count = resp["count"].as_u64().unwrap_or(0);
     if count > 1 {
         return Err(NetboxError::Ambiguous {
-            kind: "device",
+            kind,
             name: name.to_string(),
             count,
         });
@@ -88,39 +92,30 @@ pub async fn resolve_device_id(client: &NetboxClient, name: &str) -> Result<i32,
         .as_i64()
         .map(|id| id as i32)
         .ok_or_else(|| NetboxError::NotFound {
-            kind: "device",
+            kind,
             name: name.to_string(),
         })
+}
+
+/// Resolve a device name to its NetBox numeric ID.
+/// Returns `Ambiguous` if more than one device shares the name (add site= or tenant= to disambiguate).
+pub async fn resolve_device_id(client: &NetboxClient, name: &str) -> Result<i32, NetboxError> {
+    resolve_named_id(client, "/api/dcim/devices/", "device", name).await
 }
 
 /// Resolve a virtual machine name to its NetBox numeric ID.
 /// Returns `Ambiguous` if more than one VM shares the name (add site= or cluster= to disambiguate).
 pub async fn resolve_vm_id(client: &NetboxClient, name: &str) -> Result<i32, NetboxError> {
-    let resp = client
-        .list(
-            "/api/virtualization/virtual-machines/",
-            &[("name", name.to_string())],
-        )
-        .await?;
-    let count = resp["count"].as_u64().unwrap_or(0);
-    if count > 1 {
-        return Err(NetboxError::Ambiguous {
-            kind: "virtual machine",
-            name: name.to_string(),
-            count,
-        });
-    }
-    resp["results"][0]["id"]
-        .as_i64()
-        .map(|id| id as i32)
-        .ok_or_else(|| NetboxError::NotFound {
-            kind: "virtual machine",
-            name: name.to_string(),
-        })
+    resolve_named_id(
+        client,
+        "/api/virtualization/virtual-machines/",
+        "virtual machine",
+        name,
+    )
+    .await
 }
 
 /// Resolve a device name to its ID, or return the numeric ID unchanged.
-/// One call replaces the repeated 4-line `match p.device { Some(n) => resolve_device_id... }`.
 pub async fn resolve_device_id_or(
     client: &NetboxClient,
     name: Option<String>,
@@ -194,6 +189,27 @@ impl QueryBuilder {
 
     pub fn into_params(self) -> Vec<(&'static str, String)> {
         self.params
+    }
+
+    /// Issue the paginated GET for the accumulated params against `path`,
+    /// honoring the standard `limit`/`offset`/`fetch_all` semantics. Collapses
+    /// the otherwise-identical 8-line `paginate(...)` tail every `*_list`
+    /// function would repeat.
+    pub async fn run(
+        self,
+        client: &NetboxClient,
+        path: &str,
+        pg: PaginationParams,
+    ) -> Result<Value, NetboxError> {
+        paginate(
+            client,
+            path,
+            self.into_params(),
+            pg.limit,
+            pg.offset,
+            pg.fetch_all,
+        )
+        .await
     }
 }
 
@@ -2285,20 +2301,19 @@ impl NetboxMcpServer {
             client.list("/api/dcim/devices/", &params),
             client.list("/api/virtualization/virtual-machines/", &params),
         );
-        let (devices, device_total) = match devices_result {
-            Ok(v) => {
-                let total = v["count"].as_u64().unwrap_or(0);
-                let results = v["results"].as_array().cloned().unwrap_or_default();
-                (results, total)
-            }
+        // Split each page into (results, true_count); the count may exceed the
+        // returned rows since the page is capped at DEFAULT_LIMIT.
+        let extract = |v: &Value| {
+            let total = v["count"].as_u64().unwrap_or(0);
+            let results = v["results"].as_array().cloned().unwrap_or_default();
+            (results, total)
+        };
+        let (devices, device_total) = match &devices_result {
+            Ok(v) => extract(v),
             Err(e) => return tool_error(&format!("looking up devices: {e}")),
         };
-        let (vms, vm_total) = match vms_result {
-            Ok(v) => {
-                let total = v["count"].as_u64().unwrap_or(0);
-                let results = v["results"].as_array().cloned().unwrap_or_default();
-                (results, total)
-            }
+        let (vms, vm_total) = match &vms_result {
+            Ok(v) => extract(v),
             Err(e) => return tool_error(&format!("looking up virtual machines: {e}")),
         };
         let has_more = device_total > devices.len() as u64 || vm_total > vms.len() as u64;
@@ -2855,7 +2870,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 1,
                 "next": null,
                 "previous": null,
@@ -2911,7 +2926,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 1,
                 "next": null,
                 "previous": null,
@@ -2966,7 +2981,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 1,
                 "next": null,
                 "previous": null,
@@ -3026,7 +3041,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 2,
                 "next": null,
                 "previous": "http://netbox.example.com/api/dcim/devices/?limit=1&offset=0",
@@ -3055,7 +3070,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 10,
                 "next": "http://netbox.example.com/api/dcim/devices/?limit=1&offset=1",
                 "previous": null,
@@ -3091,7 +3106,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
             .and(query_param("offset", "0"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 3,
                 "next": "http://...",
                 "previous": null,
@@ -3102,7 +3117,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
             .and(query_param("offset", "2"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 3,
                 "next": null,
                 "previous": "http://...",
@@ -3374,7 +3389,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
             .and(query_param("name", "rtr-01"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 1, "next": null, "previous": null,
                 "results": [{"id": 42, "name": "rtr-01"}],
             })))
@@ -3395,7 +3410,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
             .and(query_param("name", "rtr-01"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 2, "next": null, "previous": null,
                 "results": [{"id": 1, "name": "rtr-01"}, {"id": 2, "name": "rtr-01"}],
             })))
@@ -3423,7 +3438,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
             .and(query_param("name", "nope"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 0, "next": null, "previous": null,
                 "results": [],
             })))
@@ -3447,7 +3462,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/virtualization/virtual-machines/"))
             .and(query_param("name", "web-01"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 1, "next": null, "previous": null,
                 "results": [{"id": 99, "name": "web-01"}],
             })))
@@ -3468,7 +3483,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/virtualization/virtual-machines/"))
             .and(query_param("name", "web-01"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 3, "next": null, "previous": null,
                 "results": [{"id": 1}, {"id": 2}, {"id": 3}],
             })))
@@ -3496,7 +3511,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/api/virtualization/virtual-machines/"))
             .and(query_param("name", "nope"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 0, "next": null, "previous": null,
                 "results": [],
             })))
@@ -3528,7 +3543,7 @@ mod tests {
         // list_all will loop until pages_fetched hits MAX_PAGES (200).
         Mock::given(method("GET"))
             .and(path("/api/dcim/devices/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(&json!({
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "count": 999_999,
                 "next": "http://...",
                 "previous": null,

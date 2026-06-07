@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -67,15 +67,8 @@ pub async fn ip_addresses_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/ip-addresses/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/ip-addresses/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -128,15 +121,7 @@ pub async fn prefixes_list(
         .opt("family", p.family)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/prefixes/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/prefixes/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -169,15 +154,7 @@ pub async fn vrfs_list(client: &NetboxClient, p: VrfsListParams) -> Result<Value
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/vrfs/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/vrfs/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -222,15 +199,7 @@ pub async fn vlans_list(client: &NetboxClient, p: VlansListParams) -> Result<Val
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/vlans/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/vlans/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -266,15 +235,7 @@ pub async fn aggregates_list(
         .opt("family", p.family)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/aggregates/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/aggregates/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -318,15 +279,7 @@ pub async fn ip_ranges_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/ip-ranges/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/ip-ranges/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -356,15 +309,8 @@ pub async fn route_targets_list(
         .many("name", p.name)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/route-targets/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/route-targets/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -391,15 +337,7 @@ pub async fn rirs_list(client: &NetboxClient, p: RirsListParams) -> Result<Value
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/rirs/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/rirs/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -429,15 +367,7 @@ pub async fn vlan_groups_list(
         .many("name", p.name)
         .opt("site_id", p.site_id)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/vlan-groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/vlan-groups/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -473,15 +403,7 @@ pub async fn services_list(
         .opt("virtual_machine_id", p.virtual_machine_id)
         .many("protocol", p.protocol)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/services/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/services/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -511,15 +433,7 @@ pub async fn asns_list(client: &NetboxClient, p: AsnsListParams) -> Result<Value
         .many("rir", p.rir)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/asns/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/asns/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -551,15 +465,7 @@ pub async fn fhrp_groups_list(
         .many("protocol", p.protocol)
         .opt("group_id", p.group_id)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/fhrp-groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/fhrp-groups/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -586,15 +492,8 @@ pub async fn fhrp_group_assignments_list(
         .opt("group_id", p.group_id)
         .opt("interface_type", p.interface_type)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/fhrp-group-assignments/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/fhrp-group-assignments/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -621,13 +520,5 @@ pub async fn roles_list(client: &NetboxClient, p: RolesListParams) -> Result<Val
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/ipam/roles/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/ipam/roles/", p.pagination).await
 }

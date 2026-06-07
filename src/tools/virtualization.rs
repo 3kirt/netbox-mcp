@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate, resolve_vm_id_or};
+use crate::tools::{PaginationParams, QueryBuilder, resolve_vm_id_or};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -47,13 +47,10 @@ pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, 
         .many("platform", p.platform)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
+    qb.run(
         client,
         "/api/virtualization/virtual-machines/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
+        p.pagination,
     )
     .await
 }
@@ -102,15 +99,8 @@ pub async fn clusters_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/virtualization/clusters/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/virtualization/clusters/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -140,15 +130,8 @@ pub async fn cluster_groups_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/virtualization/cluster-groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/virtualization/cluster-groups/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -178,15 +161,8 @@ pub async fn cluster_types_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/virtualization/cluster-types/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/virtualization/cluster-types/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -229,15 +205,8 @@ pub async fn interfaces_list(
         .opt("mac_address", p.mac_address)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/virtualization/interfaces/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/virtualization/interfaces/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -271,13 +240,6 @@ pub async fn virtual_disks_list(
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/virtualization/virtual-disks/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/virtualization/virtual-disks/", p.pagination)
+        .await
 }

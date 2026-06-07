@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -33,15 +33,7 @@ pub async fn tenants_list(
         .many("group", p.group)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/tenancy/tenants/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/tenancy/tenants/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -71,15 +63,8 @@ pub async fn tenant_groups_list(
         .many("name", p.name)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/tenancy/tenant-groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/tenancy/tenant-groups/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -109,15 +94,7 @@ pub async fn contacts_list(
         .many("name", p.name)
         .many("group", p.group)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/tenancy/contacts/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/tenancy/contacts/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -147,15 +124,8 @@ pub async fn contact_groups_list(
         .many("name", p.name)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/tenancy/contact-groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/tenancy/contact-groups/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -185,13 +155,6 @@ pub async fn contact_roles_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/tenancy/contact-roles/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/tenancy/contact-roles/", p.pagination)
+        .await
 }

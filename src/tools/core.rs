@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -30,15 +30,8 @@ pub async fn data_sources_list(
         .many("name", p.name)
         .many("status", p.status)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/core/data-sources/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/core/data-sources/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -67,15 +60,7 @@ pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value
         .many("status", p.status)
         .opt("object_type", p.object_type)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/core/jobs/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/core/jobs/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -113,15 +98,9 @@ pub async fn object_changes_list(
         .many("action", p.action)
         .opt("changed_object_type", p.changed_object_type)
         .opt("ordering", p.ordering);
-    let mut resp = paginate(
-        client,
-        "/api/core/object-changes/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await?;
+    let mut resp = qb
+        .run(client, "/api/core/object-changes/", p.pagination)
+        .await?;
     if diff_only && let Some(results) = resp.get_mut("results") {
         apply_change_diff(results);
     }

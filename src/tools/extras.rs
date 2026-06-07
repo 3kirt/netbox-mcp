@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -27,15 +27,7 @@ pub async fn tags_list(client: &NetboxClient, p: TagsListParams) -> Result<Value
         .many("name", p.name)
         .many("color", p.color)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/extras/tags/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/extras/tags/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -74,15 +66,8 @@ pub async fn config_contexts_list(
         .many("role", p.role)
         .many("platform", p.platform)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/extras/config-contexts/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/extras/config-contexts/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -112,15 +97,8 @@ pub async fn journal_entries_list(
         .many("created_by", p.created_by)
         .many("kind", p.kind)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/extras/journal-entries/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/extras/journal-entries/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -155,15 +133,8 @@ pub async fn custom_fields_list(
         .many("type", p.r#type)
         .many("content_types", p.content_types)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/extras/custom-fields/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/extras/custom-fields/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -193,15 +164,8 @@ pub async fn export_templates_list(
         .many("name", p.name)
         .many("content_types", p.content_types)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/extras/export-templates/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/extras/export-templates/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -231,13 +195,5 @@ pub async fn webhooks_list(
         .many("name", p.name)
         .many("http_method", p.http_method)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/extras/webhooks/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/extras/webhooks/", p.pagination).await
 }

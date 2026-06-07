@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate, resolve_device_id_or};
+use crate::tools::{PaginationParams, QueryBuilder, resolve_device_id_or};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -51,15 +51,7 @@ pub async fn devices_list(
         .opt("cluster_id", p.cluster_id)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/devices/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/devices/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -92,15 +84,7 @@ pub async fn sites_list(client: &NetboxClient, p: SitesListParams) -> Result<Val
         .many("region", p.region)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/sites/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/sites/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -133,15 +117,7 @@ pub async fn racks_list(client: &NetboxClient, p: RacksListParams) -> Result<Val
         .many("status", p.status)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/racks/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/racks/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -185,15 +161,7 @@ pub async fn interfaces_list(
         .many("tag", p.tag)
         .opt("mgmt_only", p.mgmt_only)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/interfaces/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/interfaces/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -223,15 +191,7 @@ pub async fn cables_list(client: &NetboxClient, p: CablesListParams) -> Result<V
         .many("status", p.status)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/cables/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/cables/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -264,15 +224,7 @@ pub async fn regions_list(
         .many("slug", p.slug)
         .many("parent", p.parent)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/regions/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/regions/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -311,15 +263,7 @@ pub async fn locations_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/locations/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/locations/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -349,15 +293,8 @@ pub async fn manufacturers_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/manufacturers/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/manufacturers/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -390,15 +327,8 @@ pub async fn device_types_list(
         .many("model", p.model)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/device-types/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/device-types/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -431,15 +361,8 @@ pub async fn device_roles_list(
         .many("slug", p.slug)
         .opt("vm_role", p.vm_role)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/device-roles/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/device-roles/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -472,15 +395,7 @@ pub async fn platforms_list(
         .many("manufacturer", p.manufacturer)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/platforms/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/platforms/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -507,15 +422,8 @@ pub async fn power_panels_list(
         .opt("q", p.q)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/power-panels/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/power-panels/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -548,15 +456,7 @@ pub async fn power_feeds_list(
         .many("status", p.status)
         .opt("type", p.r#type)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/power-feeds/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/power-feeds/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -586,15 +486,8 @@ pub async fn virtual_chassis_list(
         .many("site", p.site)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/virtual-chassis/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/virtual-chassis/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -632,15 +525,8 @@ pub async fn inventory_items_list(
         .many("manufacturer", p.manufacturer)
         .opt("discovered", p.discovered)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/inventory-items/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/inventory-items/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -664,15 +550,8 @@ pub async fn cable_terminations_list(
     let qb = QueryBuilder::new()
         .opt("cable_id", p.cable_id)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/cable-terminations/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/cable-terminations/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -710,15 +589,8 @@ pub async fn console_ports_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/console-ports/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/console-ports/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -756,15 +628,8 @@ pub async fn console_server_ports_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/console-server-ports/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/console-server-ports/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -802,15 +667,7 @@ pub async fn device_bays_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/device-bays/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/device-bays/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -837,15 +694,7 @@ pub async fn front_ports_list(
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/front-ports/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/front-ports/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -877,15 +726,8 @@ pub async fn mac_addresses_list(
         .opt("device_id", device_id)
         .opt("q", p.q)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/mac-addresses/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/mac-addresses/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -923,15 +765,7 @@ pub async fn modules_list(
         .many("site", p.site)
         .many("status", p.status)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/modules/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/modules/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -963,15 +797,7 @@ pub async fn module_bays_list(
         .opt("device_id", device_id)
         .opt("q", p.q)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/module-bays/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/module-bays/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -998,15 +824,8 @@ pub async fn module_types_list(
         .opt("q", p.q)
         .many("manufacturer", p.manufacturer)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/module-types/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/module-types/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1044,15 +863,8 @@ pub async fn power_outlets_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/power-outlets/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/power-outlets/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1090,15 +902,7 @@ pub async fn power_ports_list(
         .many("name", p.name)
         .many("site", p.site)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/power-ports/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/power-ports/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -1131,15 +935,8 @@ pub async fn rack_reservations_list(
         .many("site", p.site)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/rack-reservations/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/rack-reservations/", p.pagination)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1169,15 +966,7 @@ pub async fn rack_roles_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/rack-roles/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/rack-roles/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -1207,15 +996,7 @@ pub async fn rack_types_list(
         .many("slug", p.slug)
         .many("manufacturer", p.manufacturer)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/rack-types/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/rack-types/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -1242,15 +1023,7 @@ pub async fn rear_ports_list(
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/rear-ports/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/rear-ports/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -1280,15 +1053,7 @@ pub async fn site_groups_list(
         .many("name", p.name)
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/site-groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/site-groups/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -1323,13 +1088,6 @@ pub async fn virtual_device_contexts_list(
         .opt("q", p.q)
         .many("tenant", p.tenant)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/dcim/virtual-device-contexts/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/dcim/virtual-device-contexts/", p.pagination)
+        .await
 }

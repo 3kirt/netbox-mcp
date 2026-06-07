@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```sh
 make build       # cargo build --release
 make test        # cargo test --all
-make lint        # cargo clippy -- -D warnings && cargo fmt --check
+make lint        # cargo clippy --all-targets -- -D warnings && cargo fmt --check
 make install     # cargo install --path . (installs to ~/.cargo/bin)
 make clean       # remove build artifacts
 
@@ -19,7 +19,7 @@ cargo test -p netbox-mcp <test_name> # same, scoped to the crate
 NETBOX_URL=https://netbox.example.com make docker-build
 ```
 
-Formatting and lint must be clean before every commit. Run `cargo fmt` to fix formatting; `cargo clippy -- -D warnings` to check for warnings treated as errors.
+Formatting and lint must be clean before every commit. Run `cargo fmt` to fix formatting; `cargo clippy --all-targets -- -D warnings` to check for warnings treated as errors (the `--all-targets` flag lints test code too).
 
 ## Architecture
 

@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, paginate};
+use crate::tools::{PaginationParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -30,15 +30,7 @@ pub async fn users_list(client: &NetboxClient, p: UsersListParams) -> Result<Val
         .opt("is_active", p.is_active)
         .opt("is_staff", p.is_staff)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/users/users/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/users/users/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -62,15 +54,7 @@ pub async fn groups_list(client: &NetboxClient, p: GroupsListParams) -> Result<V
         .opt("q", p.q)
         .many("name", p.name)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/users/groups/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/users/groups/", p.pagination).await
 }
 
 // --------------------------------------------------------------------------
@@ -100,13 +84,5 @@ pub async fn tokens_list(client: &NetboxClient, p: TokensListParams) -> Result<V
         .many("user", p.user)
         .opt("is_active", p.is_active)
         .opt("ordering", p.ordering);
-    paginate(
-        client,
-        "/api/users/tokens/",
-        qb.into_params(),
-        p.pagination.limit,
-        p.pagination.offset,
-        p.pagination.fetch_all,
-    )
-    .await
+    qb.run(client, "/api/users/tokens/", p.pagination).await
 }
