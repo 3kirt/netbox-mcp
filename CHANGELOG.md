@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-06-07
+
+### Internals
+
+- **`make lint` now covers test code** — changed `cargo clippy` invocation to `--all-targets` so test modules are linted alongside production code. Fixed 14 `needless_borrows_for_generic_args` violations this surfaced in the test suite.
+- **`QueryBuilder::run()`** — new method that issues the paginated GET directly, collapsing the identical 8-line `paginate(...)` tail that every `*_list` function repeated into a single call. Net −608 lines across all domain modules.
+- **`resolve_named_id` shared core** — `resolve_device_id` and `resolve_vm_id` now delegate to a single private helper, eliminating the duplicated count/ambiguous/not-found logic that existed in both resolver pairs.
+- **`lookup_host` extract closure** — replaced the two copy-pasted `match` arms (total/results extraction) with a shared `extract` closure.
+
+---
+
 ## [0.4.0] - 2026-05-28
 
 ### Changed
