@@ -7,18 +7,14 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::client::NetboxClient;
-use crate::tools::slim::slim_value;
+use crate::tools::slim::{STRIP_KEYS, slim_value};
 
-/// Keys that `slim_value` must strip from every object, everywhere. Asserting
-/// their absence is how we prove the slimming actually fired against real data.
-const STRIPPED_KEYS: &[&str] = &[
-    "local_context_data",
-    "primary_ip",
-    "display_url",
-    "_depth",
-    "next",
-    "previous",
-];
+/// True for any key that must never appear in a response: the keys `slim_value`
+/// strips from every object (sourced from `slim::STRIP_KEYS` so the two can't
+/// drift), plus the bare pagination URLs `clean_page_response` removes.
+fn is_stripped_key(k: &str) -> bool {
+    STRIP_KEYS.contains(&k) || k == "next" || k == "previous"
+}
 
 /// Live credentials plus a ready client, sourced from the environment.
 pub struct LiveEnv {
@@ -90,14 +86,16 @@ pub fn first_id(resp: &Value) -> i32 {
 }
 
 /// Recursively assert the universal cleanliness invariants on any response:
-/// no null object values, no stripped keys, and no un-slimmed choice fields
-/// (an object carrying both `value` and `label`).
+/// no null object values, no stripped keys, and no un-slimmed choice fields.
 pub fn assert_clean(v: &Value, ctx: &str) {
     match v {
         Value::Object(map) => {
-            if map.contains_key("value") && map.contains_key("label") {
+            // Mirror slim's choice-field rule exactly: it strips `label` only when
+            // `value` is present and `label` is a string. A non-string `label`
+            // would not be stripped, so don't flag it here.
+            if map.contains_key("value") && matches!(map.get("label"), Some(Value::String(_))) {
                 panic!(
-                    "{ctx}: choice field still has both `value` and `label` — slim should drop `label`"
+                    "{ctx}: choice field still has `value` + string `label` — slim should drop `label`"
                 );
             }
             for (k, val) in map {
@@ -105,10 +103,7 @@ pub fn assert_clean(v: &Value, ctx: &str) {
                     !val.is_null(),
                     "{ctx}: key `{k}` is null — slim_value should strip null fields"
                 );
-                assert!(
-                    !STRIPPED_KEYS.contains(&k.as_str()),
-                    "{ctx}: stripped key `{k}` is present"
-                );
+                assert!(!is_stripped_key(k), "{ctx}: stripped key `{k}` is present");
                 assert_clean(val, &format!("{ctx}.{k}"));
             }
         }
