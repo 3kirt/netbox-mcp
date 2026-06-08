@@ -2,12 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.6.0] - 2026-06-07
 
 ### Testing
 
 - **Live integration test layer** — added a feature-gated suite (`live-tests`) under `src/tools/live/` that runs the real domain functions against a seeded NetBox, applies the same `slim_value` transform as the rmcp boundary, and asserts filter behavior plus the universal invariants. Covers DCIM (devices, interfaces, sites, regions, racks, manufacturers, device types, device roles, platforms, locations), IPAM (IP addresses, prefixes, VRFs, services, aggregates, ASNs, RIRs, VLANs, VLAN groups), Virtualization (VMs, clusters, cluster types, VM interfaces), Tenancy (tenants, contacts, contact roles), Extras (tags), and `lookup_host` — 45 tests. Skips cleanly without `NETBOX_URL`/`NETBOX_TOKEN`. Run with `make test-live`; see `docs/testing.md`.
-- **Self-contained test NetBox stack** — `test/netbox-docker/` provides a trimmed, Podman-friendly NetBox deployment that boots, mints a v1 API token, and seeds itself (`scripts/seed_data.py`) as part of `up`. One-shot `netbox-token` and `netbox-seed` compose services make `./up.sh` produce a ready-to-test instance with no manual steps.
+- **Self-contained test NetBox stack** — `test/netbox-docker/` provides a trimmed, Podman-friendly NetBox deployment that boots, mints a v1 API token, and seeds itself (`scripts/seed_data.py`) as part of `up`. One-shot `netbox-token` and `netbox-seed` compose services make `./up.sh` produce a ready-to-test instance with no manual steps. Vendored from netbox-community/netbox-docker under Apache-2.0 (see `test/netbox-docker/LICENSE` and `NOTICE`).
+- **Harness invariant mirrors `slim` exactly** — `assert_clean` now flags an un-slimmed choice field only when `label` is a string (matching `slim_value`'s rule) and sources its stripped-key list from `slim::STRIP_KEYS`, so the test invariant can't drift from what the slimmer actually removes.
 
 ### Fixed
 
