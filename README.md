@@ -162,11 +162,28 @@ Each area provides `list` (with filters) and `get` (by ID) tools. A meta-tool `n
 
 ```sh
 make build         # cargo build
-make test          # cargo test --all
+make test          # cargo test --all  (unit tests, offline)
+make test-live     # live integration tests against a seeded NetBox
 make lint          # cargo clippy -- -D warnings && cargo fmt --check
 make clean         # remove build artifacts
 make docker-build  # build Docker image
 ```
+
+### Testing
+
+Two layers verify different risks — fast offline unit tests, and a feature-gated
+live suite that checks fidelity to the real NetBox API. A self-contained,
+auto-seeding NetBox stack for the live suite lives in
+[`test/netbox-docker/`](test/netbox-docker/) (Podman on macOS):
+
+```sh
+cd test/netbox-docker && ./up.sh          # boot + seed a local NetBox
+NETBOX_URL=http://localhost:8000 \
+NETBOX_TOKEN=0123456789abcdef0123456789abcdef01234567 make test-live
+```
+
+See [`docs/testing.md`](docs/testing.md) for the full rationale and how to add
+coverage.
 
 ---
 

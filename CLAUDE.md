@@ -67,11 +67,15 @@ This cuts typical NetBox payloads by 50–70%.
 
 ## Testing
 
-Unit tests live in two places:
+Two layers verify different risks; see `docs/testing.md` for the full rationale.
+
+**Unit tests** (default `cargo test --all`, offline):
 - `src/config.rs` — config loading, env override, HTTPS enforcement.
 - `src/tools/mod.rs` — `slim_value()`, `clean_page_response()`, `PaginationParams`, and wiremock-based pipeline integration tests that fire requests through the full `paginate()` path against a mock server.
 
-For live integration testing, seed a local NetBox with `scripts/seed_data.py` and use the MCP tools directly. The testing protocol defines invariants every tool response must satisfy (no nulls, no bare pagination URLs, correct `has_more`/`next_offset` shape), described in `docs/testing-protocol.md`.
+**Live integration tests** (`src/tools/live/`, gated behind the `live-tests` cargo feature) run the real domain functions against a seeded NetBox, apply the same `slim_value` transform as the rmcp boundary, and assert behavior (filters honored) plus the universal invariants — the contract fidelity unit tests structurally cannot reach. They're shape-only (no exact counts) so they survive seed drift, and `skip_unless_live!` returns early when `NETBOX_URL`/`NETBOX_TOKEN` are absent. Run with `make test-live` against a seeded instance — the self-contained, auto-seeding stack in `test/netbox-docker/` (`./up.sh`) is the easiest way to get one.
+
+`docs/testing-protocol.md` is the seed-data reference and the manual checklist for areas the live suite has not reached yet.
 
 ## Response invariants
 

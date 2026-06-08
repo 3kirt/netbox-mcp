@@ -319,7 +319,9 @@ def main():
     for prefix, site, vrf, status, desc in prefix_defs:
         payload = {"prefix": prefix, "status": status, "description": desc}
         if site:
-            payload["site"] = site.id
+            # NetBox 4.x replaced Prefix.site with the generic scope field.
+            payload["scope_type"] = "dcim.site"
+            payload["scope_id"] = site.id
         if vrf:
             payload["vrf"] = vrf.id
         create(nb.ipam.prefixes, payload)
@@ -436,15 +438,17 @@ def main():
     print("\n=== Cluster Types & Clusters ===")
     vsphere = create(nb.virtualization.cluster_types, {"name": "VMware vSphere", "slug": "vsphere"})
 
+    # NetBox 4.x replaced Cluster.site with the generic scope field; a VM's site
+    # is derived from its cluster's scope, so this also drives VM site filters.
     nyc_cluster = get_or_create(
         nb.virtualization.clusters,
         {"name": "NYC-PROD"},
-        {"name": "NYC-PROD", "type": vsphere.id, "site": nyc.id, "tenant": infra.id, "status": "active"},
+        {"name": "NYC-PROD", "type": vsphere.id, "scope_type": "dcim.site", "scope_id": nyc.id, "tenant": infra.id, "status": "active"},
     )
     lon_cluster = get_or_create(
         nb.virtualization.clusters,
         {"name": "LON-PROD"},
-        {"name": "LON-PROD", "type": vsphere.id, "site": lon.id, "tenant": infra.id, "status": "active"},
+        {"name": "LON-PROD", "type": vsphere.id, "scope_type": "dcim.site", "scope_id": lon.id, "tenant": infra.id, "status": "active"},
     )
 
     # ------------------------------------------------------------------

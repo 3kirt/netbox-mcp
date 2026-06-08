@@ -1,0 +1,151 @@
+# Self-contained NetBox stack for testing netbox-mcp locally.
+# Derived from netbox-community/netbox-docker, trimmed and pre-wired with a
+# fixed superuser API token (see env/netbox.env) so the seed script and the
+# live test suite work with no manual setup.
+#
+# Tuned for `podman compose` on macOS:
+#   - all images are fully qualified (docker.io/...), which podman requires
+#   - NetBox is published on http://localhost:8000
+#
+# Usage (see README.md):
+#   podman compose up -d
+#   NETBOX_URL=http://localhost:8000 \
+#   NETBOX_TOKEN=0123456789abcdef0123456789abcdef01234567 \
+#     python ../../scripts/seed_data.py
+
+# Shared NetBox config for the web and worker services. Kept ports-free so the
+# worker doesn't try to publish 8000 too (no need for the non-portable !reset).
+x-netbox: &netbox
+  image: docker.io/netboxcommunity/netbox:${VERSION:-v4.6-5.0.1}
+  env_file: env/netbox.env
+  user: "netbox:root"
+  volumes:
+    - ./configuration:/etc/netbox/config:z,ro
+    - netbox-media-files:/opt/netbox/netbox/media:rw
+    - netbox-reports-files:/opt/netbox/netbox/reports:rw
+    - netbox-scripts-files:/opt/netbox/netbox/scripts:rw
+
+services:
+  netbox:
+    <<: *netbox
+    depends_on:
+      - postgres
+      - redis
+      - redis-cache
+    ports:
+      - "8000:8080"
+    healthcheck:
+      test: curl -f http://localhost:8080/login/ || exit 1
+      start_period: 120s
+      timeout: 3s
+      interval: 15s
+  netbox-worker:
+    <<: *netbox
+    depends_on:
+      netbox:
+        condition: service_healthy
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - rqworker
+    healthcheck:
+      test: ps -aux | grep -v grep | grep -q rqworker || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+
+  # One-shot init: create a legacy (v1) API token for the admin user with the
+  # fixed test value. NetBox 4.6's built-in superuser bootstrap only creates v2
+  # (Bearer) tokens, but netbox-mcp authenticates with the v1 "Token <key>"
+  # scheme — so we mint a v1 token directly via manage.py. Idempotent.
+  netbox-token:
+    <<: *netbox
+    depends_on:
+      netbox:
+        condition: service_healthy
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - shell
+      - -c
+      - |
+        from users.models import Token, User
+        u = User.objects.get(username='admin')
+        _, created = Token.objects.get_or_create(
+            user=u, version=1,
+            defaults={'token': '0123456789abcdef0123456789abcdef01234567'},
+        )
+        print('v1 API token created' if created else 'v1 API token already present')
+    restart: "no"
+
+  # One-shot seeder: once the token exists, load the test data via
+  # scripts/seed_data.py. Idempotent (skips existing objects), so it's safe to
+  # re-run on every `up`. Runs as part of the deployment — no separate step.
+  netbox-seed:
+    image: docker.io/python:3.12-slim
+    depends_on:
+      netbox-token:
+        condition: service_completed_successfully
+    environment:
+      NETBOX_URL: http://netbox:8080
+      NETBOX_TOKEN: 0123456789abcdef0123456789abcdef01234567
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    volumes:
+      - ../../scripts:/scripts:z,ro
+    command:
+      - sh
+      - -c
+      - pip install --quiet pynetbox && python /scripts/seed_data.py
+    restart: "no"
+
+  postgres:
+    image: docker.io/postgres:18-alpine
+    healthcheck:
+      test: pg_isready -q -t 2 -d $$POSTGRES_DB -U $$POSTGRES_USER
+      start_period: 20s
+      timeout: 30s
+      interval: 10s
+      retries: 5
+    env_file: env/postgres.env
+    volumes:
+      - netbox-postgres:/var/lib/postgresql
+
+  redis:
+    image: docker.io/valkey/valkey:9.0-alpine
+    command:
+      - sh
+      - -c # this is to evaluate the $REDIS_PASSWORD from the env
+      - valkey-server --appendonly yes --requirepass $$REDIS_PASSWORD
+    healthcheck: &redis-healthcheck
+      test: '[ $$(valkey-cli --pass "$${REDIS_PASSWORD}" ping) = ''PONG'' ]'
+      start_period: 5s
+      timeout: 3s
+      interval: 1s
+      retries: 5
+    env_file: env/redis.env
+    volumes:
+      - netbox-redis-data:/data
+  redis-cache:
+    image: docker.io/valkey/valkey:9.0-alpine
+    command:
+      - sh
+      - -c
+      - valkey-server --requirepass $$REDIS_PASSWORD
+    healthcheck: *redis-healthcheck
+    env_file: env/redis-cache.env
+    volumes:
+      - netbox-redis-cache-data:/data
+
+volumes:
+  netbox-media-files:
+    driver: local
+  netbox-postgres:
+    driver: local
+  netbox-redis-cache-data:
+    driver: local
+  netbox-redis-data:
+    driver: local
+  netbox-reports-files:
+    driver: local
+  netbox-scripts-files:
+    driver: local

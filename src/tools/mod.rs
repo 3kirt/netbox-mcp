@@ -27,6 +27,14 @@ pub mod virtualization;
 pub mod vpn;
 pub mod wireless;
 
+// Live integration tests against a real, seeded NetBox. Gated behind the
+// `live-tests` feature so the default `cargo test` never builds them. Placed
+// as a child of `tools` (not a top-level `tests/` crate) so it can reach the
+// private `slim` module and `pub(crate)` helpers to reproduce the server's
+// exact output path. See docs/testing.md.
+#[cfg(all(test, feature = "live-tests"))]
+mod live;
+
 // --------------------------------------------------------------------------
 // Shared helpers
 // --------------------------------------------------------------------------

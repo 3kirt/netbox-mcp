@@ -10,6 +10,11 @@ repository = "https://github.com/3kirt/netbox-mcp"
 name = "netbox-mcp"
 path = "src/main.rs"
 
+[features]
+# Live integration tests that hit a real, seeded NetBox instance.
+# Off by default so `cargo test` stays fast and offline. See docs/testing.md.
+live-tests = []
+
 [dependencies]
 rmcp = { version = "1.7", features = [
     "server",

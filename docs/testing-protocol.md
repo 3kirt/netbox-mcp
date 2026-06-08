@@ -2,6 +2,8 @@
 
 This document describes how to use the MCP tools to verify that all functionality is working correctly against a local NetBox instance seeded with `scripts/seed_data.py`.
 
+The quickest way to get such an instance is the bundled test stack in [`../test/netbox-docker/`](../test/netbox-docker/), which boots NetBox and seeds it automatically (`cd test/netbox-docker && ./up.sh`). For the automated version of these checks, see the live test suite described in [`testing.md`](testing.md).
+
 ---
 
 ## Universal Invariants

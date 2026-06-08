@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Testing
+
+- **Live integration test layer** — added a feature-gated suite (`live-tests`) under `src/tools/live/` that runs the real domain functions against a seeded NetBox, applies the same `slim_value` transform as the rmcp boundary, and asserts filter behavior plus the universal invariants. Covers DCIM (devices, interfaces, sites, regions, racks, manufacturers, device types, device roles, platforms, locations), IPAM (IP addresses, prefixes, VRFs, services, aggregates, ASNs, RIRs, VLANs, VLAN groups), Virtualization (VMs, clusters, cluster types, VM interfaces), Tenancy (tenants, contacts, contact roles), Extras (tags), and `lookup_host` — 45 tests. Skips cleanly without `NETBOX_URL`/`NETBOX_TOKEN`. Run with `make test-live`; see `docs/testing.md`.
+- **Self-contained test NetBox stack** — `test/netbox-docker/` provides a trimmed, Podman-friendly NetBox deployment that boots, mints a v1 API token, and seeds itself (`scripts/seed_data.py`) as part of `up`. One-shot `netbox-token` and `netbox-seed` compose services make `./up.sh` produce a ready-to-test instance with no manual steps.
+
+### Fixed
+
+- **Seed script for NetBox 4.x scope fields** — `scripts/seed_data.py` set the deprecated `site` field on prefixes and clusters, which NetBox 4.x ignores in favor of the generic `scope` (`scope_type`/`scope_id`). Objects had no site association, so `site=` filters returned nothing. Now sets `scope_type: dcim.site` / `scope_id`, which also restores VM-by-site filtering (a VM's site derives from its cluster's scope).
+
+---
+
 ## [0.5.0] - 2026-06-07
 
 ### Internals

@@ -1,0 +1,38 @@
+Attribution for test/netbox-docker/
+====================================
+
+The files in this directory are derived from netbox-docker:
+
+    https://github.com/netbox-community/netbox-docker
+    Copyright netbox-docker contributors
+    Licensed under the Apache License, Version 2.0 (see ./LICENSE)
+
+netbox-mcp as a whole is licensed under GPL-3.0 (see ../../LICENSE). The
+Apache-2.0 license is compatible with GPLv3; the Apache-licensed files in this
+directory retain their original license and the attribution below.
+
+Files copied verbatim from netbox-docker:
+
+  - configuration/configuration.py
+  - configuration/extra.py
+  - configuration/logging.py
+  - configuration/plugins.py
+  - env/postgres.env
+  - env/redis.env
+  - env/redis-cache.env
+
+Files modified from netbox-docker (Apache-2.0 section 4(b)):
+
+  - compose.yaml      Derived from docker-compose.yml + docker-compose.override.yml.example:
+                      trimmed for local testing, ports merged in, fully-qualified
+                      image names for Podman, and two one-shot services added
+                      (netbox-token, netbox-seed) to mint a v1 API token and seed
+                      the instance.
+  - env/netbox.env    Added superuser bootstrap settings (SKIP_SUPERUSER, SUPERUSER_*)
+                      for unattended local testing.
+
+Files original to netbox-mcp (not from netbox-docker, under GPL-3.0):
+
+  - up.sh
+  - README.md
+  - NOTICE
