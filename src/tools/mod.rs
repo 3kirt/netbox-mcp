@@ -221,16 +221,45 @@ impl QueryBuilder {
     }
 }
 
-/// Insert `(key, v)` into a JSON request body only when `v` is `Some`, so create
-/// bodies carry only the fields the caller set and PATCH stays a partial update.
-/// The write-body counterpart to `QueryBuilder::opt` (which builds query params).
-pub(crate) fn insert_opt<T: Into<serde_json::Value>>(
-    map: &mut serde_json::Map<String, Value>,
-    key: &str,
-    v: Option<T>,
-) {
-    if let Some(v) = v {
-        map.insert(key.to_string(), v.into());
+/// Serialize a request-body value to JSON. Every caller passes a scalar,
+/// `String`, or `Vec` of those, whose `Serialize` impls are infallible, so this
+/// never actually errors — but fall back to `Null` rather than panicking if a
+/// future caller ever passes a type that can.
+fn to_json<T: serde::Serialize>(v: T) -> Value {
+    serde_json::to_value(v).unwrap_or(Value::Null)
+}
+
+/// Fluent builder for a JSON request body — the write-side counterpart to
+/// [`QueryBuilder`]. `req` adds a field unconditionally; `opt` adds it only when
+/// `Some`, so create bodies carry just the fields the caller set and PATCH stays
+/// a partial update.
+pub(crate) struct BodyBuilder {
+    map: serde_json::Map<String, Value>,
+}
+
+impl BodyBuilder {
+    pub fn new() -> Self {
+        Self {
+            map: serde_json::Map::new(),
+        }
+    }
+
+    /// Insert `(key, v)` unconditionally (for required fields).
+    pub fn req<T: serde::Serialize>(mut self, key: &'static str, v: T) -> Self {
+        self.map.insert(key.to_string(), to_json(v));
+        self
+    }
+
+    /// Insert `(key, v)` only when `v` is `Some`.
+    pub fn opt<T: serde::Serialize>(mut self, key: &'static str, v: Option<T>) -> Self {
+        if let Some(v) = v {
+            self.map.insert(key.to_string(), to_json(v));
+        }
+        self
+    }
+
+    pub fn build(self) -> Value {
+        Value::Object(self.map)
     }
 }
 

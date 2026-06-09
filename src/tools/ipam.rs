@@ -1,7 +1,7 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, insert_opt};
+use crate::tools::{BodyBuilder, PaginationParams, QueryBuilder};
 use serde::Deserialize;
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 const IP_ADDRESSES_PATH: &str = "/api/ipam/ip-addresses/";
 
@@ -82,7 +82,7 @@ pub async fn ip_addresses_list(
 
 /// Writable IP-address attributes shared by create and update. Flattened into
 /// the create/update params so both expose the same fields.
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Default, Deserialize, schemars::JsonSchema)]
 pub struct IpAddressFields {
     #[schemars(
         description = "Status (active, reserved, deprecated, dhcp, slaac); defaults to active on create"
@@ -113,20 +113,20 @@ pub struct IpAddressFields {
 }
 
 impl IpAddressFields {
-    /// Insert every set field into a request body map, omitting `None`s so
-    /// PATCH stays a partial update.
-    fn insert_into(self, body: &mut Map<String, Value>) {
-        insert_opt(body, "status", self.status);
-        insert_opt(body, "role", self.role);
-        insert_opt(body, "vrf", self.vrf);
-        insert_opt(body, "tenant", self.tenant);
-        insert_opt(body, "dns_name", self.dns_name);
-        insert_opt(body, "description", self.description);
-        insert_opt(body, "comments", self.comments);
-        insert_opt(body, "nat_inside", self.nat_inside);
-        insert_opt(body, "assigned_object_type", self.assigned_object_type);
-        insert_opt(body, "assigned_object_id", self.assigned_object_id);
-        insert_opt(body, "tags", self.tags);
+    /// Apply every set field to `b`, omitting `None`s so PATCH stays a partial
+    /// update. Shared by create and update so both bodies carry the same fields.
+    fn apply(self, b: BodyBuilder) -> BodyBuilder {
+        b.opt("status", self.status)
+            .opt("role", self.role)
+            .opt("vrf", self.vrf)
+            .opt("tenant", self.tenant)
+            .opt("dns_name", self.dns_name)
+            .opt("description", self.description)
+            .opt("comments", self.comments)
+            .opt("nat_inside", self.nat_inside)
+            .opt("assigned_object_type", self.assigned_object_type)
+            .opt("assigned_object_id", self.assigned_object_id)
+            .opt("tags", self.tags)
     }
 }
 
@@ -142,10 +142,11 @@ pub async fn ip_address_create(
     client: &NetboxClient,
     p: IpAddressCreateParams,
 ) -> Result<Value, NetboxError> {
-    let mut body = Map::new();
-    body.insert("address".to_string(), Value::String(p.address));
-    p.fields.insert_into(&mut body);
-    client.post(IP_ADDRESSES_PATH, &Value::Object(body)).await
+    let body = p
+        .fields
+        .apply(BodyBuilder::new().req("address", p.address))
+        .build();
+    client.post(IP_ADDRESSES_PATH, &body).await
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -162,12 +163,11 @@ pub async fn ip_address_update(
     client: &NetboxClient,
     p: IpAddressUpdateParams,
 ) -> Result<Value, NetboxError> {
-    let mut body = Map::new();
-    insert_opt(&mut body, "address", p.address);
-    p.fields.insert_into(&mut body);
-    client
-        .patch(IP_ADDRESSES_PATH, p.id, &Value::Object(body))
-        .await
+    let body = p
+        .fields
+        .apply(BodyBuilder::new().opt("address", p.address))
+        .build();
+    client.patch(IP_ADDRESSES_PATH, p.id, &body).await
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -655,23 +655,6 @@ mod tests {
         NetboxClient::new(server.uri(), "test-token").unwrap()
     }
 
-    /// All-`None` field set; tests override only what they exercise.
-    fn empty_fields() -> IpAddressFields {
-        IpAddressFields {
-            status: None,
-            role: None,
-            vrf: None,
-            tenant: None,
-            dns_name: None,
-            description: None,
-            comments: None,
-            nat_inside: None,
-            assigned_object_type: None,
-            assigned_object_id: None,
-            tags: None,
-        }
-    }
-
     #[tokio::test]
     async fn ip_address_create_sends_address_and_only_set_fields() {
         let server = MockServer::start().await;
@@ -690,7 +673,7 @@ mod tests {
                     dns_name: Some("host.example.com".into()),
                     assigned_object_type: Some("dcim.interface".into()),
                     assigned_object_id: Some(12),
-                    ..empty_fields()
+                    ..Default::default()
                 },
             },
         )
@@ -730,7 +713,7 @@ mod tests {
                 address: None,
                 fields: IpAddressFields {
                     status: Some("deprecated".into()),
-                    ..empty_fields()
+                    ..Default::default()
                 },
             },
         )

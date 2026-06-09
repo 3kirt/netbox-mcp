@@ -1,7 +1,7 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, insert_opt, resolve_vm_id_or};
+use crate::tools::{BodyBuilder, PaginationParams, QueryBuilder, resolve_vm_id_or};
 use serde::Deserialize;
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 const VMS_PATH: &str = "/api/virtualization/virtual-machines/";
 
@@ -67,7 +67,7 @@ pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, 
 
 /// Writable VM attributes shared by create and update. Foreign keys are NetBox
 /// IDs. Flattened into the create/update params so both expose the same fields.
-#[derive(Debug, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Default, Deserialize, schemars::JsonSchema)]
 pub struct VmFields {
     #[schemars(description = "Cluster ID (NetBox requires one of cluster/site/device)")]
     pub cluster: Option<i32>,
@@ -100,22 +100,22 @@ pub struct VmFields {
 }
 
 impl VmFields {
-    /// Insert every set field into a request body map, omitting `None`s so
-    /// PATCH stays a partial update.
-    fn insert_into(self, body: &mut Map<String, Value>) {
-        insert_opt(body, "cluster", self.cluster);
-        insert_opt(body, "site", self.site);
-        insert_opt(body, "device", self.device);
-        insert_opt(body, "role", self.role);
-        insert_opt(body, "tenant", self.tenant);
-        insert_opt(body, "platform", self.platform);
-        insert_opt(body, "status", self.status);
-        insert_opt(body, "vcpus", self.vcpus);
-        insert_opt(body, "memory", self.memory);
-        insert_opt(body, "disk", self.disk);
-        insert_opt(body, "description", self.description);
-        insert_opt(body, "comments", self.comments);
-        insert_opt(body, "tags", self.tags);
+    /// Apply every set field to `b`, omitting `None`s so PATCH stays a partial
+    /// update. Shared by create and update so both bodies carry the same fields.
+    fn apply(self, b: BodyBuilder) -> BodyBuilder {
+        b.opt("cluster", self.cluster)
+            .opt("site", self.site)
+            .opt("device", self.device)
+            .opt("role", self.role)
+            .opt("tenant", self.tenant)
+            .opt("platform", self.platform)
+            .opt("status", self.status)
+            .opt("vcpus", self.vcpus)
+            .opt("memory", self.memory)
+            .opt("disk", self.disk)
+            .opt("description", self.description)
+            .opt("comments", self.comments)
+            .opt("tags", self.tags)
     }
 }
 
@@ -128,10 +128,11 @@ pub struct VmCreateParams {
 }
 
 pub async fn vm_create(client: &NetboxClient, p: VmCreateParams) -> Result<Value, NetboxError> {
-    let mut body = Map::new();
-    body.insert("name".to_string(), Value::String(p.name));
-    p.fields.insert_into(&mut body);
-    client.post(VMS_PATH, &Value::Object(body)).await
+    let body = p
+        .fields
+        .apply(BodyBuilder::new().req("name", p.name))
+        .build();
+    client.post(VMS_PATH, &body).await
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -145,10 +146,11 @@ pub struct VmUpdateParams {
 }
 
 pub async fn vm_update(client: &NetboxClient, p: VmUpdateParams) -> Result<Value, NetboxError> {
-    let mut body = Map::new();
-    insert_opt(&mut body, "name", p.name);
-    p.fields.insert_into(&mut body);
-    client.patch(VMS_PATH, p.id, &Value::Object(body)).await
+    let body = p
+        .fields
+        .apply(BodyBuilder::new().opt("name", p.name))
+        .build();
+    client.patch(VMS_PATH, p.id, &body).await
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -369,25 +371,6 @@ mod tests {
         NetboxClient::new(server.uri(), "test-token").unwrap()
     }
 
-    /// All-`None` field set; tests override only what they exercise.
-    fn empty_fields() -> VmFields {
-        VmFields {
-            cluster: None,
-            site: None,
-            device: None,
-            role: None,
-            tenant: None,
-            platform: None,
-            status: None,
-            vcpus: None,
-            memory: None,
-            disk: None,
-            description: None,
-            comments: None,
-            tags: None,
-        }
-    }
-
     #[tokio::test]
     async fn vm_create_sends_only_set_fields() {
         let server = MockServer::start().await;
@@ -406,7 +389,7 @@ mod tests {
                     status: Some("active".into()),
                     memory: Some(2048),
                     tags: Some(vec![5, 6]),
-                    ..empty_fields()
+                    ..Default::default()
                 },
             },
         )
@@ -446,7 +429,7 @@ mod tests {
                 name: None,
                 fields: VmFields {
                     status: Some("offline".into()),
-                    ..empty_fields()
+                    ..Default::default()
                 },
             },
         )
