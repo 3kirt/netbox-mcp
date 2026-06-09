@@ -15,9 +15,16 @@
 
 mod harness;
 
+mod circuits;
+mod core;
 mod dcim;
+mod errors;
 mod extras;
 mod ipam;
 mod lookup;
+mod pagination;
 mod tenancy;
+mod users;
 mod virtualization;
+mod vpn;
+mod wireless;

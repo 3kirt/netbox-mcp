@@ -140,11 +140,20 @@ The live suite is grown domain-by-domain. Covered today:
 - **Virtualization** — VMs, clusters, cluster types, VM interfaces
 - **Tenancy** — tenants, contacts, contact roles
 - **Extras** — tags
+- **Core** — object changes (list, get, type filter, `diff_only`)
+- **Users** — users, tokens
+- **Circuits** — providers, provider accounts/networks, circuit types, circuits,
+  terminations
+- **VPN** — tunnel groups, tunnels, tunnel terminations, IKE/IPSec policies,
+  L2VPNs
+- **Wireless** — LAN groups, wireless LANs, links
 - the **`lookup_host`** meta-tool
+- **cross-cutting** — pagination (first page, walking every page, `fetch_all`)
+  and error paths (404 on unknown id, 400 on an invalid filter value)
 
-Not yet automated: **circuits**, **VPN**, **wireless** (the seed script does not
-populate these yet), and the **core**/**users** families (object changes, jobs,
-data sources, users, tokens — partially available without extra seeding).
+Not yet automated and unseeded: the DCIM hardware-detail endpoints (cables,
+ports, modules, inventory, …) and Extras beyond tags. Core `jobs` /
+`data_sources` need a background job / configured data source.
 
 The manual exploratory protocol in [`testing-protocol.md`](testing-protocol.md)
 remains the seed-data reference and the checklist for areas the live suite has

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Testing
+
+- **Live coverage — Core, Users, pagination, and error paths (+12 tests)** — added `live/core.rs` (object changes: list, get, type filter, `diff_only`), `live/users.rs` (users, tokens), `live/pagination.rs` (first-page math, walking every page, `fetch_all` against the real `list_all()` path), and `live/errors.rs` (404 on an unknown id, 400 on an invalid filter value). These need no seed changes — the changelog, admin user, and minted token already exist.
+- **Live coverage — Circuits, VPN, Wireless (+19 tests, 76 total)** — extended `scripts/seed_data.py` to populate all three domains (circuit providers/types/circuits/terminations, VPN tunnel group/tunnels/terminations/IKE+IPSec policies/L2VPN, wireless LAN group/LANs/link) and added `live/circuits.rs`, `live/vpn.rs`, `live/wireless.rs`. Terminations use the NetBox 4.x generic `scope` (`termination_type`/`_id`); the wireless link joins two `ieee802.11ac` interfaces. Seed remains idempotent (termination/link creates use filter-first `get_or_create`).
+
 ## [0.6.0] - 2026-06-07
 
 ### Testing

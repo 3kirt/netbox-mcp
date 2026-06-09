@@ -521,6 +521,141 @@ def main():
         )
 
     # ------------------------------------------------------------------
+    print("\n=== Circuits ===")
+    lumen = create(nb.circuits.providers, {"name": "Lumen", "slug": "lumen"})
+    cogent = create(nb.circuits.providers, {"name": "Cogent", "slug": "cogent"})
+
+    transit = create(
+        nb.circuits.circuit_types,
+        {"name": "Internet Transit", "slug": "internet-transit"},
+    )
+    create(nb.circuits.circuit_types, {"name": "Dark Fiber", "slug": "dark-fiber"})
+
+    create(
+        nb.circuits.provider_accounts,
+        {"provider": lumen.id, "account": "ACME-LUMEN-001", "name": "ACME Primary"},
+        label="Lumen/ACME-LUMEN-001",
+        filter_keys=("account",),
+    )
+    create(
+        nb.circuits.provider_networks,
+        {"provider": lumen.id, "name": "Lumen MPLS Cloud"},
+    )
+
+    circ = create(
+        nb.circuits.circuits,
+        {"cid": "LUMEN-NYC-LON-001", "provider": lumen.id, "type": transit.id, "status": "active"},
+        label="LUMEN-NYC-LON-001",
+        filter_keys=("cid",),
+    )
+    create(
+        nb.circuits.circuits,
+        {"cid": "COGENT-NYC-001", "provider": cogent.id, "type": transit.id, "status": "active"},
+        label="COGENT-NYC-001",
+        filter_keys=("cid",),
+    )
+    # Terminations use the generic scope (termination_type/_id) in NetBox 4.x.
+    # get_or_create (filter-first) keeps re-runs idempotent — a duplicate
+    # termination raises a custom validation error, not a plain unique conflict.
+    get_or_create(
+        nb.circuits.circuit_terminations,
+        {"circuit_id": circ.id, "term_side": "A"},
+        {"circuit": circ.id, "term_side": "A", "termination_type": "dcim.site", "termination_id": nyc.id},
+        label="LUMEN-NYC-LON-001/A",
+    )
+    get_or_create(
+        nb.circuits.circuit_terminations,
+        {"circuit_id": circ.id, "term_side": "Z"},
+        {"circuit": circ.id, "term_side": "Z", "termination_type": "dcim.site", "termination_id": lon.id},
+        label="LUMEN-NYC-LON-001/Z",
+    )
+
+    # ------------------------------------------------------------------
+    print("\n=== VPN ===")
+    s2s = create(nb.vpn.tunnel_groups, {"name": "Site-to-Site", "slug": "site-to-site"})
+
+    tunnel = create(
+        nb.vpn.tunnels,
+        {"name": "NYC-LON IPsec", "status": "active", "encapsulation": "ipsec-tunnel",
+         "group": s2s.id, "tunnel_id": 1001},
+    )
+    create(
+        nb.vpn.tunnels,
+        {"name": "NYC-FRA GRE", "status": "active", "encapsulation": "gre",
+         "group": s2s.id, "tunnel_id": 1002},
+    )
+
+    # Tunnel terminations attach to an interface via the generic scope.
+    nyc_tun_if = mkiface(d["nyc-router-01"], "Tunnel0")
+    lon_tun_if = mkiface(d["lon-router-01"], "Tunnel0")
+    # An interface attaches to at most one tunnel, so look up by interface to
+    # stay idempotent (a duplicate raises a custom 400, not a unique conflict).
+    get_or_create(
+        nb.vpn.tunnel_terminations,
+        {"interface_id": nyc_tun_if.id},
+        {"tunnel": tunnel.id, "role": "hub",
+         "termination_type": "dcim.interface", "termination_id": nyc_tun_if.id},
+        label="NYC-LON IPsec/hub",
+    )
+    get_or_create(
+        nb.vpn.tunnel_terminations,
+        {"interface_id": lon_tun_if.id},
+        {"tunnel": tunnel.id, "role": "spoke",
+         "termination_type": "dcim.interface", "termination_id": lon_tun_if.id},
+        label="NYC-LON IPsec/spoke",
+    )
+
+    ike_prop = create(
+        nb.vpn.ike_proposals,
+        {"name": "ike-aes256-sha256", "authentication_method": "preshared-keys",
+         "encryption_algorithm": "aes-256-cbc", "authentication_algorithm": "hmac-sha256", "group": 14},
+    )
+    create(
+        nb.vpn.ike_policies,
+        {"name": "ike-policy-1", "version": 2, "proposals": [ike_prop.id]},
+    )
+    ipsec_prop = create(
+        nb.vpn.ipsec_proposals,
+        {"name": "esp-aes256-sha256", "encryption_algorithm": "aes-256-cbc",
+         "authentication_algorithm": "hmac-sha256"},
+    )
+    create(
+        nb.vpn.ipsec_policies,
+        {"name": "ipsec-policy-1", "proposals": [ipsec_prop.id]},
+    )
+
+    create(nb.vpn.l2vpns, {"name": "VXLAN-100", "slug": "vxlan-100", "type": "vxlan", "identifier": 100})
+
+    # ------------------------------------------------------------------
+    print("\n=== Wireless ===")
+    wlan_grp = create(
+        nb.wireless.wireless_lan_groups,
+        {"name": "Corporate WLANs", "slug": "corporate-wlans"},
+    )
+    create(
+        nb.wireless.wireless_lans,
+        {"ssid": "Corp-WiFi", "group": wlan_grp.id, "status": "active"},
+        label="Corp-WiFi",
+        filter_keys=("ssid",),
+    )
+    create(
+        nb.wireless.wireless_lans,
+        {"ssid": "Guest-WiFi", "group": wlan_grp.id, "status": "active"},
+        label="Guest-WiFi",
+        filter_keys=("ssid",),
+    )
+    # A wireless link joins two wireless-type interfaces. Look up by one side to
+    # stay idempotent (a re-linked interface raises a custom 400).
+    wif_a = mkiface(d["nyc-leaf-01"], "wlan0", "ieee802.11ac")
+    wif_b = mkiface(d["lon-leaf-01"], "wlan0", "ieee802.11ac")
+    get_or_create(
+        nb.wireless.wireless_links,
+        {"interface_a_id": wif_a.id},
+        {"interface_a": wif_a.id, "interface_b": wif_b.id, "ssid": "Corp-WiFi", "status": "connected"},
+        label="nyc-leaf-01/wlan0 <-> lon-leaf-01/wlan0",
+    )
+
+    # ------------------------------------------------------------------
     print("\n=== Done! ===")
     print(f"\nNetBox UI: {NETBOX_URL}")
     print(
@@ -531,6 +666,9 @@ def main():
         "\n  • 7 VM interfaces with IPs and primary IPs assigned"
         "\n  • 14 prefixes across 2 VRFs (global + management)"
         "\n  • Services on servers and VMs"
+        "\n  • 2 circuit providers, 2 circuit types, 2 circuits with terminations"
+        "\n  • VPN: tunnel group, 2 tunnels with terminations, IKE/IPSec policies, an L2VPN"
+        "\n  • Wireless: LAN group, 2 wireless LANs, a wireless link"
     )
 
 
