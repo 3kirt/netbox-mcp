@@ -221,6 +221,19 @@ impl QueryBuilder {
     }
 }
 
+/// Insert `(key, v)` into a JSON request body only when `v` is `Some`, so create
+/// bodies carry only the fields the caller set and PATCH stays a partial update.
+/// The write-body counterpart to `QueryBuilder::opt` (which builds query params).
+pub(crate) fn insert_opt<T: Into<serde_json::Value>>(
+    map: &mut serde_json::Map<String, Value>,
+    key: &str,
+    v: Option<T>,
+) {
+    if let Some(v) = v {
+        map.insert(key.to_string(), v.into());
+    }
+}
+
 /// Append `limit` and `offset` to a parameter vector unless `fetch_all` is
 /// requested (in which case the client iterates internally). Split out from
 /// `paginate` so the branching is unit-testable without an HTTP client.
@@ -1146,6 +1159,51 @@ impl NetboxMcpServer {
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
         delegate_get!(self, "/api/ipam/ip-addresses/", p.id, "IP address")
+    }
+    #[tool(
+        description = "Create an IP address. Required: address in CIDR notation (e.g. 192.0.2.10/24). Optional: status, role, vrf, tenant, dns_name, description, comments, nat_inside, tags (NetBox IDs). Attach to an interface by setting assigned_object_type ('dcim.interface' or 'virtualization.vminterface') and assigned_object_id. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_ipam_ip_addresses_create(
+        &self,
+        Parameters(p): Parameters<ipam::IpAddressCreateParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_write!(self, ipam::ip_address_create, p, "creating", "IP address")
+    }
+    #[tool(
+        description = "Update an IP address by NetBox ID (partial update — only supplied fields change). Foreign keys are NetBox IDs. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_ipam_ip_addresses_update(
+        &self,
+        Parameters(p): Parameters<ipam::IpAddressUpdateParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_write!(self, ipam::ip_address_update, p, "updating", "IP address")
+    }
+    #[tool(
+        description = "Delete an IP address by its NetBox ID. This is destructive and cannot be undone. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = true,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_ipam_ip_addresses_delete(
+        &self,
+        Parameters(p): Parameters<ipam::IpAddressDeleteParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_delete!(self, ipam::ip_address_delete, p, p.id, "IP address")
     }
 
     #[tool(

@@ -7,10 +7,26 @@ use super::harness::{
     assert_clean, assert_nonempty, assert_page_shape, first_id, params, results, skip_unless_live,
     slim, slim_get,
 };
+use crate::client::NetboxError;
 use crate::tools::ipam::{
     self, AggregatesListParams, AsnsListParams, IpAddressesListParams, PrefixesListParams,
     RirsListParams, ServicesListParams, VlanGroupsListParams, VlansListParams, VrfsListParams,
 };
+
+const IP_ADDRESSES_PATH: &str = "/api/ipam/ip-addresses/";
+
+/// An address unique to this run, in TEST-NET-3 (192.0.2.0/24, RFC 5737), so a
+/// leaked address from a prior run never clashes and the value is obviously a
+/// throwaway. The host octet is derived from the current nanosecond.
+fn unique_test_address() -> String {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock before epoch")
+        .as_nanos();
+    // 1..=254 keeps it a valid, non-zero host in the /24.
+    let host = (nanos % 254) + 1;
+    format!("192.0.2.{host}/24")
+}
 
 #[tokio::test]
 async fn ip_addresses_filter_by_device_returns_rows() {
@@ -202,6 +218,67 @@ async fn vlan_groups_filter_by_name_is_exact() {
     for g in results(&resp) {
         assert_eq!(g["name"], "NYC VLANs");
     }
+}
+
+/// Exercises the IP-address write path end-to-end against real NetBox: create an
+/// address, change a field via PATCH, confirm it persisted through the get path,
+/// then delete and confirm the follow-up get 404s. Self-cleaning — the address it
+/// creates is the address it deletes — so the seeded instance is left untouched.
+/// Requires a write-enabled token (a read-only token makes the create 403).
+#[tokio::test]
+async fn ip_address_create_update_delete_lifecycle() {
+    let env = skip_unless_live!();
+    let address = unique_test_address();
+
+    // Create — response is slimmed exactly as the rmcp boundary would slim it.
+    let created = slim(
+        ipam::ip_address_create(
+            &env.client,
+            params(json!({ "address": address, "status": "reserved" })),
+        )
+        .await
+        .expect("ip_address_create"),
+    );
+    assert_clean(&created, "ip.create");
+    assert_eq!(created["address"], address);
+    assert_eq!(created["status"]["value"], "reserved");
+    let id = created["id"].as_i64().expect("created IP has an id") as i32;
+
+    // Partial update: flip status, leave the address untouched.
+    let updated = slim(
+        ipam::ip_address_update(
+            &env.client,
+            params(json!({ "id": id, "status": "deprecated" })),
+        )
+        .await
+        .expect("ip_address_update"),
+    );
+    assert_clean(&updated, "ip.update");
+    assert_eq!(updated["id"], id);
+    assert_eq!(updated["status"]["value"], "deprecated");
+    assert_eq!(
+        updated["address"], address,
+        "partial update must not change the address"
+    );
+
+    // Read back through the get path: the change persisted server-side.
+    let got = slim_get(&env.client, IP_ADDRESSES_PATH, id).await;
+    assert_eq!(got["status"]["value"], "deprecated");
+
+    // Delete, then a follow-up get must surface a 404.
+    ipam::ip_address_delete(&env.client, params(json!({ "id": id })))
+        .await
+        .expect("ip_address_delete");
+
+    let err = env
+        .client
+        .get(IP_ADDRESSES_PATH, id)
+        .await
+        .expect_err("get after delete must 404");
+    assert!(
+        matches!(err, NetboxError::Api { status, .. } if status.as_u16() == 404),
+        "expected 404 after delete, got {err:?}"
+    );
 }
 
 #[tokio::test]

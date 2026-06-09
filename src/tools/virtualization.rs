@@ -1,17 +1,9 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, resolve_vm_id_or};
+use crate::tools::{PaginationParams, QueryBuilder, insert_opt, resolve_vm_id_or};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
 const VMS_PATH: &str = "/api/virtualization/virtual-machines/";
-
-/// Insert `(key, v)` into a JSON body map only when `v` is `Some`, so create
-/// bodies carry only the fields the caller set and PATCH stays partial.
-fn insert_opt<T: Into<Value>>(map: &mut Map<String, Value>, key: &str, v: Option<T>) {
-    if let Some(v) = v {
-        map.insert(key.to_string(), v.into());
-    }
-}
 
 // --------------------------------------------------------------------------
 // Virtual Machines

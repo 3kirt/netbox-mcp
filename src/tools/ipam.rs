@@ -1,7 +1,9 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{PaginationParams, QueryBuilder, insert_opt};
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
+
+const IP_ADDRESSES_PATH: &str = "/api/ipam/ip-addresses/";
 
 // --------------------------------------------------------------------------
 // IP Addresses
@@ -67,8 +69,118 @@ pub async fn ip_addresses_list(
         .many("tenant", p.tenant)
         .many("tag", p.tag)
         .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/ip-addresses/", p.pagination)
+    qb.run(client, IP_ADDRESSES_PATH, p.pagination).await
+}
+
+// --------------------------------------------------------------------------
+// IP Addresses — write (create / update / delete)
+//
+// Foreign-key fields are numeric NetBox IDs (use the *_list tools to find
+// them). To attach an IP to an interface, set both assigned_object_type
+// ("dcim.interface" or "virtualization.vminterface") and assigned_object_id.
+// --------------------------------------------------------------------------
+
+/// Writable IP-address attributes shared by create and update. Flattened into
+/// the create/update params so both expose the same fields.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct IpAddressFields {
+    #[schemars(
+        description = "Status (active, reserved, deprecated, dhcp, slaac); defaults to active on create"
+    )]
+    pub status: Option<String>,
+    #[schemars(description = "Role (loopback, secondary, anycast, vip, vrrp, hsrp, glbp, carp)")]
+    pub role: Option<String>,
+    #[schemars(description = "VRF ID")]
+    pub vrf: Option<i32>,
+    #[schemars(description = "Tenant ID")]
+    pub tenant: Option<i32>,
+    #[schemars(description = "DNS name (e.g. host.example.com)")]
+    pub dns_name: Option<String>,
+    #[schemars(description = "Short description")]
+    pub description: Option<String>,
+    #[schemars(description = "Long-form comments")]
+    pub comments: Option<String>,
+    #[schemars(description = "NAT inside IP-address ID this address maps to")]
+    pub nat_inside: Option<i32>,
+    #[schemars(
+        description = "Assignment object type: 'dcim.interface' or 'virtualization.vminterface' (set together with assigned_object_id)"
+    )]
+    pub assigned_object_type: Option<String>,
+    #[schemars(description = "ID of the interface this IP is assigned to")]
+    pub assigned_object_id: Option<i32>,
+    #[schemars(description = "Tag IDs (on update, replaces the existing set)")]
+    pub tags: Option<Vec<i32>>,
+}
+
+impl IpAddressFields {
+    /// Insert every set field into a request body map, omitting `None`s so
+    /// PATCH stays a partial update.
+    fn insert_into(self, body: &mut Map<String, Value>) {
+        insert_opt(body, "status", self.status);
+        insert_opt(body, "role", self.role);
+        insert_opt(body, "vrf", self.vrf);
+        insert_opt(body, "tenant", self.tenant);
+        insert_opt(body, "dns_name", self.dns_name);
+        insert_opt(body, "description", self.description);
+        insert_opt(body, "comments", self.comments);
+        insert_opt(body, "nat_inside", self.nat_inside);
+        insert_opt(body, "assigned_object_type", self.assigned_object_type);
+        insert_opt(body, "assigned_object_id", self.assigned_object_id);
+        insert_opt(body, "tags", self.tags);
+    }
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct IpAddressCreateParams {
+    #[schemars(description = "IP address in CIDR notation, e.g. 192.0.2.10/24 (required)")]
+    pub address: String,
+    #[serde(flatten)]
+    pub fields: IpAddressFields,
+}
+
+pub async fn ip_address_create(
+    client: &NetboxClient,
+    p: IpAddressCreateParams,
+) -> Result<Value, NetboxError> {
+    let mut body = Map::new();
+    body.insert("address".to_string(), Value::String(p.address));
+    p.fields.insert_into(&mut body);
+    client.post(IP_ADDRESSES_PATH, &Value::Object(body)).await
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct IpAddressUpdateParams {
+    #[schemars(description = "NetBox ID of the IP address to update (required)")]
+    pub id: i32,
+    #[schemars(description = "New IP address in CIDR notation, e.g. 192.0.2.10/24")]
+    pub address: Option<String>,
+    #[serde(flatten)]
+    pub fields: IpAddressFields,
+}
+
+pub async fn ip_address_update(
+    client: &NetboxClient,
+    p: IpAddressUpdateParams,
+) -> Result<Value, NetboxError> {
+    let mut body = Map::new();
+    insert_opt(&mut body, "address", p.address);
+    p.fields.insert_into(&mut body);
+    client
+        .patch(IP_ADDRESSES_PATH, p.id, &Value::Object(body))
         .await
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct IpAddressDeleteParams {
+    #[schemars(description = "NetBox ID of the IP address to delete (required)")]
+    pub id: i32,
+}
+
+pub async fn ip_address_delete(
+    client: &NetboxClient,
+    p: IpAddressDeleteParams,
+) -> Result<(), NetboxError> {
+    client.delete(IP_ADDRESSES_PATH, p.id).await
 }
 
 // --------------------------------------------------------------------------
@@ -521,4 +633,131 @@ pub async fn roles_list(client: &NetboxClient, p: RolesListParams) -> Result<Val
         .many("slug", p.slug)
         .opt("ordering", p.ordering);
     qb.run(client, "/api/ipam/roles/", p.pagination).await
+}
+
+// --------------------------------------------------------------------------
+// Tests
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::{
+        IpAddressCreateParams, IpAddressDeleteParams, IpAddressFields, IpAddressUpdateParams,
+        ip_address_create, ip_address_delete, ip_address_update,
+    };
+    use crate::client::NetboxClient;
+
+    fn mock_client(server: &MockServer) -> NetboxClient {
+        NetboxClient::new(server.uri(), "test-token").unwrap()
+    }
+
+    /// All-`None` field set; tests override only what they exercise.
+    fn empty_fields() -> IpAddressFields {
+        IpAddressFields {
+            status: None,
+            role: None,
+            vrf: None,
+            tenant: None,
+            dns_name: None,
+            description: None,
+            comments: None,
+            nat_inside: None,
+            assigned_object_type: None,
+            assigned_object_id: None,
+            tags: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn ip_address_create_sends_address_and_only_set_fields() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/ipam/ip-addresses/"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(json!({ "id": 1 })))
+            .mount(&server)
+            .await;
+
+        ip_address_create(
+            &mock_client(&server),
+            IpAddressCreateParams {
+                address: "192.0.2.10/24".into(),
+                fields: IpAddressFields {
+                    status: Some("reserved".into()),
+                    dns_name: Some("host.example.com".into()),
+                    assigned_object_type: Some("dcim.interface".into()),
+                    assigned_object_id: Some(12),
+                    ..empty_fields()
+                },
+            },
+        )
+        .await
+        .unwrap();
+
+        let reqs = server.received_requests().await.unwrap();
+        let body = reqs
+            .iter()
+            .find(|r| r.method == wiremock::http::Method::POST)
+            .and_then(|r| r.body_json::<serde_json::Value>().ok())
+            .expect("POST body");
+        assert_eq!(body["address"], "192.0.2.10/24");
+        assert_eq!(body["status"], "reserved");
+        assert_eq!(body["dns_name"], "host.example.com");
+        assert_eq!(body["assigned_object_type"], "dcim.interface");
+        assert_eq!(body["assigned_object_id"], 12);
+        // Unset optionals must be omitted, not sent as null.
+        assert!(body.get("vrf").is_none());
+        assert!(body.get("role").is_none());
+        assert!(body.get("tenant").is_none());
+    }
+
+    #[tokio::test]
+    async fn ip_address_update_patches_id_with_partial_body() {
+        let server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path("/api/ipam/ip-addresses/5/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "id": 5 })))
+            .mount(&server)
+            .await;
+
+        ip_address_update(
+            &mock_client(&server),
+            IpAddressUpdateParams {
+                id: 5,
+                address: None,
+                fields: IpAddressFields {
+                    status: Some("deprecated".into()),
+                    ..empty_fields()
+                },
+            },
+        )
+        .await
+        .unwrap();
+
+        let reqs = server.received_requests().await.unwrap();
+        let body = reqs
+            .iter()
+            .find(|r| r.method == wiremock::http::Method::PATCH)
+            .and_then(|r| r.body_json::<serde_json::Value>().ok())
+            .expect("PATCH body");
+        assert_eq!(body["status"], "deprecated");
+        assert_eq!(body.as_object().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn ip_address_delete_hits_id_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("DELETE"))
+            .and(path("/api/ipam/ip-addresses/5/"))
+            .respond_with(ResponseTemplate::new(204))
+            .mount(&server)
+            .await;
+
+        ip_address_delete(&mock_client(&server), IpAddressDeleteParams { id: 5 })
+            .await
+            .unwrap();
+    }
 }
