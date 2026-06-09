@@ -323,6 +323,40 @@ macro_rules! delegate_get {
     }};
 }
 
+/// Run a write domain function that returns the created/updated object.
+/// `$verb` labels the failure message (e.g. "creating", "updating"); the
+/// returned object flows through `json_result` so writes are slimmed like reads.
+macro_rules! delegate_write {
+    ($self:expr, $domain_fn:path, $p:expr, $verb:literal, $noun:literal) => {{
+        let client = $self.get_client();
+        match $domain_fn(client, $p).await {
+            Ok(v) => json_result(v),
+            Err(e) => tool_error(&format!("{} {}: {}", $verb, $noun, e.to_tool_message())),
+        }
+    }};
+}
+
+/// Run a delete domain function (returns `()`), replying with a text
+/// confirmation on success.
+macro_rules! delegate_delete {
+    ($self:expr, $domain_fn:path, $p:expr, $id:expr, $noun:literal) => {{
+        let client = $self.get_client();
+        let id = $id;
+        match $domain_fn(client, $p).await {
+            Ok(()) => Ok(CallToolResult::success(vec![Content::text(format!(
+                "{} {} deleted",
+                $noun, id
+            ))])),
+            Err(e) => tool_error(&format!(
+                "deleting {} {}: {}",
+                $noun,
+                id,
+                e.to_tool_message()
+            )),
+        }
+    }};
+}
+
 // --------------------------------------------------------------------------
 // Server struct
 // --------------------------------------------------------------------------
@@ -1683,6 +1717,63 @@ impl NetboxMcpServer {
         Parameters(p): Parameters<GetByIdParams>,
     ) -> Result<CallToolResult, McpError> {
         delegate_get!(self, "/api/virtualization/virtual-machines/", p.id, "VM")
+    }
+    #[tool(
+        description = "Create a virtual machine. Required: name plus one of cluster/site/device (NetBox IDs — use the *_list tools to find them). Optional: role, tenant, platform, status, vcpus, memory, disk, description, comments, tags. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_virtualization_vms_create(
+        &self,
+        Parameters(p): Parameters<virtualization::VmCreateParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_write!(
+            self,
+            virtualization::vm_create,
+            p,
+            "creating",
+            "virtual machine"
+        )
+    }
+    #[tool(
+        description = "Update a virtual machine by NetBox ID (partial update — only supplied fields change). Foreign keys are NetBox IDs. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_virtualization_vms_update(
+        &self,
+        Parameters(p): Parameters<virtualization::VmUpdateParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_write!(
+            self,
+            virtualization::vm_update,
+            p,
+            "updating",
+            "virtual machine"
+        )
+    }
+    #[tool(
+        description = "Delete a virtual machine by its NetBox ID. This is destructive and cannot be undone. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = true,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_virtualization_vms_delete(
+        &self,
+        Parameters(p): Parameters<virtualization::VmDeleteParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_delete!(self, virtualization::vm_delete, p, p.id, "virtual machine")
     }
 
     #[tool(

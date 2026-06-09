@@ -29,7 +29,7 @@ The codebase is a single Rust binary with four modules:
 src/
   main.rs         — CLI (clap), startup logging
   config.rs       — Config loading: ~/.netbox_mcp.json + env var override
-  client.rs       — Thin reqwest wrapper: list(), get(), list_all()
+  client.rs       — Thin reqwest wrapper: list(), get(), list_all() (reads); post(), patch(), delete() (writes)
   tools/
     mod.rs        — NetboxMcpServer struct, paginate(), clean_page_response(), all tool shims, unit + integration tests
     slim.rs       — slim_value(), STRIP_KEYS, TAG_KEEP_KEYS (response slimming logic)
@@ -42,12 +42,15 @@ src/
 **Transport:** stdio only. The binary runs as a subprocess managed by the MCP client; credentials are read from config at startup via `NetboxMcpServer::new(url, token)`.
 
 **Tool registration flow:**
-The `#[tool_router]` macro on `impl NetboxMcpServer` in `tools/mod.rs` generates the MCP tool registry. Each shim is a thin `#[tool]`-annotated async method that calls a domain function (e.g. `dcim::devices_list`) via the `delegate_list!` or `delegate_get!` macros.
+The `#[tool_router]` macro on `impl NetboxMcpServer` in `tools/mod.rs` generates the MCP tool registry. Each shim is a thin `#[tool]`-annotated async method that calls a domain function (e.g. `dcim::devices_list`) via a `delegate_*!` macro: `delegate_list!`/`delegate_get!` for reads, `delegate_write!` (create/update) and `delegate_delete!` for writes.
 
 **Adding a new tool:**
 1. Add a `*Params` struct and a domain function to the relevant `tools/<domain>.rs`.
-2. Add the `#[tool]` shim to `tools/mod.rs` using `delegate_list!` or `delegate_get!`.
+2. Add the `#[tool]` shim to `tools/mod.rs` using the matching `delegate_*!` macro.
 3. No routing table to update — the `#[tool_router]` macro handles registration.
+
+**Write tools (create/update/delete):**
+A limited set of mutating tools exists (virtualization VMs are the first — see `tools/virtualization.rs`). Writes are always registered; there is **no read-only gate** — safety relies on the NetBox API token's permissions (a read-only token simply gets `403`). Conventions: foreign-key fields are taken as numeric NetBox IDs (callers use the `*_list` tools to resolve names first); bodies are built field-by-field with `insert_opt` so unset options are omitted (PATCH stays a partial update); create/update return the object through `json_result` (so writes are slimmed like reads), delete returns a text confirmation. Write shims carry `read_only_hint = false` and, for delete, `destructive_hint = true`.
 
 **Pagination pattern:**
 All list tools share `paginate()` in `tools/mod.rs`. It calls `client.list()` (single page) or `client.list_all()` (all pages) based on `fetch_all`. Responses go through `clean_page_response()` which strips `next`/`previous` URLs and injects `{ has_more, next_offset }`. Default page size is 50; max is 1000.

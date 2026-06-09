@@ -12,7 +12,7 @@ use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 #[derive(Parser)]
 #[command(
     name = "netbox-mcp",
-    about = "Read-only MCP server for NetBox infrastructure data"
+    about = "MCP server for NetBox infrastructure data (read + limited write)"
 )]
 struct Args {
     /// Path to the configuration file (default: ~/.netbox_mcp.json)

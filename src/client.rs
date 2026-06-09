@@ -148,6 +148,34 @@ impl NetboxClient {
         }))
     }
 
+    /// POST /api/{path} with a JSON body — returns the created object.
+    pub async fn post(&self, path: &str, body: &Value) -> Result<Value, NetboxError> {
+        let url = format!("{}{}", self.base_url.trim_end_matches('/'), path);
+        let resp = self.http.post(&url).json(body).send().await?;
+        self.handle_response(resp).await
+    }
+
+    /// PATCH /api/{path}{id}/ with a JSON body — partial update, returns the
+    /// updated object. NetBox treats PATCH as a partial update (unlike PUT,
+    /// which requires every writable field).
+    pub async fn patch(&self, path: &str, id: i32, body: &Value) -> Result<Value, NetboxError> {
+        let url = format!("{}{}{}/", self.base_url.trim_end_matches('/'), path, id);
+        let resp = self.http.patch(&url).json(body).send().await?;
+        self.handle_response(resp).await
+    }
+
+    /// DELETE /api/{path}{id}/ — returns () on success (NetBox replies 204).
+    pub async fn delete(&self, path: &str, id: i32) -> Result<(), NetboxError> {
+        let url = format!("{}{}{}/", self.base_url.trim_end_matches('/'), path, id);
+        let resp = self.http.delete(&url).send().await?;
+        let status = resp.status();
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(NetboxError::Api { status, body });
+        }
+        Ok(())
+    }
+
     async fn handle_response(&self, resp: reqwest::Response) -> Result<Value, NetboxError> {
         let status = resp.status();
         if !status.is_success() {
@@ -210,5 +238,113 @@ mod tests {
             name: "rtr-01".to_string(),
         };
         assert_eq!(e.to_tool_message(), "device 'rtr-01' not found");
+    }
+
+    // ----- write verbs -----
+
+    use serde_json::json;
+    use wiremock::matchers::{body_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn mock_client(server: &MockServer) -> NetboxClient {
+        NetboxClient::new(server.uri(), "test-token").unwrap()
+    }
+
+    #[tokio::test]
+    async fn post_sends_json_body_and_returns_created_object() {
+        let server = MockServer::start().await;
+        let req_body = json!({ "name": "vm-01", "cluster": 3 });
+        Mock::given(method("POST"))
+            .and(path("/api/virtualization/virtual-machines/"))
+            .and(body_json(&req_body))
+            .respond_with(
+                ResponseTemplate::new(201).set_body_json(json!({ "id": 7, "name": "vm-01" })),
+            )
+            .mount(&server)
+            .await;
+
+        let resp = mock_client(&server)
+            .post("/api/virtualization/virtual-machines/", &req_body)
+            .await
+            .unwrap();
+        assert_eq!(resp["id"], 7);
+        assert_eq!(resp["name"], "vm-01");
+    }
+
+    #[tokio::test]
+    async fn post_error_surfaces_api_error_with_body() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/virtualization/virtual-machines/"))
+            .respond_with(
+                ResponseTemplate::new(400)
+                    .set_body_json(json!({ "name": ["This field is required."] })),
+            )
+            .mount(&server)
+            .await;
+
+        let err = mock_client(&server)
+            .post("/api/virtualization/virtual-machines/", &json!({}))
+            .await
+            .unwrap_err();
+        match err {
+            NetboxError::Api { status, body } => {
+                assert_eq!(status, StatusCode::BAD_REQUEST);
+                assert!(body.contains("This field is required."));
+            }
+            other => panic!("expected Api error, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn patch_targets_id_path_and_returns_updated_object() {
+        let server = MockServer::start().await;
+        let req_body = json!({ "status": "offline" });
+        Mock::given(method("PATCH"))
+            .and(path("/api/virtualization/virtual-machines/7/"))
+            .and(body_json(&req_body))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(json!({ "id": 7, "status": { "value": "offline" } })),
+            )
+            .mount(&server)
+            .await;
+
+        let resp = mock_client(&server)
+            .patch("/api/virtualization/virtual-machines/", 7, &req_body)
+            .await
+            .unwrap();
+        assert_eq!(resp["status"]["value"], "offline");
+    }
+
+    #[tokio::test]
+    async fn delete_targets_id_path_and_succeeds_on_204() {
+        let server = MockServer::start().await;
+        Mock::given(method("DELETE"))
+            .and(path("/api/virtualization/virtual-machines/7/"))
+            .respond_with(ResponseTemplate::new(204))
+            .mount(&server)
+            .await;
+
+        mock_client(&server)
+            .delete("/api/virtualization/virtual-machines/", 7)
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn delete_error_surfaces_api_error() {
+        let server = MockServer::start().await;
+        Mock::given(method("DELETE"))
+            .and(path("/api/virtualization/virtual-machines/99/"))
+            .respond_with(ResponseTemplate::new(404).set_body_string("Not found."))
+            .mount(&server)
+            .await;
+
+        let err = mock_client(&server)
+            .delete("/api/virtualization/virtual-machines/", 99)
+            .await
+            .unwrap_err();
+        assert!(matches!(err, NetboxError::Api { status, .. } if status == StatusCode::NOT_FOUND));
     }
 }

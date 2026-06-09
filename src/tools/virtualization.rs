@@ -1,7 +1,17 @@
 use crate::client::{NetboxClient, NetboxError};
 use crate::tools::{PaginationParams, QueryBuilder, resolve_vm_id_or};
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
+
+const VMS_PATH: &str = "/api/virtualization/virtual-machines/";
+
+/// Insert `(key, v)` into a JSON body map only when `v` is `Some`, so create
+/// bodies carry only the fields the caller set and PATCH stays partial.
+fn insert_opt<T: Into<Value>>(map: &mut Map<String, Value>, key: &str, v: Option<T>) {
+    if let Some(v) = v {
+        map.insert(key.to_string(), v.into());
+    }
+}
 
 // --------------------------------------------------------------------------
 // Virtual Machines
@@ -53,6 +63,110 @@ pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, 
         p.pagination,
     )
     .await
+}
+
+// --------------------------------------------------------------------------
+// Virtual Machines — write (create / update / delete)
+//
+// Foreign-key fields are taken as numeric NetBox IDs; use the corresponding
+// *_list tools to find them. NetBox requires `name` plus exactly one of
+// cluster/site/device on create — its 400 response spells out any violation.
+// --------------------------------------------------------------------------
+
+/// Writable VM attributes shared by create and update. Foreign keys are NetBox
+/// IDs. Flattened into the create/update params so both expose the same fields.
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct VmFields {
+    #[schemars(description = "Cluster ID (NetBox requires one of cluster/site/device)")]
+    pub cluster: Option<i32>,
+    #[schemars(description = "Site ID")]
+    pub site: Option<i32>,
+    #[schemars(description = "Device ID (host the VM runs on)")]
+    pub device: Option<i32>,
+    #[schemars(description = "Device role ID")]
+    pub role: Option<i32>,
+    #[schemars(description = "Tenant ID")]
+    pub tenant: Option<i32>,
+    #[schemars(description = "Platform ID")]
+    pub platform: Option<i32>,
+    #[schemars(
+        description = "Status (active, planned, staged, failed, offline, decommissioning); defaults to active on create"
+    )]
+    pub status: Option<String>,
+    #[schemars(description = "Number of vCPUs")]
+    pub vcpus: Option<f64>,
+    #[schemars(description = "Memory in MB")]
+    pub memory: Option<i64>,
+    #[schemars(description = "Disk in MB")]
+    pub disk: Option<i64>,
+    #[schemars(description = "Short description")]
+    pub description: Option<String>,
+    #[schemars(description = "Long-form comments")]
+    pub comments: Option<String>,
+    #[schemars(description = "Tag IDs (on update, replaces the existing set)")]
+    pub tags: Option<Vec<i32>>,
+}
+
+impl VmFields {
+    /// Insert every set field into a request body map, omitting `None`s so
+    /// PATCH stays a partial update.
+    fn insert_into(self, body: &mut Map<String, Value>) {
+        insert_opt(body, "cluster", self.cluster);
+        insert_opt(body, "site", self.site);
+        insert_opt(body, "device", self.device);
+        insert_opt(body, "role", self.role);
+        insert_opt(body, "tenant", self.tenant);
+        insert_opt(body, "platform", self.platform);
+        insert_opt(body, "status", self.status);
+        insert_opt(body, "vcpus", self.vcpus);
+        insert_opt(body, "memory", self.memory);
+        insert_opt(body, "disk", self.disk);
+        insert_opt(body, "description", self.description);
+        insert_opt(body, "comments", self.comments);
+        insert_opt(body, "tags", self.tags);
+    }
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct VmCreateParams {
+    #[schemars(description = "VM name (required)")]
+    pub name: String,
+    #[serde(flatten)]
+    pub fields: VmFields,
+}
+
+pub async fn vm_create(client: &NetboxClient, p: VmCreateParams) -> Result<Value, NetboxError> {
+    let mut body = Map::new();
+    body.insert("name".to_string(), Value::String(p.name));
+    p.fields.insert_into(&mut body);
+    client.post(VMS_PATH, &Value::Object(body)).await
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct VmUpdateParams {
+    #[schemars(description = "NetBox ID of the VM to update (required)")]
+    pub id: i32,
+    #[schemars(description = "New VM name")]
+    pub name: Option<String>,
+    #[serde(flatten)]
+    pub fields: VmFields,
+}
+
+pub async fn vm_update(client: &NetboxClient, p: VmUpdateParams) -> Result<Value, NetboxError> {
+    let mut body = Map::new();
+    insert_opt(&mut body, "name", p.name);
+    p.fields.insert_into(&mut body);
+    client.patch(VMS_PATH, p.id, &Value::Object(body)).await
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct VmDeleteParams {
+    #[schemars(description = "NetBox ID of the VM to delete (required)")]
+    pub id: i32,
+}
+
+pub async fn vm_delete(client: &NetboxClient, p: VmDeleteParams) -> Result<(), NetboxError> {
+    client.delete(VMS_PATH, p.id).await
 }
 
 // --------------------------------------------------------------------------
@@ -242,4 +356,133 @@ pub async fn virtual_disks_list(
         .opt("ordering", p.ordering);
     qb.run(client, "/api/virtualization/virtual-disks/", p.pagination)
         .await
+}
+
+// --------------------------------------------------------------------------
+// Tests
+// --------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use super::{
+        VmCreateParams, VmDeleteParams, VmFields, VmUpdateParams, vm_create, vm_delete, vm_update,
+    };
+    use crate::client::NetboxClient;
+
+    fn mock_client(server: &MockServer) -> NetboxClient {
+        NetboxClient::new(server.uri(), "test-token").unwrap()
+    }
+
+    /// All-`None` field set; tests override only what they exercise.
+    fn empty_fields() -> VmFields {
+        VmFields {
+            cluster: None,
+            site: None,
+            device: None,
+            role: None,
+            tenant: None,
+            platform: None,
+            status: None,
+            vcpus: None,
+            memory: None,
+            disk: None,
+            description: None,
+            comments: None,
+            tags: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn vm_create_sends_only_set_fields() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/virtualization/virtual-machines/"))
+            .respond_with(ResponseTemplate::new(201).set_body_json(json!({ "id": 1 })))
+            .mount(&server)
+            .await;
+
+        vm_create(
+            &mock_client(&server),
+            VmCreateParams {
+                name: "vm-01".into(),
+                fields: VmFields {
+                    cluster: Some(3),
+                    status: Some("active".into()),
+                    memory: Some(2048),
+                    tags: Some(vec![5, 6]),
+                    ..empty_fields()
+                },
+            },
+        )
+        .await
+        .unwrap();
+
+        let reqs = server.received_requests().await.unwrap();
+        let body = reqs
+            .iter()
+            .find(|r| r.method == wiremock::http::Method::POST)
+            .and_then(|r| r.body_json::<serde_json::Value>().ok())
+            .expect("POST body");
+        assert_eq!(body["name"], "vm-01");
+        assert_eq!(body["cluster"], 3);
+        assert_eq!(body["status"], "active");
+        assert_eq!(body["memory"], 2048);
+        assert_eq!(body["tags"], json!([5, 6]));
+        // Unset optional fields must be omitted, not sent as null.
+        assert!(body.get("site").is_none());
+        assert!(body.get("vcpus").is_none());
+        assert!(body.get("description").is_none());
+    }
+
+    #[tokio::test]
+    async fn vm_update_patches_id_with_partial_body() {
+        let server = MockServer::start().await;
+        Mock::given(method("PATCH"))
+            .and(path("/api/virtualization/virtual-machines/7/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "id": 7 })))
+            .mount(&server)
+            .await;
+
+        vm_update(
+            &mock_client(&server),
+            VmUpdateParams {
+                id: 7,
+                name: None,
+                fields: VmFields {
+                    status: Some("offline".into()),
+                    ..empty_fields()
+                },
+            },
+        )
+        .await
+        .unwrap();
+
+        let reqs = server.received_requests().await.unwrap();
+        let body = reqs
+            .iter()
+            .find(|r| r.method == wiremock::http::Method::PATCH)
+            .and_then(|r| r.body_json::<serde_json::Value>().ok())
+            .expect("PATCH body");
+        // Only the single field under change is sent.
+        assert_eq!(body["status"], "offline");
+        assert_eq!(body.as_object().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn vm_delete_hits_id_path() {
+        let server = MockServer::start().await;
+        Mock::given(method("DELETE"))
+            .and(path("/api/virtualization/virtual-machines/7/"))
+            .respond_with(ResponseTemplate::new(204))
+            .mount(&server)
+            .await;
+
+        vm_delete(&mock_client(&server), VmDeleteParams { id: 7 })
+            .await
+            .unwrap();
+    }
 }

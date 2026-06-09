@@ -6,10 +6,13 @@
 //! instance and apply the same `slim_value` transform the rmcp boundary
 //! applies, so assertions run on exactly what an MCP client receives.
 //!
-//! Because the server is read-only, the suite cannot self-seed via the API the
-//! way a write-capable server would. Instead the deterministic fixture is
-//! `scripts/seed_data.py`; tests assert *behavior* (filters honored, invariants
-//! hold) rather than exact counts, so they survive seed-data drift.
+//! Reads rely on a deterministic fixture (`scripts/seed_data.py`) rather than
+//! self-seeding: tests assert *behavior* (filters honored, invariants hold)
+//! rather than exact counts, so they survive seed-data drift. The write tools
+//! (e.g. VM create/update/delete) are exercised by self-cleaning lifecycle
+//! tests that create an object, mutate it, and delete it within one test, so
+//! they leave the seeded instance as they found it (a write-enabled token is
+//! required; otherwise NetBox returns 403 and the create fails).
 //!
 //! See `docs/testing.md` for the philosophy and how to run these.
 

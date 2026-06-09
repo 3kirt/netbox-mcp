@@ -9,9 +9,22 @@ use super::harness::{
     assert_clean, assert_nonempty, assert_page_shape, first_id, params, results, skip_unless_live,
     slim, slim_get,
 };
+use crate::client::NetboxError;
 use crate::tools::virtualization::{
     self, ClusterTypesListParams, ClustersListParams, InterfacesListParams, VmsListParams,
 };
+
+const VMS_PATH: &str = "/api/virtualization/virtual-machines/";
+
+/// A name unique to this run, so a leaked object from a prior run never clashes
+/// and parallel test binaries don't collide.
+fn unique_vm_name() -> String {
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("system clock before epoch")
+        .as_nanos();
+    format!("mcp-live-vm-{nanos}")
+}
 
 #[tokio::test]
 async fn vms_list_strips_local_context_data() {
@@ -119,6 +132,73 @@ async fn cluster_types_filter_by_slug_is_exact() {
     for t in results(&resp) {
         assert_eq!(t["slug"], "vsphere");
     }
+}
+
+/// Exercises the write path end-to-end against real NetBox: create a VM, flip a
+/// field via PATCH, confirm it persisted through the get path, then delete and
+/// confirm the follow-up get 404s. Self-cleaning — the VM it creates is the VM
+/// it deletes — so it leaves the seeded instance as it found it. Requires a
+/// write-enabled token; a read-only token makes `vm_create` fail with 403.
+#[tokio::test]
+async fn vm_create_update_delete_lifecycle() {
+    let env = skip_unless_live!();
+
+    // A VM needs a cluster (or site/device) — borrow one the seed created.
+    let clusters = slim(
+        virtualization::clusters_list(&env.client, params(json!({})))
+            .await
+            .unwrap(),
+    );
+    assert_nonempty(&clusters, "clusters");
+    let cluster_id = first_id(&clusters);
+    let name = unique_vm_name();
+
+    // Create — response is slimmed exactly as the rmcp boundary would slim it.
+    let created = slim(
+        virtualization::vm_create(
+            &env.client,
+            params(json!({ "name": name, "cluster": cluster_id, "status": "active" })),
+        )
+        .await
+        .expect("vm_create"),
+    );
+    assert_clean(&created, "vm.create");
+    assert_eq!(created["name"], name);
+    assert_eq!(created["status"]["value"], "active");
+    let id = created["id"].as_i64().expect("created VM has an id") as i32;
+
+    // Partial update: flip status, leave everything else untouched.
+    let updated = slim(
+        virtualization::vm_update(
+            &env.client,
+            params(json!({ "id": id, "status": "offline" })),
+        )
+        .await
+        .expect("vm_update"),
+    );
+    assert_clean(&updated, "vm.update");
+    assert_eq!(updated["id"], id);
+    assert_eq!(updated["status"]["value"], "offline");
+    assert_eq!(updated["name"], name, "partial update must not change name");
+
+    // Read back through the get path: the change persisted server-side.
+    let got = slim_get(&env.client, VMS_PATH, id).await;
+    assert_eq!(got["status"]["value"], "offline");
+
+    // Delete, then a follow-up get must surface a 404.
+    virtualization::vm_delete(&env.client, params(json!({ "id": id })))
+        .await
+        .expect("vm_delete");
+
+    let err = env
+        .client
+        .get(VMS_PATH, id)
+        .await
+        .expect_err("get after delete must 404");
+    assert!(
+        matches!(err, NetboxError::Api { status, .. } if status.as_u16() == 404),
+        "expected 404 after delete, got {err:?}"
+    );
 }
 
 #[tokio::test]

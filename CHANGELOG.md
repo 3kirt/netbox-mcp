@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Write support — Virtualization VMs (first mutating tools)** — added `netbox_virtualization_vms_create`, `_update`, and `_delete`, backed by new `post()`/`patch()`/`delete()` verbs on the client. This is the initial read/write test case; other objects remain read-only. Writes are always registered (no read-only gate) — a NetBox token without write permission simply receives `403`, surfaced as a tool error. Foreign keys are passed as numeric IDs (resolve names via the `*_list` tools); create/update return the slimmed object, delete returns a confirmation. Delete carries the MCP `destructive_hint`.
+
 ### Testing
 
+- **Live coverage — VM write lifecycle (+1 test)** — added a self-cleaning `vm_create_update_delete_lifecycle` to `live/virtualization.rs` that creates a VM in a seeded cluster, flips its status via PATCH, confirms the change persisted through the get path, then deletes it and asserts the follow-up get 404s. It leaves the instance as it found it, so the seed stays clean. Requires a write-enabled token (a read-only token makes `vm_create` 403). The live-suite module doc no longer claims the server is read-only.
 - **Live coverage — Core, Users, pagination, and error paths (+12 tests)** — added `live/core.rs` (object changes: list, get, type filter, `diff_only`), `live/users.rs` (users, tokens), `live/pagination.rs` (first-page math, walking every page, `fetch_all` against the real `list_all()` path), and `live/errors.rs` (404 on an unknown id, 400 on an invalid filter value). These need no seed changes — the changelog, admin user, and minted token already exist.
 - **Live coverage — Circuits, VPN, Wireless (+19 tests, 76 total)** — extended `scripts/seed_data.py` to populate all three domains (circuit providers/types/circuits/terminations, VPN tunnel group/tunnels/terminations/IKE+IPSec policies/L2VPN, wireless LAN group/LANs/link) and added `live/circuits.rs`, `live/vpn.rs`, `live/wireless.rs`. Terminations use the NetBox 4.x generic `scope` (`termination_type`/`_id`); the wireless link joins two `ieee802.11ac` interfaces. Seed remains idempotent (termination/link creates use filter-first `get_or_create`).
 
