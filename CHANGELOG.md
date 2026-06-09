@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Write support — Extras tags** — added `netbox_extras_tags_create`, `_update`, and `_delete`, following the established write pattern. Create requires `name` and `slug`; optional `color` (6-digit hex), `description`, `object_types` (content-type labels like `["dcim.device"]`), and `weight`. Delete carries the MCP `destructive_hint` (removing a tag detaches it from every tagged object).
+
+### Testing
+
+- **Live coverage — tag write lifecycle (+1 test)** — added a self-cleaning `tag_create_update_delete_lifecycle` to `live/extras.rs` that creates a run-unique tag, recolors it via PATCH, confirms persistence through the get path, then deletes it and asserts the follow-up get 404s. Leaves the seed clean.
+
 ## [0.7.0] - 2026-06-08
 
 ### Added

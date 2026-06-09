@@ -2045,6 +2045,51 @@ impl NetboxMcpServer {
     ) -> Result<CallToolResult, McpError> {
         delegate_get!(self, "/api/extras/tags/", p.id, "tag")
     }
+    #[tool(
+        description = "Create a tag. Required: name and slug. Optional: color (6-digit hex, no '#'), description, object_types (content-type labels like [\"dcim.device\"]; empty = all types), weight. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = false,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_extras_tags_create(
+        &self,
+        Parameters(p): Parameters<extras::TagCreateParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_write!(self, extras::tag_create, p, "creating", "tag")
+    }
+    #[tool(
+        description = "Update a tag by NetBox ID (partial update — only supplied fields change). Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_extras_tags_update(
+        &self,
+        Parameters(p): Parameters<extras::TagUpdateParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_write!(self, extras::tag_update, p, "updating", "tag")
+    }
+    #[tool(
+        description = "Delete a tag by its NetBox ID. This is destructive and removes the tag from all tagged objects. Requires a write-enabled NetBox token.",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = true,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn netbox_extras_tags_delete(
+        &self,
+        Parameters(p): Parameters<extras::TagDeleteParams>,
+    ) -> Result<CallToolResult, McpError> {
+        delegate_delete!(self, extras::tag_delete, p, p.id, "tag")
+    }
 
     #[tool(
         description = "List config contexts (filter: q, name, is_active, site, role). Use fetch_all=true for all results.",
