@@ -2,12 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.7.0] - 2026-06-08
 
 ### Added
 
 - **Write support — Virtualization VMs (first mutating tools)** — added `netbox_virtualization_vms_create`, `_update`, and `_delete`, backed by new `post()`/`patch()`/`delete()` verbs on the client. This is the initial read/write test case; other objects remain read-only. Writes are always registered (no read-only gate) — a NetBox token without write permission simply receives `403`, surfaced as a tool error. Foreign keys are passed as numeric IDs (resolve names via the `*_list` tools); create/update return the slimmed object, delete returns a confirmation. Delete carries the MCP `destructive_hint`.
-- **Write support — IPAM IP addresses** — added `netbox_ipam_ip_addresses_create`, `_update`, and `_delete`, following the VM write pattern. Create requires `address` (CIDR); optional `status`, `role`, `vrf`, `tenant`, `dns_name`, `description`, `comments`, `nat_inside`, `tags`, plus `assigned_object_type`/`assigned_object_id` to attach the IP to an interface. The `insert_opt` body helper is now shared in `tools/mod.rs` (alongside `QueryBuilder`) rather than duplicated per domain.
+- **Write support — IPAM IP addresses** — added `netbox_ipam_ip_addresses_create`, `_update`, and `_delete`, following the VM write pattern. Create requires `address` (CIDR); optional `status`, `role`, `vrf`, `tenant`, `dns_name`, `description`, `comments`, `nat_inside`, `tags`, plus `assigned_object_type`/`assigned_object_id` to attach the IP to an interface.
+
+### Internals
+
+- **`BodyBuilder` for write request bodies** — write payloads are now assembled with a fluent `BodyBuilder` (`.req` for required fields, `.opt` to include a field only when `Some`), the write-side counterpart to `QueryBuilder`. Replaces the earlier per-domain `insert_opt` helper, so VM and IP-address writes build their bodies the same way and PATCH stays a partial update.
+- **`CommonListParams` extraction + shared test client** — the near-universal `q` + `ordering` + pagination fields are now flattened from a single `CommonListParams` (driven by `qb.run_common(...)`) instead of being re-declared on every list-params struct; endpoints without a `q` filter keep their fields inline and call `qb.run(...)`. Unit tests share one `test_support::mock_client` helper rather than redefining it per module.
 
 ### Testing
 
