@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{CommonListParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,25 +9,19 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TagsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by tag name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by color (hex, e.g. ff0000)")]
     pub color: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tags_list(client: &NetboxClient, p: TagsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("color", p.color)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/extras/tags/", p.pagination).await
+        .many("color", p.color);
+    qb.run_common(client, "/api/extras/tags/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -36,8 +30,6 @@ pub async fn tags_list(client: &NetboxClient, p: TagsListParams) -> Result<Value
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ConfigContextsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by config context name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by active state")]
@@ -48,10 +40,8 @@ pub struct ConfigContextsListParams {
     pub role: Option<Vec<String>>,
     #[schemars(description = "Filter by platform slug")]
     pub platform: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn config_contexts_list(
@@ -59,14 +49,12 @@ pub async fn config_contexts_list(
     p: ConfigContextsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .opt("is_active", p.is_active)
         .many("site", p.site)
         .many("role", p.role)
-        .many("platform", p.platform)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/extras/config-contexts/", p.pagination)
+        .many("platform", p.platform);
+    qb.run_common(client, "/api/extras/config-contexts/", p.common)
         .await
 }
 
@@ -76,16 +64,12 @@ pub async fn config_contexts_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct JournalEntriesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by creating user (username)")]
     pub created_by: Option<Vec<String>>,
     #[schemars(description = "Filter by kind (info, success, warning, danger)")]
     pub kind: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn journal_entries_list(
@@ -93,11 +77,9 @@ pub async fn journal_entries_list(
     p: JournalEntriesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("created_by", p.created_by)
-        .many("kind", p.kind)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/extras/journal-entries/", p.pagination)
+        .many("kind", p.kind);
+    qb.run_common(client, "/api/extras/journal-entries/", p.common)
         .await
 }
 
@@ -107,8 +89,6 @@ pub async fn journal_entries_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CustomFieldsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by custom field name")]
     pub name: Option<Vec<String>>,
     #[schemars(
@@ -117,10 +97,8 @@ pub struct CustomFieldsListParams {
     pub r#type: Option<Vec<String>>,
     #[schemars(description = "Filter by content type (e.g. dcim.device)")]
     pub content_types: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn custom_fields_list(
@@ -128,12 +106,10 @@ pub async fn custom_fields_list(
     p: CustomFieldsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("type", p.r#type)
-        .many("content_types", p.content_types)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/extras/custom-fields/", p.pagination)
+        .many("content_types", p.content_types);
+    qb.run_common(client, "/api/extras/custom-fields/", p.common)
         .await
 }
 
@@ -143,16 +119,12 @@ pub async fn custom_fields_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ExportTemplatesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by export template name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by content type (e.g. dcim.device)")]
     pub content_types: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn export_templates_list(
@@ -160,11 +132,9 @@ pub async fn export_templates_list(
     p: ExportTemplatesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("content_types", p.content_types)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/extras/export-templates/", p.pagination)
+        .many("content_types", p.content_types);
+    qb.run_common(client, "/api/extras/export-templates/", p.common)
         .await
 }
 
@@ -174,16 +144,12 @@ pub async fn export_templates_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct WebhooksListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by webhook name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by HTTP method (GET, POST, PUT, PATCH, DELETE)")]
     pub http_method: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn webhooks_list(
@@ -191,9 +157,8 @@ pub async fn webhooks_list(
     p: WebhooksListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("http_method", p.http_method)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/extras/webhooks/", p.pagination).await
+        .many("http_method", p.http_method);
+    qb.run_common(client, "/api/extras/webhooks/", p.common)
+        .await
 }

@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{CommonListParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,18 +9,14 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TenantsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by tenant name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant group slug")]
     pub group: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tenants_list(
@@ -28,12 +24,11 @@ pub async fn tenants_list(
     p: TenantsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("group", p.group)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/tenancy/tenants/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/tenancy/tenants/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -42,16 +37,12 @@ pub async fn tenants_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TenantGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by tenant group name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by parent group slug")]
     pub parent: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tenant_groups_list(
@@ -59,11 +50,9 @@ pub async fn tenant_groups_list(
     p: TenantGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("parent", p.parent)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/tenancy/tenant-groups/", p.pagination)
+        .many("parent", p.parent);
+    qb.run_common(client, "/api/tenancy/tenant-groups/", p.common)
         .await
 }
 
@@ -73,16 +62,12 @@ pub async fn tenant_groups_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ContactsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by contact name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by contact group slug")]
     pub group: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn contacts_list(
@@ -90,11 +75,10 @@ pub async fn contacts_list(
     p: ContactsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("group", p.group)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/tenancy/contacts/", p.pagination).await
+        .many("group", p.group);
+    qb.run_common(client, "/api/tenancy/contacts/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -103,16 +87,12 @@ pub async fn contacts_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ContactGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by contact group name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by parent group slug")]
     pub parent: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn contact_groups_list(
@@ -120,11 +100,9 @@ pub async fn contact_groups_list(
     p: ContactGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("parent", p.parent)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/tenancy/contact-groups/", p.pagination)
+        .many("parent", p.parent);
+    qb.run_common(client, "/api/tenancy/contact-groups/", p.common)
         .await
 }
 
@@ -134,16 +112,12 @@ pub async fn contact_groups_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ContactRolesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by role name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn contact_roles_list(
@@ -151,10 +125,8 @@ pub async fn contact_roles_list(
     p: ContactRolesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/tenancy/contact-roles/", p.pagination)
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/tenancy/contact-roles/", p.common)
         .await
 }

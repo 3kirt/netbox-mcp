@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{BodyBuilder, PaginationParams, QueryBuilder, resolve_vm_id_or};
+use crate::tools::{BodyBuilder, CommonListParams, QueryBuilder, resolve_vm_id_or};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -11,8 +11,6 @@ const VMS_PATH: &str = "/api/virtualization/virtual-machines/";
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VmsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by VM name")]
     pub name: Option<Vec<String>>,
     #[schemars(
@@ -31,15 +29,12 @@ pub struct VmsListParams {
     pub platform: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("status", p.status)
         .many("site", p.site)
@@ -47,14 +42,9 @@ pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, 
         .many("role", p.role)
         .many("tenant", p.tenant)
         .many("platform", p.platform)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(
-        client,
-        "/api/virtualization/virtual-machines/",
-        p.pagination,
-    )
-    .await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/virtualization/virtual-machines/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -169,8 +159,6 @@ pub async fn vm_delete(client: &NetboxClient, p: VmDeleteParams) -> Result<(), N
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ClustersListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by cluster name")]
     pub name: Option<Vec<String>>,
     #[schemars(
@@ -187,10 +175,8 @@ pub struct ClustersListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn clusters_list(
@@ -198,16 +184,14 @@ pub async fn clusters_list(
     p: ClustersListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("status", p.status)
         .many("site", p.site)
         .many("group", p.group)
         .many("type", p.r#type)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/virtualization/clusters/", p.pagination)
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/virtualization/clusters/", p.common)
         .await
 }
 
@@ -217,16 +201,12 @@ pub async fn clusters_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ClusterGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by cluster group name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn cluster_groups_list(
@@ -234,11 +214,9 @@ pub async fn cluster_groups_list(
     p: ClusterGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/virtualization/cluster-groups/", p.pagination)
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/virtualization/cluster-groups/", p.common)
         .await
 }
 
@@ -248,16 +226,12 @@ pub async fn cluster_groups_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ClusterTypesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by cluster type name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn cluster_types_list(
@@ -265,11 +239,9 @@ pub async fn cluster_types_list(
     p: ClusterTypesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/virtualization/cluster-types/", p.pagination)
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/virtualization/cluster-types/", p.common)
         .await
 }
 
@@ -279,8 +251,6 @@ pub async fn cluster_types_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct InterfacesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by interface name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by enabled state")]
@@ -293,10 +263,8 @@ pub struct InterfacesListParams {
     pub mac_address: Option<String>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn interfaces_list(
@@ -307,13 +275,11 @@ pub async fn interfaces_list(
         resolve_vm_id_or(client, p.virtual_machine, p.virtual_machine_id).await?;
     let qb = QueryBuilder::new()
         .opt("virtual_machine_id", virtual_machine_id)
-        .opt("q", p.q)
         .many("name", p.name)
         .opt("enabled", p.enabled)
         .opt("mac_address", p.mac_address)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/virtualization/interfaces/", p.pagination)
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/virtualization/interfaces/", p.common)
         .await
 }
 
@@ -323,18 +289,14 @@ pub async fn interfaces_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VirtualDisksListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by disk name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by virtual machine name (preferred over virtual_machine_id)")]
     pub virtual_machine: Option<String>,
     #[schemars(description = "Filter by virtual machine ID")]
     pub virtual_machine_id: Option<i32>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn virtual_disks_list(
@@ -345,10 +307,8 @@ pub async fn virtual_disks_list(
         resolve_vm_id_or(client, p.virtual_machine, p.virtual_machine_id).await?;
     let qb = QueryBuilder::new()
         .opt("virtual_machine_id", virtual_machine_id)
-        .opt("q", p.q)
-        .many("name", p.name)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/virtualization/virtual-disks/", p.pagination)
+        .many("name", p.name);
+    qb.run_common(client, "/api/virtualization/virtual-disks/", p.common)
         .await
 }
 
@@ -365,11 +325,7 @@ mod tests {
     use super::{
         VmCreateParams, VmDeleteParams, VmFields, VmUpdateParams, vm_create, vm_delete, vm_update,
     };
-    use crate::client::NetboxClient;
-
-    fn mock_client(server: &MockServer) -> NetboxClient {
-        NetboxClient::new(server.uri(), "test-token").unwrap()
-    }
+    use crate::test_support::mock_client;
 
     #[tokio::test]
     async fn vm_create_sends_only_set_fields() {

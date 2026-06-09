@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder, resolve_device_id_or};
+use crate::tools::{CommonListParams, PaginationParams, QueryBuilder, resolve_device_id_or};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,8 +9,6 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct DevicesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by exact device name (multi-value)")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by name contains, case-insensitive (partial match)")]
@@ -29,10 +27,8 @@ pub struct DevicesListParams {
     pub cluster_id: Option<i32>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by (prefix with - for descending)")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn devices_list(
@@ -40,7 +36,6 @@ pub async fn devices_list(
     p: DevicesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .opt("name__ic", p.name_ic)
         .many("site", p.site)
@@ -49,9 +44,8 @@ pub async fn devices_list(
         .many("tenant", p.tenant)
         .opt("rack_id", p.rack_id)
         .opt("cluster_id", p.cluster_id)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/devices/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/devices/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -60,8 +54,6 @@ pub async fn devices_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct SitesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
@@ -70,21 +62,17 @@ pub struct SitesListParams {
     pub region: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn sites_list(client: &NetboxClient, p: SitesListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("status", p.status)
         .many("region", p.region)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/sites/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/sites/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -93,8 +81,6 @@ pub async fn sites_list(client: &NetboxClient, p: SitesListParams) -> Result<Val
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RacksListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by location slug")]
@@ -103,21 +89,17 @@ pub struct RacksListParams {
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn racks_list(client: &NetboxClient, p: RacksListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("site", p.site)
         .many("location", p.location)
         .many("status", p.status)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/racks/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/racks/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -126,8 +108,6 @@ pub async fn racks_list(client: &NetboxClient, p: RacksListParams) -> Result<Val
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct InterfacesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
     #[schemars(
@@ -142,10 +122,8 @@ pub struct InterfacesListParams {
     pub tag: Option<Vec<String>>,
     #[schemars(description = "Return only management interfaces when true")]
     pub mgmt_only: Option<bool>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn interfaces_list(
@@ -155,13 +133,12 @@ pub async fn interfaces_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("name", p.name)
         .many("type", p.r#type)
         .many("tag", p.tag)
-        .opt("mgmt_only", p.mgmt_only)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/interfaces/", p.pagination).await
+        .opt("mgmt_only", p.mgmt_only);
+    qb.run_common(client, "/api/dcim/interfaces/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -170,28 +147,22 @@ pub async fn interfaces_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CablesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn cables_list(client: &NetboxClient, p: CablesListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("site", p.site)
         .many("status", p.status)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/cables/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/cables/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -200,18 +171,14 @@ pub async fn cables_list(client: &NetboxClient, p: CablesListParams) -> Result<V
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RegionsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Filter by parent region slug")]
     pub parent: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn regions_list(
@@ -219,12 +186,10 @@ pub async fn regions_list(
     p: RegionsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("slug", p.slug)
-        .many("parent", p.parent)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/regions/", p.pagination).await
+        .many("parent", p.parent);
+    qb.run_common(client, "/api/dcim/regions/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -233,8 +198,6 @@ pub async fn regions_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct LocationsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by parent location slug")]
@@ -245,10 +208,8 @@ pub struct LocationsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn locations_list(
@@ -256,14 +217,13 @@ pub async fn locations_list(
     p: LocationsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("site", p.site)
         .many("parent", p.parent)
         .many("status", p.status)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/locations/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/locations/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -272,16 +232,12 @@ pub async fn locations_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ManufacturersListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn manufacturers_list(
@@ -289,11 +245,9 @@ pub async fn manufacturers_list(
     p: ManufacturersListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/manufacturers/", p.pagination)
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/dcim/manufacturers/", p.common)
         .await
 }
 
@@ -303,18 +257,14 @@ pub async fn manufacturers_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct DeviceTypesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Filter by model")]
     pub model: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn device_types_list(
@@ -322,12 +272,10 @@ pub async fn device_types_list(
     p: DeviceTypesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("manufacturer", p.manufacturer)
         .many("model", p.model)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/device-types/", p.pagination)
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/device-types/", p.common)
         .await
 }
 
@@ -337,18 +285,14 @@ pub async fn device_types_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct DeviceRolesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Filter to roles eligible for virtual machines")]
     pub vm_role: Option<bool>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn device_roles_list(
@@ -356,12 +300,10 @@ pub async fn device_roles_list(
     p: DeviceRolesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("slug", p.slug)
-        .opt("vm_role", p.vm_role)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/device-roles/", p.pagination)
+        .opt("vm_role", p.vm_role);
+    qb.run_common(client, "/api/dcim/device-roles/", p.common)
         .await
 }
 
@@ -371,18 +313,14 @@ pub async fn device_roles_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PlatformsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug (multi-value)")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn platforms_list(
@@ -390,12 +328,11 @@ pub async fn platforms_list(
     p: PlatformsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("manufacturer", p.manufacturer)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/platforms/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/dcim/platforms/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -404,25 +341,18 @@ pub async fn platforms_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PowerPanelsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn power_panels_list(
     client: &NetboxClient,
     p: PowerPanelsListParams,
 ) -> Result<Value, NetboxError> {
-    let qb = QueryBuilder::new()
-        .opt("q", p.q)
-        .many("site", p.site)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/power-panels/", p.pagination)
+    let qb = QueryBuilder::new().many("site", p.site);
+    qb.run_common(client, "/api/dcim/power-panels/", p.common)
         .await
 }
 
@@ -432,18 +362,14 @@ pub async fn power_panels_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PowerFeedsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by type (primary or redundant)")]
     pub r#type: Option<String>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn power_feeds_list(
@@ -451,12 +377,11 @@ pub async fn power_feeds_list(
     p: PowerFeedsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("site", p.site)
         .many("status", p.status)
-        .opt("type", p.r#type)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/power-feeds/", p.pagination).await
+        .opt("type", p.r#type);
+    qb.run_common(client, "/api/dcim/power-feeds/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -465,16 +390,12 @@ pub async fn power_feeds_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VirtualChassisListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn virtual_chassis_list(
@@ -482,11 +403,9 @@ pub async fn virtual_chassis_list(
     p: VirtualChassisListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("site", p.site)
-        .many("tenant", p.tenant)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/virtual-chassis/", p.pagination)
+        .many("tenant", p.tenant);
+    qb.run_common(client, "/api/dcim/virtual-chassis/", p.common)
         .await
 }
 
@@ -496,8 +415,6 @@ pub async fn virtual_chassis_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct InventoryItemsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
     #[schemars(
@@ -508,10 +425,8 @@ pub struct InventoryItemsListParams {
     pub manufacturer: Option<Vec<String>>,
     #[schemars(description = "Filter to discovered items only")]
     pub discovered: Option<bool>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn inventory_items_list(
@@ -521,11 +436,9 @@ pub async fn inventory_items_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("manufacturer", p.manufacturer)
-        .opt("discovered", p.discovered)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/inventory-items/", p.pagination)
+        .opt("discovered", p.discovered);
+    qb.run_common(client, "/api/dcim/inventory-items/", p.common)
         .await
 }
 
@@ -560,8 +473,6 @@ pub async fn cable_terminations_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ConsolePortsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
@@ -572,10 +483,8 @@ pub struct ConsolePortsListParams {
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn console_ports_list(
@@ -585,11 +494,9 @@ pub async fn console_ports_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("site", p.site)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/console-ports/", p.pagination)
+        .many("site", p.site);
+    qb.run_common(client, "/api/dcim/console-ports/", p.common)
         .await
 }
 
@@ -599,8 +506,6 @@ pub async fn console_ports_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ConsoleServerPortsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
@@ -611,10 +516,8 @@ pub struct ConsoleServerPortsListParams {
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn console_server_ports_list(
@@ -624,11 +527,9 @@ pub async fn console_server_ports_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("site", p.site)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/console-server-ports/", p.pagination)
+        .many("site", p.site);
+    qb.run_common(client, "/api/dcim/console-server-ports/", p.common)
         .await
 }
 
@@ -638,8 +539,6 @@ pub async fn console_server_ports_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct DeviceBaysListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
@@ -650,10 +549,8 @@ pub struct DeviceBaysListParams {
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn device_bays_list(
@@ -663,11 +560,10 @@ pub async fn device_bays_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("site", p.site)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/device-bays/", p.pagination).await
+        .many("site", p.site);
+    qb.run_common(client, "/api/dcim/device-bays/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -676,25 +572,19 @@ pub async fn device_bays_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct FrontPortsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn front_ports_list(
     client: &NetboxClient,
     p: FrontPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let qb = QueryBuilder::new()
-        .opt("q", p.q)
-        .many("name", p.name)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/front-ports/", p.pagination).await
+    let qb = QueryBuilder::new().many("name", p.name);
+    qb.run_common(client, "/api/dcim/front-ports/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -703,18 +593,14 @@ pub async fn front_ports_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct MacAddressesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
     #[schemars(
         description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
     )]
     pub device: Option<String>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn mac_addresses_list(
@@ -722,11 +608,8 @@ pub async fn mac_addresses_list(
     p: MacAddressesListParams,
 ) -> Result<Value, NetboxError> {
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
-    let qb = QueryBuilder::new()
-        .opt("device_id", device_id)
-        .opt("q", p.q)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/mac-addresses/", p.pagination)
+    let qb = QueryBuilder::new().opt("device_id", device_id);
+    qb.run_common(client, "/api/dcim/mac-addresses/", p.common)
         .await
 }
 
@@ -736,8 +619,6 @@ pub async fn mac_addresses_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ModulesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
     #[schemars(
@@ -748,10 +629,8 @@ pub struct ModulesListParams {
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by status")]
     pub status: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn modules_list(
@@ -761,11 +640,9 @@ pub async fn modules_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("site", p.site)
-        .many("status", p.status)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/modules/", p.pagination).await
+        .many("status", p.status);
+    qb.run_common(client, "/api/dcim/modules/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -774,18 +651,14 @@ pub async fn modules_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ModuleBaysListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
     #[schemars(
         description = "Filter by device name — resolves to ID automatically (preferred over device_id)"
     )]
     pub device: Option<String>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn module_bays_list(
@@ -793,11 +666,9 @@ pub async fn module_bays_list(
     p: ModuleBaysListParams,
 ) -> Result<Value, NetboxError> {
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
-    let qb = QueryBuilder::new()
-        .opt("device_id", device_id)
-        .opt("q", p.q)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/module-bays/", p.pagination).await
+    let qb = QueryBuilder::new().opt("device_id", device_id);
+    qb.run_common(client, "/api/dcim/module-bays/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -806,25 +677,18 @@ pub async fn module_bays_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ModuleTypesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn module_types_list(
     client: &NetboxClient,
     p: ModuleTypesListParams,
 ) -> Result<Value, NetboxError> {
-    let qb = QueryBuilder::new()
-        .opt("q", p.q)
-        .many("manufacturer", p.manufacturer)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/module-types/", p.pagination)
+    let qb = QueryBuilder::new().many("manufacturer", p.manufacturer);
+    qb.run_common(client, "/api/dcim/module-types/", p.common)
         .await
 }
 
@@ -834,8 +698,6 @@ pub async fn module_types_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PowerOutletsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
@@ -846,10 +708,8 @@ pub struct PowerOutletsListParams {
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn power_outlets_list(
@@ -859,11 +719,9 @@ pub async fn power_outlets_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("site", p.site)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/power-outlets/", p.pagination)
+        .many("site", p.site);
+    qb.run_common(client, "/api/dcim/power-outlets/", p.common)
         .await
 }
 
@@ -873,8 +731,6 @@ pub async fn power_outlets_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PowerPortsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
@@ -885,10 +741,8 @@ pub struct PowerPortsListParams {
     pub device: Option<String>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn power_ports_list(
@@ -898,11 +752,10 @@ pub async fn power_ports_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("site", p.site)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/power-ports/", p.pagination).await
+        .many("site", p.site);
+    qb.run_common(client, "/api/dcim/power-ports/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -911,18 +764,14 @@ pub async fn power_ports_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RackReservationsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by rack ID")]
     pub rack_id: Option<i32>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn rack_reservations_list(
@@ -930,12 +779,10 @@ pub async fn rack_reservations_list(
     p: RackReservationsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .opt("rack_id", p.rack_id)
         .many("site", p.site)
-        .many("tenant", p.tenant)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/rack-reservations/", p.pagination)
+        .many("tenant", p.tenant);
+    qb.run_common(client, "/api/dcim/rack-reservations/", p.common)
         .await
 }
 
@@ -945,16 +792,12 @@ pub async fn rack_reservations_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RackRolesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn rack_roles_list(
@@ -962,11 +805,10 @@ pub async fn rack_roles_list(
     p: RackRolesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/rack-roles/", p.pagination).await
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/dcim/rack-roles/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -975,16 +817,12 @@ pub async fn rack_roles_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RackTypesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Filter by manufacturer slug")]
     pub manufacturer: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn rack_types_list(
@@ -992,11 +830,10 @@ pub async fn rack_types_list(
     p: RackTypesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("slug", p.slug)
-        .many("manufacturer", p.manufacturer)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/rack-types/", p.pagination).await
+        .many("manufacturer", p.manufacturer);
+    qb.run_common(client, "/api/dcim/rack-types/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1005,25 +842,19 @@ pub async fn rack_types_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RearPortsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn rear_ports_list(
     client: &NetboxClient,
     p: RearPortsListParams,
 ) -> Result<Value, NetboxError> {
-    let qb = QueryBuilder::new()
-        .opt("q", p.q)
-        .many("name", p.name)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/rear-ports/", p.pagination).await
+    let qb = QueryBuilder::new().many("name", p.name);
+    qb.run_common(client, "/api/dcim/rear-ports/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1032,16 +863,12 @@ pub async fn rear_ports_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct SiteGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn site_groups_list(
@@ -1049,11 +876,10 @@ pub async fn site_groups_list(
     p: SiteGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/site-groups/", p.pagination).await
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/dcim/site-groups/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -1062,8 +888,6 @@ pub async fn site_groups_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VirtualDeviceContextsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by device ID (prefer device for name-based lookup)")]
     pub device_id: Option<i32>,
     #[schemars(
@@ -1072,10 +896,8 @@ pub struct VirtualDeviceContextsListParams {
     pub device: Option<String>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn virtual_device_contexts_list(
@@ -1085,9 +907,7 @@ pub async fn virtual_device_contexts_list(
     let device_id = resolve_device_id_or(client, p.device, p.device_id).await?;
     let qb = QueryBuilder::new()
         .opt("device_id", device_id)
-        .opt("q", p.q)
-        .many("tenant", p.tenant)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/dcim/virtual-device-contexts/", p.pagination)
+        .many("tenant", p.tenant);
+    qb.run_common(client, "/api/dcim/virtual-device-contexts/", p.common)
         .await
 }

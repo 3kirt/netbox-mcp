@@ -242,13 +242,10 @@ mod tests {
 
     // ----- write verbs -----
 
+    use crate::test_support::mock_client;
     use serde_json::json;
     use wiremock::matchers::{body_json, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
-
-    fn mock_client(server: &MockServer) -> NetboxClient {
-        NetboxClient::new(server.uri(), "test-token").unwrap()
-    }
 
     #[tokio::test]
     async fn post_sends_json_body_and_returns_created_object() {

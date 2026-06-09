@@ -66,7 +66,7 @@ This cuts typical NetBox payloads by 50–70%.
 
 **Config resolution order:** `NETBOX_URL`/`NETBOX_TOKEN` env vars → `~/.netbox_mcp.json` → error. HTTP (non-localhost) URLs are rejected to prevent token exposure.
 
-**`QueryBuilder`** is the canonical way to build filter params: `.opt(key, Option<T>)` for scalar filters, `.many(key, Option<Vec<String>>)` for multi-value filters. Never push to the params vec directly.
+**`QueryBuilder`** is the canonical way to build filter params: `.opt(key, Option<T>)` for scalar filters, `.many(key, Option<Vec<String>>)` for multi-value filters. Never push to the params vec directly. List-params structs flatten `CommonListParams` (the near-universal `q` + `ordering` + pagination) instead of re-declaring those fields, and finish with `qb.run_common(client, path, p.common)`. The handful of endpoints without a `q` filter (e.g. cable terminations, FHRP group assignments) keep `ordering` + `PaginationParams` inline and call `qb.run(...)` instead.
 
 ## Testing
 

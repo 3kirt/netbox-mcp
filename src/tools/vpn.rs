@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{CommonListParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,8 +9,6 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TunnelsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by tunnel name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by status (planned, active, disabled)")]
@@ -23,10 +21,8 @@ pub struct TunnelsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tunnels_list(
@@ -34,14 +30,12 @@ pub async fn tunnels_list(
     p: TunnelsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("status", p.status)
         .many("encapsulation", p.encapsulation)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/vpn/tunnels/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/vpn/tunnels/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -50,16 +44,12 @@ pub async fn tunnels_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TunnelGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by tunnel group name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tunnel_groups_list(
@@ -67,11 +57,9 @@ pub async fn tunnel_groups_list(
     p: TunnelGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/vpn/tunnel-groups/", p.pagination)
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/vpn/tunnel-groups/", p.common)
         .await
 }
 
@@ -81,8 +69,6 @@ pub async fn tunnel_groups_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct L2vpnsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by L2VPN name")]
     pub name: Option<Vec<String>>,
     #[schemars(
@@ -93,21 +79,17 @@ pub struct L2vpnsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn l2vpns_list(client: &NetboxClient, p: L2vpnsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("type", p.r#type)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/vpn/l2vpns/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/vpn/l2vpns/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -116,16 +98,12 @@ pub async fn l2vpns_list(client: &NetboxClient, p: L2vpnsListParams) -> Result<V
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct IkePoliciesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by IKE policy name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by IKE version (1 or 2)")]
     pub version: Option<i32>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn ike_policies_list(
@@ -133,11 +111,10 @@ pub async fn ike_policies_list(
     p: IkePoliciesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .opt("version", p.version)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/vpn/ike-policies/", p.pagination).await
+        .opt("version", p.version);
+    qb.run_common(client, "/api/vpn/ike-policies/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -146,16 +123,12 @@ pub async fn ike_policies_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct IpsecPoliciesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by IPSec policy name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by PFS group")]
     pub pfs_group: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn ipsec_policies_list(
@@ -163,11 +136,9 @@ pub async fn ipsec_policies_list(
     p: IpsecPoliciesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("pfs_group", p.pfs_group)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/vpn/ipsec-policies/", p.pagination)
+        .many("pfs_group", p.pfs_group);
+    qb.run_common(client, "/api/vpn/ipsec-policies/", p.common)
         .await
 }
 
@@ -177,16 +148,12 @@ pub async fn ipsec_policies_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TunnelTerminationsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by tunnel ID")]
     pub tunnel_id: Option<i32>,
     #[schemars(description = "Filter by termination role (peer, hub, spoke)")]
     pub role: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tunnel_terminations_list(
@@ -194,10 +161,8 @@ pub async fn tunnel_terminations_list(
     p: TunnelTerminationsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .opt("tunnel_id", p.tunnel_id)
-        .many("role", p.role)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/vpn/tunnel-terminations/", p.pagination)
+        .many("role", p.role);
+    qb.run_common(client, "/api/vpn/tunnel-terminations/", p.common)
         .await
 }

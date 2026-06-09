@@ -55,6 +55,21 @@ pub(crate) struct PaginationParams {
     pub fetch_all: Option<bool>,
 }
 
+/// The free-text `q` search and `ordering` filters plus pagination — present on
+/// nearly every list endpoint. Flatten this into a domain params struct with
+/// `#[serde(flatten)]` and call `QueryBuilder::run_common` instead of
+/// re-declaring all three. (A handful of endpoints lack `q`; those keep
+/// `ordering` + `PaginationParams` inline and call `run`.)
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub(crate) struct CommonListParams {
+    #[schemars(description = "Free-text search")]
+    pub q: Option<String>,
+    #[schemars(description = "Field to order results by")]
+    pub ordering: Option<String>,
+    #[serde(flatten)]
+    pub pagination: PaginationParams,
+}
+
 pub(crate) const DEFAULT_LIMIT: i32 = 50;
 pub(crate) const MAX_LIMIT: i32 = 1000;
 
@@ -218,6 +233,21 @@ impl QueryBuilder {
             pg.fetch_all,
         )
         .await
+    }
+
+    /// Apply the near-universal `q` and `ordering` filters, then `run`.
+    /// The read-side convenience for [`CommonListParams`]; most `*_list`
+    /// functions add their domain-specific filters and finish with this.
+    pub async fn run_common(
+        self,
+        client: &NetboxClient,
+        path: &str,
+        c: CommonListParams,
+    ) -> Result<Value, NetboxError> {
+        self.opt("q", c.q)
+            .opt("ordering", c.ordering)
+            .run(client, path, c.pagination)
+            .await
     }
 }
 
@@ -3044,9 +3074,7 @@ mod tests {
         }
     }
 
-    fn mock_client(uri: &str) -> crate::client::NetboxClient {
-        crate::client::NetboxClient::new(uri, "test-token").unwrap()
-    }
+    use crate::test_support::mock_client;
 
     #[tokio::test]
     async fn pipeline_strips_nulls_and_noise_keys() {
@@ -3076,9 +3104,8 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let p = crate::tools::dcim::DevicesListParams {
-            q: None,
             name: None,
             name_ic: None,
             site: None,
@@ -3088,11 +3115,14 @@ mod tests {
             rack_id: None,
             cluster_id: None,
             tag: None,
-            ordering: None,
-            pagination: PaginationParams {
-                limit: None,
-                offset: None,
-                fetch_all: None,
+            common: CommonListParams {
+                q: None,
+                ordering: None,
+                pagination: PaginationParams {
+                    limit: None,
+                    offset: None,
+                    fetch_all: None,
+                },
             },
         };
         let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
@@ -3131,9 +3161,8 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let p = crate::tools::dcim::DevicesListParams {
-            q: None,
             name: None,
             name_ic: None,
             site: None,
@@ -3143,11 +3172,14 @@ mod tests {
             rack_id: None,
             cluster_id: None,
             tag: None,
-            ordering: None,
-            pagination: PaginationParams {
-                limit: None,
-                offset: None,
-                fetch_all: None,
+            common: CommonListParams {
+                q: None,
+                ordering: None,
+                pagination: PaginationParams {
+                    limit: None,
+                    offset: None,
+                    fetch_all: None,
+                },
             },
         };
         let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
@@ -3188,9 +3220,8 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let p = crate::tools::dcim::DevicesListParams {
-            q: None,
             name: None,
             name_ic: None,
             site: None,
@@ -3200,11 +3231,14 @@ mod tests {
             rack_id: None,
             cluster_id: None,
             tag: None,
-            ordering: None,
-            pagination: PaginationParams {
-                limit: None,
-                offset: None,
-                fetch_all: None,
+            common: CommonListParams {
+                q: None,
+                ordering: None,
+                pagination: PaginationParams {
+                    limit: None,
+                    offset: None,
+                    fetch_all: None,
+                },
             },
         };
         let result = slim_value(crate::tools::dcim::devices_list(&client, p).await.unwrap());
@@ -3236,7 +3270,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let result = paginate(&client, "/api/dcim/devices/", vec![], None, None, None)
             .await
             .unwrap();
@@ -3265,7 +3299,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let result = paginate(
             &client,
             "/api/dcim/devices/",
@@ -3312,7 +3346,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let result = paginate(
             &client,
             "/api/dcim/devices/",
@@ -3582,7 +3616,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let id = resolve_device_id(&client, "rtr-01").await.unwrap();
         assert_eq!(id, 42);
     }
@@ -3603,7 +3637,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let err = resolve_device_id(&client, "rtr-01").await.unwrap_err();
         assert!(matches!(
             err,
@@ -3631,7 +3665,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let err = resolve_device_id(&client, "nope").await.unwrap_err();
         assert!(matches!(
             err,
@@ -3655,7 +3689,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let id = resolve_vm_id(&client, "web-01").await.unwrap();
         assert_eq!(id, 99);
     }
@@ -3676,7 +3710,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let err = resolve_vm_id(&client, "web-01").await.unwrap_err();
         assert!(matches!(
             err,
@@ -3704,7 +3738,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let err = resolve_vm_id(&client, "nope").await.unwrap_err();
         assert!(matches!(
             err,
@@ -3738,7 +3772,7 @@ mod tests {
             .mount(&server)
             .await;
 
-        let client = mock_client(&server.uri());
+        let client = mock_client(&server);
         let err = client
             .list_all("/api/dcim/devices/", &[])
             .await

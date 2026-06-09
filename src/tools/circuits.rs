@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{CommonListParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,8 +9,6 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CircuitsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by provider slug")]
     pub provider: Option<Vec<String>>,
     #[schemars(
@@ -25,10 +23,8 @@ pub struct CircuitsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn circuits_list(
@@ -36,15 +32,13 @@ pub async fn circuits_list(
     p: CircuitsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("provider", p.provider)
         .many("status", p.status)
         .many("type", p.r#type)
         .many("site", p.site)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/circuits/circuits/", p.pagination)
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/circuits/circuits/", p.common)
         .await
 }
 
@@ -54,18 +48,14 @@ pub async fn circuits_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ProvidersListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by provider name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn providers_list(
@@ -73,12 +63,10 @@ pub async fn providers_list(
     p: ProvidersListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("slug", p.slug)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/circuits/providers/", p.pagination)
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/circuits/providers/", p.common)
         .await
 }
 
@@ -88,16 +76,12 @@ pub async fn providers_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CircuitTypesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by circuit type name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn circuit_types_list(
@@ -105,11 +89,9 @@ pub async fn circuit_types_list(
     p: CircuitTypesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/circuits/circuit-types/", p.pagination)
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/circuits/circuit-types/", p.common)
         .await
 }
 
@@ -119,18 +101,14 @@ pub async fn circuit_types_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct CircuitTerminationsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by circuit ID")]
     pub circuit_id: Option<i32>,
     #[schemars(description = "Filter by site slug")]
     pub site: Option<Vec<String>>,
     #[schemars(description = "Filter by termination side (A or Z)")]
     pub term_side: Option<String>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn circuit_terminations_list(
@@ -138,12 +116,10 @@ pub async fn circuit_terminations_list(
     p: CircuitTerminationsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .opt("circuit_id", p.circuit_id)
         .many("site", p.site)
-        .opt("term_side", p.term_side)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/circuits/circuit-terminations/", p.pagination)
+        .opt("term_side", p.term_side);
+    qb.run_common(client, "/api/circuits/circuit-terminations/", p.common)
         .await
 }
 
@@ -153,16 +129,12 @@ pub async fn circuit_terminations_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ProviderAccountsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by provider slug")]
     pub provider: Option<Vec<String>>,
     #[schemars(description = "Filter by account name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn provider_accounts_list(
@@ -170,11 +142,9 @@ pub async fn provider_accounts_list(
     p: ProviderAccountsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("provider", p.provider)
-        .many("name", p.name)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/circuits/provider-accounts/", p.pagination)
+        .many("name", p.name);
+    qb.run_common(client, "/api/circuits/provider-accounts/", p.common)
         .await
 }
 
@@ -184,16 +154,12 @@ pub async fn provider_accounts_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ProviderNetworksListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by provider slug")]
     pub provider: Option<Vec<String>>,
     #[schemars(description = "Filter by network name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn provider_networks_list(
@@ -201,10 +167,8 @@ pub async fn provider_networks_list(
     p: ProviderNetworksListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("provider", p.provider)
-        .many("name", p.name)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/circuits/provider-networks/", p.pagination)
+        .many("name", p.name);
+    qb.run_common(client, "/api/circuits/provider-networks/", p.common)
         .await
 }

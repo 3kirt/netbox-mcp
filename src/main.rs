@@ -2,6 +2,18 @@ mod client;
 mod config;
 mod tools;
 
+/// Test-only helpers shared across the crate's unit tests.
+#[cfg(test)]
+pub(crate) mod test_support {
+    use crate::client::NetboxClient;
+    use wiremock::MockServer;
+
+    /// A `NetboxClient` pointed at a wiremock server, with a dummy token.
+    pub(crate) fn mock_client(server: &MockServer) -> NetboxClient {
+        NetboxClient::new(server.uri(), "test-token").unwrap()
+    }
+}
+
 use std::path::PathBuf;
 
 use clap::Parser;

@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{BodyBuilder, PaginationParams, QueryBuilder};
+use crate::tools::{BodyBuilder, CommonListParams, PaginationParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -11,8 +11,6 @@ const IP_ADDRESSES_PATH: &str = "/api/ipam/ip-addresses/";
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct IpAddressesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by IP address (e.g. 192.0.2.1/24)")]
     pub address: Option<Vec<String>>,
     #[schemars(
@@ -43,10 +41,8 @@ pub struct IpAddressesListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn ip_addresses_list(
@@ -54,7 +50,6 @@ pub async fn ip_addresses_list(
     p: IpAddressesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("address", p.address)
         .many("vrf", p.vrf)
         .opt("vrf_id", p.vrf_id)
@@ -67,9 +62,8 @@ pub async fn ip_addresses_list(
         .opt("virtual_machine_id", p.virtual_machine_id)
         .opt("dns_name", p.dns_name)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, IP_ADDRESSES_PATH, p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, IP_ADDRESSES_PATH, p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -189,8 +183,6 @@ pub async fn ip_address_delete(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PrefixesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by prefix (e.g. 192.0.2.0/24)")]
     pub prefix: Option<Vec<String>>,
     #[schemars(
@@ -211,10 +203,8 @@ pub struct PrefixesListParams {
     pub family: Option<i32>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn prefixes_list(
@@ -222,7 +212,6 @@ pub async fn prefixes_list(
     p: PrefixesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("prefix", p.prefix)
         .many("vrf", p.vrf)
         .opt("vrf_id", p.vrf_id)
@@ -231,9 +220,8 @@ pub async fn prefixes_list(
         .many("site", p.site)
         .many("tenant", p.tenant)
         .opt("family", p.family)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/prefixes/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/ipam/prefixes/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -242,8 +230,6 @@ pub async fn prefixes_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VrfsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by VRF name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by route distinguisher")]
@@ -252,21 +238,17 @@ pub struct VrfsListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn vrfs_list(client: &NetboxClient, p: VrfsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .many("rd", p.rd)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/vrfs/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/ipam/vrfs/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -275,8 +257,6 @@ pub async fn vrfs_list(client: &NetboxClient, p: VrfsListParams) -> Result<Value
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VlansListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by VLAN ID (802.1Q VID)")]
     pub vid: Option<i32>,
     #[schemars(description = "Filter by VLAN name")]
@@ -293,15 +273,12 @@ pub struct VlansListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn vlans_list(client: &NetboxClient, p: VlansListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .opt("vid", p.vid)
         .many("name", p.name)
         .many("status", p.status)
@@ -309,9 +286,8 @@ pub async fn vlans_list(client: &NetboxClient, p: VlansListParams) -> Result<Val
         .many("site", p.site)
         .many("group", p.group)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/vlans/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/ipam/vlans/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -320,8 +296,6 @@ pub async fn vlans_list(client: &NetboxClient, p: VlansListParams) -> Result<Val
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct AggregatesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by prefix")]
     pub prefix: Option<Vec<String>>,
     #[schemars(description = "Filter by RIR slug")]
@@ -330,10 +304,8 @@ pub struct AggregatesListParams {
     pub family: Option<i32>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn aggregates_list(
@@ -341,13 +313,12 @@ pub async fn aggregates_list(
     p: AggregatesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("prefix", p.prefix)
         .many("rir", p.rir)
         .opt("family", p.family)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/aggregates/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/ipam/aggregates/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -356,8 +327,6 @@ pub async fn aggregates_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct IpRangesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by status (active, reserved, deprecated)")]
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by role slug")]
@@ -372,10 +341,8 @@ pub struct IpRangesListParams {
     pub tenant: Option<Vec<String>>,
     #[schemars(description = "Filter by tag slug")]
     pub tag: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn ip_ranges_list(
@@ -383,15 +350,14 @@ pub async fn ip_ranges_list(
     p: IpRangesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("status", p.status)
         .many("role", p.role)
         .many("vrf", p.vrf)
         .opt("vrf_id", p.vrf_id)
         .many("tenant", p.tenant)
-        .many("tag", p.tag)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/ip-ranges/", p.pagination).await
+        .many("tag", p.tag);
+    qb.run_common(client, "/api/ipam/ip-ranges/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -400,16 +366,12 @@ pub async fn ip_ranges_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RouteTargetsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by route target name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn route_targets_list(
@@ -417,11 +379,9 @@ pub async fn route_targets_list(
     p: RouteTargetsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("tenant", p.tenant)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/route-targets/", p.pagination)
+        .many("tenant", p.tenant);
+    qb.run_common(client, "/api/ipam/route-targets/", p.common)
         .await
 }
 
@@ -431,25 +391,19 @@ pub async fn route_targets_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RirsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by RIR name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn rirs_list(client: &NetboxClient, p: RirsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/rirs/", p.pagination).await
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/ipam/rirs/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -458,16 +412,12 @@ pub async fn rirs_list(client: &NetboxClient, p: RirsListParams) -> Result<Value
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct VlanGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by VLAN group name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by site ID")]
     pub site_id: Option<i32>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn vlan_groups_list(
@@ -475,11 +425,10 @@ pub async fn vlan_groups_list(
     p: VlanGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .opt("site_id", p.site_id)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/vlan-groups/", p.pagination).await
+        .opt("site_id", p.site_id);
+    qb.run_common(client, "/api/ipam/vlan-groups/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -488,8 +437,6 @@ pub async fn vlan_groups_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ServicesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by service name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by device ID")]
@@ -498,10 +445,8 @@ pub struct ServicesListParams {
     pub virtual_machine_id: Option<i32>,
     #[schemars(description = "Filter by protocol (tcp, udp, sctp)")]
     pub protocol: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn services_list(
@@ -509,13 +454,11 @@ pub async fn services_list(
     p: ServicesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
         .opt("device_id", p.device_id)
         .opt("virtual_machine_id", p.virtual_machine_id)
-        .many("protocol", p.protocol)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/services/", p.pagination).await
+        .many("protocol", p.protocol);
+    qb.run_common(client, "/api/ipam/services/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -524,28 +467,22 @@ pub async fn services_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct AsnsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by AS number")]
     pub asn: Option<i64>,
     #[schemars(description = "Filter by RIR slug")]
     pub rir: Option<Vec<String>>,
     #[schemars(description = "Filter by tenant slug")]
     pub tenant: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn asns_list(client: &NetboxClient, p: AsnsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .opt("asn", p.asn)
         .many("rir", p.rir)
-        .many("tenant", p.tenant)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/asns/", p.pagination).await
+        .many("tenant", p.tenant);
+    qb.run_common(client, "/api/ipam/asns/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -554,18 +491,14 @@ pub async fn asns_list(client: &NetboxClient, p: AsnsListParams) -> Result<Value
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct FhrpGroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(
         description = "Filter by protocol (vrrp2, vrrp3, carp, clusterxl, hsrp, glbp, other)"
     )]
     pub protocol: Option<Vec<String>>,
     #[schemars(description = "Filter by group ID number")]
     pub group_id: Option<i32>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn fhrp_groups_list(
@@ -573,11 +506,10 @@ pub async fn fhrp_groups_list(
     p: FhrpGroupsListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("protocol", p.protocol)
-        .opt("group_id", p.group_id)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/fhrp-groups/", p.pagination).await
+        .opt("group_id", p.group_id);
+    qb.run_common(client, "/api/ipam/fhrp-groups/", p.common)
+        .await
 }
 
 // --------------------------------------------------------------------------
@@ -614,25 +546,19 @@ pub async fn fhrp_group_assignments_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct RolesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by role name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by slug")]
     pub slug: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn roles_list(client: &NetboxClient, p: RolesListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("slug", p.slug)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/ipam/roles/", p.pagination).await
+        .many("slug", p.slug);
+    qb.run_common(client, "/api/ipam/roles/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -649,11 +575,7 @@ mod tests {
         IpAddressCreateParams, IpAddressDeleteParams, IpAddressFields, IpAddressUpdateParams,
         ip_address_create, ip_address_delete, ip_address_update,
     };
-    use crate::client::NetboxClient;
-
-    fn mock_client(server: &MockServer) -> NetboxClient {
-        NetboxClient::new(server.uri(), "test-token").unwrap()
-    }
+    use crate::test_support::mock_client;
 
     #[tokio::test]
     async fn ip_address_create_sends_address_and_only_set_fields() {

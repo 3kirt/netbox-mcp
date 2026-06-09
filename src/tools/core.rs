@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{CommonListParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,16 +9,12 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct DataSourcesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by data source name")]
     pub name: Option<Vec<String>>,
     #[schemars(description = "Filter by status (new, queued, syncing, completed, failed)")]
     pub status: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn data_sources_list(
@@ -26,11 +22,9 @@ pub async fn data_sources_list(
     p: DataSourcesListParams,
 ) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("name", p.name)
-        .many("status", p.status)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/core/data-sources/", p.pagination)
+        .many("status", p.status);
+    qb.run_common(client, "/api/core/data-sources/", p.common)
         .await
 }
 
@@ -40,27 +34,21 @@ pub async fn data_sources_list(
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct JobsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(
         description = "Filter by job status (pending, running, completed, errored, failed)"
     )]
     pub status: Option<Vec<String>>,
     #[schemars(description = "Filter by object type (e.g. dcim.device)")]
     pub object_type: Option<String>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("status", p.status)
-        .opt("object_type", p.object_type)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/core/jobs/", p.pagination).await
+        .opt("object_type", p.object_type);
+    qb.run_common(client, "/api/core/jobs/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -69,22 +57,18 @@ pub async fn jobs_list(client: &NetboxClient, p: JobsListParams) -> Result<Value
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct ObjectChangesListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by username")]
     pub user: Option<Vec<String>>,
     #[schemars(description = "Filter by action (create, update, delete)")]
     pub action: Option<Vec<String>>,
     #[schemars(description = "Filter by changed object type (e.g. dcim.device)")]
     pub changed_object_type: Option<String>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[schemars(
         description = "When true, replace prechange_data/postchange_data with only the keys that differ between them. Has no effect on create/delete records (one side is null). Reduces response size significantly for update-heavy logs."
     )]
     pub diff_only: Option<bool>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn object_changes_list(
@@ -93,13 +77,11 @@ pub async fn object_changes_list(
 ) -> Result<Value, NetboxError> {
     let diff_only = p.diff_only.unwrap_or(false);
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("user", p.user)
         .many("action", p.action)
-        .opt("changed_object_type", p.changed_object_type)
-        .opt("ordering", p.ordering);
+        .opt("changed_object_type", p.changed_object_type);
     let mut resp = qb
-        .run(client, "/api/core/object-changes/", p.pagination)
+        .run_common(client, "/api/core/object-changes/", p.common)
         .await?;
     if diff_only && let Some(results) = resp.get_mut("results") {
         apply_change_diff(results);

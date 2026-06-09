@@ -1,5 +1,5 @@
 use crate::client::{NetboxClient, NetboxError};
-use crate::tools::{PaginationParams, QueryBuilder};
+use crate::tools::{CommonListParams, QueryBuilder};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -9,28 +9,22 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct UsersListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by username")]
     pub username: Option<Vec<String>>,
     #[schemars(description = "Filter by active state")]
     pub is_active: Option<bool>,
     #[schemars(description = "Filter by staff state")]
     pub is_staff: Option<bool>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn users_list(client: &NetboxClient, p: UsersListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .many("username", p.username)
         .opt("is_active", p.is_active)
-        .opt("is_staff", p.is_staff)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/users/users/", p.pagination).await
+        .opt("is_staff", p.is_staff);
+    qb.run_common(client, "/api/users/users/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -39,22 +33,15 @@ pub async fn users_list(client: &NetboxClient, p: UsersListParams) -> Result<Val
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct GroupsListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by group name")]
     pub name: Option<Vec<String>>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn groups_list(client: &NetboxClient, p: GroupsListParams) -> Result<Value, NetboxError> {
-    let qb = QueryBuilder::new()
-        .opt("q", p.q)
-        .many("name", p.name)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/users/groups/", p.pagination).await
+    let qb = QueryBuilder::new().many("name", p.name);
+    qb.run_common(client, "/api/users/groups/", p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -63,26 +50,20 @@ pub async fn groups_list(client: &NetboxClient, p: GroupsListParams) -> Result<V
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct TokensListParams {
-    #[schemars(description = "Free-text search")]
-    pub q: Option<String>,
     #[schemars(description = "Filter by user ID")]
     pub user_id: Option<i32>,
     #[schemars(description = "Filter by username")]
     pub user: Option<Vec<String>>,
     #[schemars(description = "Filter by active state")]
     pub is_active: Option<bool>,
-    #[schemars(description = "Field to order results by")]
-    pub ordering: Option<String>,
     #[serde(flatten)]
-    pub pagination: PaginationParams,
+    pub common: CommonListParams,
 }
 
 pub async fn tokens_list(client: &NetboxClient, p: TokensListParams) -> Result<Value, NetboxError> {
     let qb = QueryBuilder::new()
-        .opt("q", p.q)
         .opt("user_id", p.user_id)
         .many("user", p.user)
-        .opt("is_active", p.is_active)
-        .opt("ordering", p.ordering);
-    qb.run(client, "/api/users/tokens/", p.pagination).await
+        .opt("is_active", p.is_active);
+    qb.run_common(client, "/api/users/tokens/", p.common).await
 }
