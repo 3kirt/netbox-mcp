@@ -12,6 +12,22 @@ pub(crate) mod test_support {
     pub(crate) fn mock_client(server: &MockServer) -> NetboxClient {
         NetboxClient::new(server.uri(), "test-token").unwrap()
     }
+
+    /// The JSON body of the first request `server` received with `method`.
+    /// Panics if no such request arrived or its body is not JSON.
+    pub(crate) async fn sent_body(
+        server: &MockServer,
+        method: wiremock::http::Method,
+    ) -> serde_json::Value {
+        server
+            .received_requests()
+            .await
+            .unwrap()
+            .iter()
+            .find(|r| r.method == method)
+            .and_then(|r| r.body_json().ok())
+            .unwrap_or_else(|| panic!("no {method} request with a JSON body"))
+    }
 }
 
 use std::path::PathBuf;

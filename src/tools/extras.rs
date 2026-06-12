@@ -258,7 +258,7 @@ mod tests {
         TagCreateParams, TagDeleteParams, TagFields, TagUpdateParams, tag_create, tag_delete,
         tag_update,
     };
-    use crate::test_support::mock_client;
+    use crate::test_support::{mock_client, sent_body};
 
     #[tokio::test]
     async fn tag_create_sends_name_slug_and_only_set_fields() {
@@ -284,12 +284,7 @@ mod tests {
         .await
         .unwrap();
 
-        let reqs = server.received_requests().await.unwrap();
-        let body = reqs
-            .iter()
-            .find(|r| r.method == wiremock::http::Method::POST)
-            .and_then(|r| r.body_json::<serde_json::Value>().ok())
-            .expect("POST body");
+        let body = sent_body(&server, wiremock::http::Method::POST).await;
         assert_eq!(body["name"], "Production");
         assert_eq!(body["slug"], "production");
         assert_eq!(body["color"], "9e9e9e");
@@ -323,12 +318,7 @@ mod tests {
         .await
         .unwrap();
 
-        let reqs = server.received_requests().await.unwrap();
-        let body = reqs
-            .iter()
-            .find(|r| r.method == wiremock::http::Method::PATCH)
-            .and_then(|r| r.body_json::<serde_json::Value>().ok())
-            .expect("PATCH body");
+        let body = sent_body(&server, wiremock::http::Method::PATCH).await;
         assert_eq!(body["description"], "edge devices");
         assert_eq!(body.as_object().unwrap().len(), 1);
     }

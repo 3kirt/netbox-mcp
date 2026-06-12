@@ -575,7 +575,7 @@ mod tests {
         IpAddressCreateParams, IpAddressDeleteParams, IpAddressFields, IpAddressUpdateParams,
         ip_address_create, ip_address_delete, ip_address_update,
     };
-    use crate::test_support::mock_client;
+    use crate::test_support::{mock_client, sent_body};
 
     #[tokio::test]
     async fn ip_address_create_sends_address_and_only_set_fields() {
@@ -602,12 +602,7 @@ mod tests {
         .await
         .unwrap();
 
-        let reqs = server.received_requests().await.unwrap();
-        let body = reqs
-            .iter()
-            .find(|r| r.method == wiremock::http::Method::POST)
-            .and_then(|r| r.body_json::<serde_json::Value>().ok())
-            .expect("POST body");
+        let body = sent_body(&server, wiremock::http::Method::POST).await;
         assert_eq!(body["address"], "192.0.2.10/24");
         assert_eq!(body["status"], "reserved");
         assert_eq!(body["dns_name"], "host.example.com");
@@ -642,12 +637,7 @@ mod tests {
         .await
         .unwrap();
 
-        let reqs = server.received_requests().await.unwrap();
-        let body = reqs
-            .iter()
-            .find(|r| r.method == wiremock::http::Method::PATCH)
-            .and_then(|r| r.body_json::<serde_json::Value>().ok())
-            .expect("PATCH body");
+        let body = sent_body(&server, wiremock::http::Method::PATCH).await;
         assert_eq!(body["status"], "deprecated");
         assert_eq!(body.as_object().unwrap().len(), 1);
     }

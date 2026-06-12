@@ -43,8 +43,7 @@ pub async fn vms_list(client: &NetboxClient, p: VmsListParams) -> Result<Value, 
         .many("tenant", p.tenant)
         .many("platform", p.platform)
         .many("tag", p.tag);
-    qb.run_common(client, "/api/virtualization/virtual-machines/", p.common)
-        .await
+    qb.run_common(client, VMS_PATH, p.common).await
 }
 
 // --------------------------------------------------------------------------
@@ -325,7 +324,7 @@ mod tests {
     use super::{
         VmCreateParams, VmDeleteParams, VmFields, VmUpdateParams, vm_create, vm_delete, vm_update,
     };
-    use crate::test_support::mock_client;
+    use crate::test_support::{mock_client, sent_body};
 
     #[tokio::test]
     async fn vm_create_sends_only_set_fields() {
@@ -352,12 +351,7 @@ mod tests {
         .await
         .unwrap();
 
-        let reqs = server.received_requests().await.unwrap();
-        let body = reqs
-            .iter()
-            .find(|r| r.method == wiremock::http::Method::POST)
-            .and_then(|r| r.body_json::<serde_json::Value>().ok())
-            .expect("POST body");
+        let body = sent_body(&server, wiremock::http::Method::POST).await;
         assert_eq!(body["name"], "vm-01");
         assert_eq!(body["cluster"], 3);
         assert_eq!(body["status"], "active");
@@ -392,12 +386,7 @@ mod tests {
         .await
         .unwrap();
 
-        let reqs = server.received_requests().await.unwrap();
-        let body = reqs
-            .iter()
-            .find(|r| r.method == wiremock::http::Method::PATCH)
-            .and_then(|r| r.body_json::<serde_json::Value>().ok())
-            .expect("PATCH body");
+        let body = sent_body(&server, wiremock::http::Method::PATCH).await;
         // Only the single field under change is sent.
         assert_eq!(body["status"], "offline");
         assert_eq!(body.as_object().unwrap().len(), 1);
