@@ -1,6 +1,6 @@
 [package]
 name = "netbox-mcp"
-version = "0.8.0"
+version = "0.9.0"
 edition = "2024"
 description = "An MCP server that exposes NetBox infrastructure data as tools for Claude and other MCP clients, with read plus limited write support"
 license = "GPL-3.0"

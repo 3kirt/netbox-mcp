@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-06-12
+
+### Changed
+
+- **Tool descriptions standardized and corrected** — all 84 list tools now use a uniform `List X. Filters: …` description that enumerates their actual filter parameters (previously three competing styles). The pass corrected nine descriptions whose filter lists had drifted from the params structs: journal entries advertised non-existent `assigned_object_type`/`assigned_object_id` (actual: `created_by`, `kind`), tags claimed `slug` (actual: `name`, `color`), ASNs claimed `site` (actual: `asn`, `rir`, `tenant`), custom fields and export templates said `object_type` (actual: `content_types`), VPN tunnels listed `group` (actual: `name`, `encapsulation`, `tag`), and devices, VMs, and IP addresses were missing real filters (`cluster_id`, `platform`, `vrf_id`/`dns_name`).
+
+### Fixed
+
+- **`lookup_host` error truncation** — the two `netbox_lookup_host` error paths formatted failures with plain `Display`, bypassing the 300-byte truncation every other tool applies to NetBox API error bodies. They now route through `to_tool_message()`, so a large 4xx response can no longer flood the client's context.
+- **`make test-live` silently skipped the live suite** — the config env-var tests `remove_var` `NETBOX_URL`/`NETBOX_TOKEN` mid-run; in the unfiltered `--test-threads=1` run they executed before the live module, so every live test returned early through `skip_unless_live!` while still reporting `ok`. The target is now scoped to `live::` (offline tests are already covered by `make test`), and a credentialed run executes all 79 live tests.
+
+### Internals
+
+- **Paging invariant built in one place** — extracted `inject_paging()` (plus a `response_count()` reader); both `clean_page_response` and `paginate`'s `fetch_all` branch now construct the `{has_more, next_offset}` contract through it instead of duplicating the field surgery. Also dropped a dead re-collect in `paginate`.
+- **`delegate_list!` collapsed into `delegate_write!`** — the two macro bodies were identical except for the failure-message verb; list shims now expand through the generic macro with the verb fixed to "listing".
+- **Shared `sent_body()` test helper** — replaces the six copies of the received-requests/find-method/parse-body block in the virtualization, IPAM, and extras write tests; `vms_list` now uses the existing `VMS_PATH` constant instead of repeating the path literal.
+
 ## [0.8.0] - 2026-06-09
 
 ### Added
