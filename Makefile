@@ -21,8 +21,11 @@ test:
 # Live integration tests against a real, seeded NetBox. Requires NETBOX_URL and
 # NETBOX_TOKEN; seed the instance first with scripts/seed_data.py. Skips (does
 # not fail) when credentials are absent. See docs/testing.md.
+# Scoped to the live:: module: the config env-var tests remove_var the live
+# credentials mid-run, so an unfiltered single-threaded run silently skips
+# every live test that executes after them.
 test-live:
-	cargo test --features live-tests -- --test-threads=1
+	cargo test --features live-tests live:: -- --test-threads=1
 
 install:
 	cargo install --path .
