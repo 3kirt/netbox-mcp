@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2026-06-25
+
+### Fixed
+
+- **Security: remote memory exhaustion in `quinn-proto`** — refreshed `Cargo.lock` to pull `quinn-proto` 0.11.15, resolving [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) (high, CVSS 7.5; unbounded out-of-order stream reassembly), which reached the tree transitively via `reqwest → quinn`. `cargo audit` is now clean.
+
+### Internals
+
+- **Dependency refresh** — moved ~38 in-range lockfile entries to their latest compatible versions, including `rmcp` 1.7.0 → 1.8.0, `anyhow` 1.0.102 → 1.0.103, `rustls` 0.23.40 → 0.23.41, and `hyper`, `chrono`, `regex`, and the `wasm-bindgen` family. No source changes; lint, the offline suite (96), and the live suite (79, against a seeded NetBox) all pass.
+
 ## [0.9.0] - 2026-06-12
 
 ### Changed
