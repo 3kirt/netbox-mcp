@@ -44,7 +44,7 @@ async fn walking_pages_visits_every_row_once() {
         let p: IpAddressesListParams = params(json!({ "limit": limit, "offset": offset }));
         let resp = slim(ipam::ip_addresses_list(&env.client, p).await.unwrap());
         assert_page_shape(&resp, "ip-addresses page");
-        total.get_or_insert(count_of(&resp));
+        total.get_or_insert_with(|| count_of(&resp));
 
         for r in results(&resp) {
             seen.insert(r["id"].as_i64().expect("row has id"));

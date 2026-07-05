@@ -5,6 +5,8 @@ edition = "2024"
 description = "An MCP server that exposes NetBox infrastructure data as tools for Claude and other MCP clients, with read plus limited write support"
 license = "GPL-3.0"
 repository = "https://github.com/3kirt/netbox-mcp"
+keywords = ["netbox", "mcp", "claude", "api", "llm"]
+categories = ["command-line-utilities", "api-bindings"]
 
 [[bin]]
 name = "netbox-mcp"
@@ -42,3 +44,28 @@ lto = true
 opt-level = "z"
 codegen-units = 1
 strip = true
+
+# Strictest practical clippy: the pedantic, nursery, and cargo groups are on by
+# default for every `cargo clippy` (so the release gate and the Makefile pick
+# them up automatically). The `restriction` group is intentionally NOT enabled
+# wholesale — it contains mutually contradictory lints. `priority = -1` lets the
+# per-lint `allow`s below override the groups.
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+
+# Unfixable: the transitive dependency tree carries duplicate crate versions.
+multiple_crate_versions = "allow"
+# Doc comments are prose-heavy and reference many proper nouns and API terms
+# (NetBox, IPAM, DCIM, VLAN, VRF, CIDR, FHRP, …); backticking them all is noise.
+doc_markdown = "allow"
+# `pub(crate)` on shared cross-module helpers is deliberate API-surface control.
+redundant_pub_crate = "allow"
+# `use rmcp::model::*` is an intentional glob over rmcp's large model module.
+wildcard_imports = "allow"
+# Pagination/ID casts operate on bounded values: NetBox IDs are i32-range, the
+# page limit is clamped to 1..=1000, and offsets are `.max(0)`, so the u64/i32
+# conversions can neither truncate nor lose a sign in practice.
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"

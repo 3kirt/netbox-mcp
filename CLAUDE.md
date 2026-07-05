@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```sh
 make build       # cargo build --release
 make test        # cargo test --all
-make lint        # cargo clippy --all-targets -- -D warnings && cargo fmt --check
+make lint        # cargo clippy --all-targets -- -D warnings (both feature sets) && cargo fmt --check
+make check       # full offline gate: lint + test + build
 make install     # cargo install --path . (installs to ~/.cargo/bin)
 make clean       # remove build artifacts
 
@@ -20,6 +21,8 @@ NETBOX_URL=https://netbox.example.com make docker-build
 ```
 
 Formatting and lint must be clean before every commit. Run `cargo fmt` to fix formatting; `cargo clippy --all-targets -- -D warnings` to check for warnings treated as errors (the `--all-targets` flag lints test code too).
+
+Clippy runs at pedantic strictness: the `pedantic`, `nursery`, and `cargo` lint groups are enabled in `Cargo.toml` under `[lints.clippy]` (with a curated set of per-lint `allow`s documented there), so *every* `cargo clippy` invocation — CI, rust-analyzer, and the release gate — enforces them with no extra flags. `make lint` runs clippy over all targets and both feature sets; `make check` runs the full offline gate (`lint` + `test` + `build`).
 
 ## Architecture
 

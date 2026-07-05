@@ -36,12 +36,8 @@ impl NetboxError {
     /// echoed in 4xx responses don't blow up the assistant's context window.
     pub fn to_tool_message(&self) -> String {
         match self {
-            NetboxError::Api { status, body } => {
-                let cut = body
-                    .char_indices()
-                    .nth(300)
-                    .map(|(i, _)| i)
-                    .unwrap_or(body.len());
+            Self::Api { status, body } => {
+                let cut = body.char_indices().nth(300).map_or(body.len(), |(i, _)| i);
                 if cut < body.len() {
                     format!("NetBox API error {status}: {}… (truncated)", &body[..cut])
                 } else {
@@ -82,7 +78,7 @@ impl NetboxClient {
             .default_headers(headers)
             .build()?;
 
-        Ok(NetboxClient {
+        Ok(Self {
             http,
             base_url: base_url.into(),
         })

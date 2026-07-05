@@ -93,11 +93,10 @@ pub fn assert_clean(v: &Value, ctx: &str) {
             // Mirror slim's choice-field rule exactly: it strips `label` only when
             // `value` is present and `label` is a string. A non-string `label`
             // would not be stripped, so don't flag it here.
-            if map.contains_key("value") && matches!(map.get("label"), Some(Value::String(_))) {
-                panic!(
-                    "{ctx}: choice field still has `value` + string `label` — slim should drop `label`"
-                );
-            }
+            assert!(
+                !(map.contains_key("value") && matches!(map.get("label"), Some(Value::String(_)))),
+                "{ctx}: choice field still has `value` + string `label` — slim should drop `label`"
+            );
             for (k, val) in map {
                 assert!(
                     !val.is_null(),

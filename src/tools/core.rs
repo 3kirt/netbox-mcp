@@ -93,22 +93,18 @@ pub async fn object_changes_list(
 /// only the keys whose values differ between the two snapshots.
 /// Create/delete records (where one side is null) are left untouched.
 pub(crate) fn apply_change_diff(results: &mut Value) {
-    let arr = match results.as_array_mut() {
-        Some(a) => a,
-        None => return,
+    let Some(arr) = results.as_array_mut() else {
+        return;
     };
     for item in arr.iter_mut() {
-        let obj = match item.as_object_mut() {
-            Some(o) => o,
-            None => continue,
+        let Some(obj) = item.as_object_mut() else {
+            continue;
         };
-        let pre = match obj.get("prechange_data").cloned() {
-            Some(Value::Object(m)) => m,
-            _ => continue,
+        let Some(Value::Object(pre)) = obj.get("prechange_data").cloned() else {
+            continue;
         };
-        let post = match obj.get("postchange_data").cloned() {
-            Some(Value::Object(m)) => m,
-            _ => continue,
+        let Some(Value::Object(post)) = obj.get("postchange_data").cloned() else {
+            continue;
         };
         let all_keys: std::collections::HashSet<&String> = pre.keys().chain(post.keys()).collect();
         let mut diff_pre = serde_json::Map::new();

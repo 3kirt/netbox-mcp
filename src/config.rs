@@ -27,7 +27,7 @@ impl Config {
         };
 
         if !resolved.exists() {
-            return Ok(Config {
+            return Ok(Self {
                 file_url: None,
                 file_token: None,
             });
@@ -40,7 +40,7 @@ impl Config {
         let raw: RawConfig = serde_json::from_str(&contents)
             .with_context(|| format!("parsing config file {}", resolved.display()))?;
 
-        Ok(Config {
+        Ok(Self {
             file_url: raw.url,
             file_token: raw.token,
         })
@@ -106,9 +106,8 @@ fn enforce_https(url: &str) -> anyhow::Result<()> {
         return Ok(());
     }
     bail!(
-        "NetBox URL must use HTTPS, got: {}  \
-         (use https:// to prevent token from being sent in plaintext)",
-        url
+        "NetBox URL must use HTTPS, got: {url}  \
+         (use https:// to prevent token from being sent in plaintext)"
     );
 }
 
@@ -125,7 +124,9 @@ mod tests {
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     fn lock_env() -> MutexGuard<'static, ()> {
-        ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+        ENV_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn write_config(dir: &Path, content: &str) -> PathBuf {

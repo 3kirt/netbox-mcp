@@ -73,7 +73,7 @@ pub(crate) struct CommonListParams {
 pub(crate) const DEFAULT_LIMIT: i32 = 50;
 pub(crate) const MAX_LIMIT: i32 = 1000;
 
-pub fn clamp_limit(limit: Option<i32>) -> i32 {
+pub const fn clamp_limit(limit: Option<i32>) -> i32 {
     match limit {
         None | Some(0) => DEFAULT_LIMIT,
         Some(n) if n < 0 => DEFAULT_LIMIT,
@@ -89,6 +89,9 @@ pub fn json_result(v: Value) -> Result<CallToolResult, McpError> {
     Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
 }
 
+// Returns a Result for a uniform response shape with `json_result` across the
+// delegate macros, even though this variant is infallible.
+#[allow(clippy::unnecessary_wraps)]
 pub fn tool_error(msg: &str) -> Result<CallToolResult, McpError> {
     Ok(CallToolResult::error(vec![ContentBlock::text(msg)]))
 }
@@ -190,7 +193,7 @@ pub struct QueryBuilder {
 }
 
 impl QueryBuilder {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { params: vec![] }
     }
 
@@ -324,7 +327,9 @@ fn inject_paging(resp: &mut Value, has_more: bool, next_offset: u64) {
 
 /// Read the total `count` from a list response (0 when absent).
 fn response_count(resp: &Value) -> u64 {
-    resp.get("count").and_then(|v| v.as_u64()).unwrap_or(0)
+    resp.get("count")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0)
 }
 
 /// Apply [`inject_paging`] to a single-page response, deriving `has_more`
@@ -443,9 +448,9 @@ macro_rules! delegate_delete {
 pub struct NetboxMcpServer {
     client: NetboxClient,
     #[allow(dead_code)]
-    tool_router: ToolRouter<NetboxMcpServer>,
+    tool_router: ToolRouter<Self>,
     #[allow(dead_code)]
-    prompt_router: PromptRouter<NetboxMcpServer>,
+    prompt_router: PromptRouter<Self>,
 }
 
 impl NetboxMcpServer {
@@ -457,7 +462,7 @@ impl NetboxMcpServer {
         })
     }
 
-    fn get_client(&self) -> &NetboxClient {
+    const fn get_client(&self) -> &NetboxClient {
         &self.client
     }
 }

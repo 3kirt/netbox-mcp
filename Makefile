@@ -2,7 +2,11 @@ BINARY     := netbox-mcp
 IMAGE      := netbox-mcp
 VERSION    := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: build clean lint test test-live install docker-build
+# Clippy strictness (the pedantic, nursery, and cargo lint groups) is configured
+# in Cargo.toml under [lints.clippy], so every `cargo clippy` — `make lint`,
+# rust-analyzer, and the release gate — enforces it with no extra flags.
+
+.PHONY: build clean lint test test-live check install docker-build
 
 build:
 	cargo build --release
@@ -10,10 +14,16 @@ build:
 clean:
 	cargo clean
 
+# Escalates every warning to an error across all targets (incl. tests) and both
+# feature sets; pedantic/nursery/cargo come from Cargo.toml.
 lint:
 	cargo clippy --all-targets -- -D warnings
 	cargo clippy --features live-tests --tests -- -D warnings
 	cargo fmt --check
+
+# Full offline gate, mirroring the release process minus the live suite (which
+# needs credentials — run `make test-live` with NETBOX_URL/NETBOX_TOKEN set).
+check: lint test build
 
 test:
 	cargo test --all

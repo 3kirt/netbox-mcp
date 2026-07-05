@@ -19,7 +19,7 @@ async fn get_with_unknown_id_returns_404() {
 
     match &err {
         NetboxError::Api { status, .. } => {
-            assert_eq!(status.as_u16(), 404, "expected 404, got {err:?}")
+            assert_eq!(status.as_u16(), 404, "expected 404, got {err:?}");
         }
         other => panic!("expected an Api error, got {other:?}"),
     }
@@ -39,7 +39,7 @@ async fn invalid_filter_value_surfaces_400() {
 
     match &err {
         NetboxError::Api { status, .. } => {
-            assert_eq!(status.as_u16(), 400, "expected 400, got {err:?}")
+            assert_eq!(status.as_u16(), 400, "expected 400, got {err:?}");
         }
         other => panic!("expected an Api error, got {other:?}"),
     }
