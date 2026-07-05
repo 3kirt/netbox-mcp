@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2026-07-04
+
+### Changed
+
+- **rmcp 1.7 → 2.1 (major)** — bumped to the 2.x line of the MCP Rust SDK. Two API changes reach this crate: `model::Content` was renamed to `ContentBlock` (updated in `json_result`, `tool_error`, and the `delegate_delete!` macro), and the prompt-message role enum was folded into the generic `model::Role`, so the prompt shims now pass `Role::User` instead of `PromptMessageRole::User`. The crate uses neither progress notifications nor the (2.x-deprecated) MCP logging feature, so no other breaking changes applied — a clean direct jump. `cargo audit` is clean on 2.1.0.
+- **Clippy now runs at pedantic strictness** — the `pedantic`, `nursery`, and `cargo` lint groups are enabled in `Cargo.toml` under `[lints.clippy]` (with a curated, commented allow-list), so every `cargo clippy` invocation — CI, rust-analyzer, and the release gate — enforces them with no extra flags. Added package `keywords`/`categories` metadata to satisfy `cargo_common_metadata`, a `make check` gate, and documented the setup in `CLAUDE.md`.
+
+### Testing
+
+- **Fail-closed guard tests for tool annotations (+2 tests)** — all 178 tool shims already carry MCP behavior annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`); two new tests keep it that way. `every_tool_carries_behavior_annotations` panics if any tool ships without annotations (fail closed for newly added tools) and asserts no tool is both read-only and destructive; `annotation_profiles_match_operation` spot-checks the read/create/update/delete profiles against the IPAM IP-address CRUD tools.
+
+### Internals
+
+- **Pedantic-lint cleanup** — fixed the resulting warnings, mostly mechanical (`use_self`, `map_unwrap_or`, `uninlined_format_args`, `semicolon_if_nothing_returned`, redundant closures, `missing_const_for_fn`, manual `let…else`), plus one justified local `allow` on `tool_error`'s uniform `Result` shape. No behavior change; lint, the offline suite (98), and the live suite (79, against a seeded NetBox) all pass.
+
 ## [0.10.0] - 2026-06-25
 
 ### Fixed
