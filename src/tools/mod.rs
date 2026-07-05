@@ -2771,6 +2771,58 @@ mod tests {
     }
 
     // ------------------------------------------------------------------
+    // tool behavior annotations
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn every_tool_carries_behavior_annotations() {
+        // Each tool shim must declare read/write hints (readOnlyHint etc.) so
+        // clients can make auto-approval decisions. Fail closed: a newly added
+        // tool without `annotations(...)` on its `#[tool]` trips this. Also
+        // sanity-check that the hints are internally consistent — a read-only
+        // tool must not also claim to be destructive.
+        for tool in NetboxMcpServer::tool_router().list_all() {
+            let ann = tool
+                .annotations
+                .as_ref()
+                .unwrap_or_else(|| panic!("{} is missing tool annotations", tool.name));
+            if ann.read_only_hint == Some(true) {
+                assert_ne!(
+                    ann.destructive_hint,
+                    Some(true),
+                    "{} is marked both read-only and destructive",
+                    tool.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn annotation_profiles_match_operation() {
+        let router = NetboxMcpServer::tool_router();
+        let ann = |name: &str| router.get(name).unwrap().annotations.clone().unwrap();
+
+        // Read: read-only.
+        assert_eq!(
+            ann("netbox_ipam_ip_addresses_list").read_only_hint,
+            Some(true)
+        );
+        // Create: writes, but additive (not destructive, not idempotent).
+        let create = ann("netbox_ipam_ip_addresses_create");
+        assert_eq!(create.read_only_hint, Some(false));
+        assert_eq!(create.destructive_hint, Some(false));
+        assert_eq!(create.idempotent_hint, Some(false));
+        // Update: idempotent, non-destructive write.
+        let update = ann("netbox_ipam_ip_addresses_update");
+        assert_eq!(update.destructive_hint, Some(false));
+        assert_eq!(update.idempotent_hint, Some(true));
+        // Delete: destructive and idempotent.
+        let delete = ann("netbox_ipam_ip_addresses_delete");
+        assert_eq!(delete.destructive_hint, Some(true));
+        assert_eq!(delete.idempotent_hint, Some(true));
+    }
+
+    // ------------------------------------------------------------------
     // slim_value
     // ------------------------------------------------------------------
 
