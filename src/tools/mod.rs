@@ -86,11 +86,11 @@ pub fn json_result(v: Value) -> Result<CallToolResult, McpError> {
     let v = slim_value(v);
     let text = serde_json::to_string_pretty(&v)
         .map_err(|e| McpError::internal_error(format!("marshalling response: {e}"), None))?;
-    Ok(CallToolResult::success(vec![Content::text(text)]))
+    Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
 }
 
 pub fn tool_error(msg: &str) -> Result<CallToolResult, McpError> {
-    Ok(CallToolResult::error(vec![Content::text(msg)]))
+    Ok(CallToolResult::error(vec![ContentBlock::text(msg)]))
 }
 
 /// Resolve a `name`-filtered list endpoint to a single numeric ID.
@@ -420,7 +420,7 @@ macro_rules! delegate_delete {
         let client = $self.get_client();
         let id = $id;
         match $domain_fn(client, $p).await {
-            Ok(()) => Ok(CallToolResult::success(vec![Content::text(format!(
+            Ok(()) => Ok(CallToolResult::success(vec![ContentBlock::text(format!(
                 "{} {} deleted",
                 $noun, id
             ))])),
@@ -2614,7 +2614,7 @@ impl NetboxMcpServer {
         _ctx: RequestContext<RoleServer>,
     ) -> Result<Vec<PromptMessage>, McpError> {
         Ok(vec![PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!(
                 "Using the netbox MCP tools, build a complete inventory for site: '{}'. \
                  Include: all devices (with roles and status), racks and their occupancy, \
@@ -2635,7 +2635,7 @@ impl NetboxMcpServer {
         _ctx: RequestContext<RoleServer>,
     ) -> Result<Vec<PromptMessage>, McpError> {
         Ok(vec![PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!(
                 "Using the netbox MCP tools, generate a detailed report for device: '{}'. \
                  Include: device role, platform, site and rack, all interfaces and their IP addresses, \
@@ -2655,7 +2655,7 @@ impl NetboxMcpServer {
         _ctx: RequestContext<RoleServer>,
     ) -> Result<Vec<PromptMessage>, McpError> {
         Ok(vec![PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!(
                 "Using the netbox MCP tools, analyze utilization for prefix: '{}'. \
                  List all child prefixes and IP addresses within the prefix, \
@@ -2675,7 +2675,7 @@ impl NetboxMcpServer {
         _ctx: RequestContext<RoleServer>,
     ) -> Result<Vec<PromptMessage>, McpError> {
         Ok(vec![PromptMessage::new_text(
-            PromptMessageRole::User,
+            Role::User,
             format!(
                 "Using the netbox MCP tools, provide a complete summary for tenant: '{}'. \
                  Include: all devices, virtual machines, IP addresses, prefixes, circuits, \
