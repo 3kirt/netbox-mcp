@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0] - 2026-08-06
+
+### Changed
+
+- **rmcp 2.1 → 3.1 (major)** — bumped to the 3.x line of the MCP Rust SDK. netbox-mcp relies on the `#[tool_handler]`/`#[prompt_handler]` macros rather than hand-rolled `ServerHandler::call_tool`/`read_resource` overrides, so the 3.x change to MRTR-aware `CallToolResponse`/`ReadResourceResponse` return types was fully absorbed by the macro layer — no source changes were required beyond the version bump. `cargo audit` is clean on 3.1.1.
+
+### Added
+
+- **Real SEP-2549 cache hints on `tools/list` and `prompts/list`** — the tool and prompt catalogs are fixed for the life of the process, but the `#[tool_handler]`/`#[prompt_handler]` macro defaults only ever emit `ttl_ms: 0` (spec-compliant but useless, since it never lets a capable client skip a refetch). `list_tools` and `list_prompts` are now hand-written to hint a real TTL (`u64::MAX`) with `Public` scope. `#[prompt_handler]` was dropped in favor of a manual `get_prompt`/`list_prompts` implementation, since it unconditionally overwrites any hand-written override of those two methods; `#[tool_handler]` has no such issue and continues to generate `call_tool`/`get_tool`.
+
+### Internals
+
+- **Dependency refresh** — moved several in-range lockfile entries to their latest compatible versions, including `anyhow` 1.0.103 → 1.0.104, `clap` 4.6.1 → 4.6.6, `schemars` 1.2.1 → 1.2.2, `serde`/`serde_json`, `thiserror` 2.0.18 → 2.0.19, and `tokio` 1.52.3 → 1.53.1. No source changes; lint, the offline suite (101), and the live suite (79, against a seeded NetBox) all pass.
+
 ## [0.11.0] - 2026-07-04
 
 ### Changed
