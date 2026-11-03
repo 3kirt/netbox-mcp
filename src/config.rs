@@ -97,18 +97,26 @@ fn check_file_permissions(path: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Require HTTPS, except plain HTTP to a loopback host. The URL is parsed
+/// rather than prefix-matched so look-alike hosts (`http://localhost.evil.com`)
+/// and userinfo tricks (`http://127.0.0.1@evil.com`) are judged by their real
+/// host.
 fn enforce_https(url: &str) -> anyhow::Result<()> {
-    if url.starts_with("https://") {
-        return Ok(());
+    let parsed = url::Url::parse(url).with_context(|| format!("invalid NetBox URL: {url}"))?;
+    let is_loopback = match parsed.host() {
+        Some(url::Host::Domain(d)) => d == "localhost",
+        Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+        Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+        None => false,
+    };
+    match parsed.scheme() {
+        "https" => Ok(()),
+        "http" if is_loopback => Ok(()),
+        _ => bail!(
+            "NetBox URL must use HTTPS, got: {url}  \
+             (use https:// to prevent token from being sent in plaintext)"
+        ),
     }
-    let is_local = url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1");
-    if is_local {
-        return Ok(());
-    }
-    bail!(
-        "NetBox URL must use HTTPS, got: {url}  \
-         (use https:// to prevent token from being sent in plaintext)"
-    );
 }
 
 #[cfg(test)]
@@ -260,6 +268,19 @@ mod tests {
         assert!(enforce_https("http://localhost:8080").is_ok());
         assert!(enforce_https("http://127.0.0.1").is_ok());
         assert!(enforce_https("http://127.0.0.1:8080").is_ok());
+        assert!(enforce_https("http://[::1]:8080").is_ok());
+        assert!(enforce_https("HTTP://LOCALHOST:8080").is_ok());
+    }
+
+    #[test]
+    fn enforce_https_rejects_lookalike_local_hosts() {
+        // Prefix matching once let these through, sending the token in
+        // plaintext to a non-local host.
+        assert!(enforce_https("http://localhost.evil.com").is_err());
+        assert!(enforce_https("http://localhostevil.com").is_err());
+        assert!(enforce_https("http://127.0.0.1.evil.com").is_err());
+        assert!(enforce_https("http://127.0.0.1@evil.com/").is_err());
+        assert!(enforce_https("http://localhost@evil.com/").is_err());
     }
 
     #[test]
