@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 2026-11-02
+
+### Fixed
+
+- **Security: 12 RustSec advisories cleared** — an in-range `cargo update` (~100 crates) pulls `quinn-proto` 0.11.19 (RUSTSEC-2026-0338..0342, two rated high), `rustls` 0.23.46 (RUSTSEC-2026-0285/0346/0348/0349), `rustls-webpki` 0.103.16 (RUSTSEC-2026-0382), `webpki-root-certs` 1.0.11 (RUSTSEC-2026-0383), and `h2` 0.4.20 (RUSTSEC-2026-0258), plus the `tokio` 1.54.1 unsoundness warning (RUSTSEC-2026-0386) and a yanked `chacha20`. `cargo audit` is clean.
+- **Security: HTTPS check could be bypassed** — `enforce_https` prefix-matched `http://localhost` / `http://127.0.0.1`, so look-alike hosts (`http://localhost.evil.com`) and userinfo tricks (`http://127.0.0.1@evil.com/`) passed as local and would have received the token over plain HTTP. The URL is now parsed and judged by its real host: plain HTTP is allowed only to `localhost` or a loopback IP (now including `[::1]`), and scheme matching is case-insensitive.
+- **`tools/list` was unparseable for rmcp clients** — the 0.12.0 cache hint used `ttlMs: u64::MAX`, but rmcp's own client deserializes `ttlMs` as `i64` and rejected the whole response (JavaScript clients also lose precision above 2^53). The hint is now one day, which also lets a persisted catalog pick up tools from an upgraded binary; a new test round-trips it through rmcp's parser.
+- **Docker image failed to start** — the floating `rust:slim` builder moved to a newer Debian than the `bookworm-slim` runtime, producing a binary that died with `GLIBC_2.38 not found`. The builder is pinned to `rust:1.99.0-slim-bookworm`.
+
+### Changed
+
+- **rmcp 3.1 → 3.8** — the floor is raised to 3.8 (`ServerConfig` needs 3.4+). The deprecated `ServerInfo` alias is replaced by `ServerConfig`, and `list_tools`/`list_prompts` return `std::future::ready(...)` instead of an `async fn` with no `.await`.
+- **Non-blocking stdio on Linux** — the server runs over rmcp's `stdio_pipes()` transport, which drives FIFO stdin/stdout through the IO reactor on Linux (as in the Docker image) and behaves exactly like `stdio()` elsewhere.
+- **Compact JSON output** — tool results are serialized without pretty-printing; the reader is an LLM, and indentation was pure token cost on every response.
+- **Explicit `--config` must exist** — a `--config` path that doesn't exist is now an error instead of being silently ignored (which surfaced later as a misleading "URL not set"). A missing *default* `~/.netbox_mcp.json` is still fine, and `try_exists` now reports I/O errors such as a permission-denied parent directory.
+- **Empty env vars fall back to the config file** — a set-but-empty `NETBOX_URL` / `NETBOX_TOKEN` (as MCP clients pass when expanding an unexported `${NETBOX_TOKEN}`) now counts as unset.
+
+### Robustness
+
+- **Client cancellation is honored** — `call_tool` races every tool call against the client's `notifications/cancelled`. rmcp only signals cancellation and never aborts the handler, so a cancelled `fetch_all` walk previously kept paging through NetBox; the call is now dropped immediately along with its in-flight request. rmcp 3.6+ clients cancel abandoned calls automatically.
+- **Token kept out of debug output** — the `Authorization` header value is marked sensitive, `Config` has a redacting `Debug` impl, and `RawConfig` no longer derives `Debug`.
+
+### Internals
+
+- **Pinned toolchain and stricter CI** — `rust-toolchain.toml` pins Rust 1.99.0, so a new stable clippy can't break CI or the release gate unannounced. CI's lint job now runs `make lint` (all targets including tests, both feature sets) instead of skipping test code, a new job runs `cargo audit`, and a weekly scheduled run surfaces new advisories without a push. The release workflow uses the pinned toolchain.
+- **Rust 1.99 lints** — fixed clippy's new `assert_is_empty` in the unit and live tests, and every env-mutating `unsafe` block in the config tests now carries its own `SAFETY` comment. Lint, the offline suite (108), and the live suite (79, against a seeded NetBox) all pass.
+
 ## [0.12.0] - 2026-08-06
 
 ### Changed
