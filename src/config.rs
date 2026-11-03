@@ -191,6 +191,7 @@ mod tests {
             std::env::set_var("HOME", home.path());
         }
         let cfg = Config::load(None);
+        // SAFETY: still holding ENV_LOCK (see above); restores the variable.
         unsafe {
             match saved {
                 Some(h) => std::env::set_var("HOME", h),
@@ -235,6 +236,7 @@ mod tests {
             std::env::set_var("NETBOX_URL", "https://env.example.com");
         }
         let url = cfg.resolve_url().unwrap();
+        // SAFETY: still holding ENV_LOCK (see above); restores the variable.
         unsafe {
             std::env::remove_var("NETBOX_URL");
         }
@@ -255,6 +257,7 @@ mod tests {
             std::env::set_var("NETBOX_TOKEN", "env-token");
         }
         let token = cfg.resolve_token().unwrap();
+        // SAFETY: still holding ENV_LOCK (see above); restores the variable.
         unsafe {
             std::env::remove_var("NETBOX_TOKEN");
         }
