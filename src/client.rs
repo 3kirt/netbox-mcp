@@ -62,11 +62,14 @@ pub struct NetboxClient {
 impl NetboxClient {
     pub fn new(base_url: impl Into<String>, token: impl AsRef<str>) -> anyhow::Result<Self> {
         let auth = format!("Token {}", token.as_ref());
-        let auth_value = header::HeaderValue::from_str(&auth).map_err(|_| {
+        let mut auth_value = header::HeaderValue::from_str(&auth).map_err(|_| {
             anyhow::anyhow!(
                 "NetBox token contains characters not valid in HTTP headers (must be visible ASCII)"
             )
         })?;
+        // Keeps the token out of `Debug` output and out of HTTP/2 HPACK
+        // dynamic tables (where header values could otherwise be inferred).
+        auth_value.set_sensitive(true);
 
         let mut headers = header::HeaderMap::new();
         // NetBox uses "Token <token>", not "Bearer <token>".

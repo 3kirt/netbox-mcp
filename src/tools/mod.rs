@@ -85,7 +85,9 @@ pub const fn clamp_limit(limit: Option<i32>) -> i32 {
 
 pub fn json_result(v: Value) -> Result<CallToolResult, McpError> {
     let v = slim_value(v);
-    let text = serde_json::to_string_pretty(&v)
+    // Compact, not pretty: the reader is an LLM, and indentation is pure
+    // token cost on every response.
+    let text = serde_json::to_string(&v)
         .map_err(|e| McpError::internal_error(format!("marshalling response: {e}"), None))?;
     Ok(CallToolResult::success(vec![ContentBlock::text(text)]))
 }
@@ -2779,6 +2781,27 @@ fn supports_cache_hints(context: &RequestContext<RoleServer>) -> bool {
         .is_some_and(|version| version >= ProtocolVersion::V_2026_07_28)
 }
 
+/// Race a tool call against the client's `notifications/cancelled`.
+///
+/// rmcp only *signals* cancellation (via `RequestContext::ct`); it never
+/// aborts the handler future. Without this, a cancelled long-running call (a
+/// `fetch_all` walk of up to `MAX_PAGES` pages) would keep hitting NetBox until
+/// it finished on its own. Dropping the tool future here also drops any
+/// in-flight `reqwest` request. Since rmcp 3.6, clients cancel abandoned
+/// calls automatically, so this path is exercised in normal use.
+async fn run_cancellable<T>(
+    call: impl Future<Output = Result<T, McpError>>,
+    cancelled: impl Future<Output = ()>,
+) -> Result<T, McpError> {
+    tokio::select! {
+        result = call => result,
+        () = cancelled => {
+            tracing::debug!("tool call cancelled by client");
+            Err(McpError::internal_error("tool call cancelled by client", None))
+        }
+    }
+}
+
 #[tool_handler]
 impl ServerHandler for NetboxMcpServer {
     fn get_info(&self) -> ServerConfig {
@@ -2789,6 +2812,18 @@ impl ServerHandler for NetboxMcpServer {
                 .build(),
         )
         .with_server_info(Implementation::new("netbox-mcp", env!("CARGO_PKG_VERSION")))
+    }
+
+    /// Hand-written in place of the `#[tool_handler]` default (which the macro
+    /// skips when this method exists) so every call honors cancellation.
+    async fn call_tool(
+        &self,
+        request: CallToolRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResponse, McpError> {
+        let ct = context.ct.clone();
+        let tcc = rmcp::handler::server::tool::ToolCallContext::new(self, request, context);
+        run_cancellable(self.tool_router.call(tcc), ct.cancelled()).await
     }
 
     fn list_tools(
@@ -4010,6 +4045,42 @@ mod tests {
         let result = with_static_cache_hint(ListPromptsResult::with_all_items(vec![]), true);
         assert_eq!(result.ttl_ms, Some(STATIC_LIST_TTL_MS));
         assert_eq!(result.cache_scope, Some(CacheScope::Public));
+    }
+
+    // ------------------------------------------------------------------
+    // Cancellation
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn run_cancellable_drops_call_on_cancel() {
+        // A call that never completes on its own must be abandoned as soon as
+        // the cancel signal fires, and its future dropped (which is what
+        // aborts an in-flight NetBox request).
+        struct DropFlag(std::sync::Arc<std::sync::atomic::AtomicBool>);
+        impl Drop for DropFlag {
+            fn drop(&mut self) {
+                self.0.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
+        let dropped = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let flag = DropFlag(dropped.clone());
+        let call = async move {
+            let _flag = flag;
+            std::future::pending::<Result<(), McpError>>().await
+        };
+        let err = run_cancellable(call, std::future::ready(()))
+            .await
+            .unwrap_err();
+        assert!(err.message.contains("cancelled"));
+        assert!(dropped.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn run_cancellable_passes_through_without_cancel() {
+        let out = run_cancellable(async { Ok::<_, McpError>(7) }, std::future::pending::<()>())
+            .await
+            .unwrap();
+        assert_eq!(out, 7);
     }
 
     #[test]
