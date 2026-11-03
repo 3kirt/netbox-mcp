@@ -1,0 +1,6 @@
+# Pin the toolchain so a new stable clippy can't break CI or the release gate
+# unannounced. Bump deliberately (and fix any new lints in the same change).
+[toolchain]
+channel = "1.99.0"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

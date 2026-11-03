@@ -1,4 +1,7 @@
-FROM rust:slim AS builder
+# Pin both the Rust version (matching rust-toolchain.toml) and the Debian
+# release (matching the runtime stage below): a floating `rust:slim` moved to a
+# newer Debian and produced a binary needing a glibc bookworm doesn't have.
+FROM rust:1.99.0-slim-bookworm AS builder
 
 WORKDIR /src
 

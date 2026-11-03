@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Weekly run so newly published RustSec advisories surface without a push.
+  schedule:
+    - cron: "0 6 * * 1"
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,7 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Installs the toolchain pinned in rust-toolchain.toml.
+      - run: rustup toolchain install
 
       - uses: Swatinem/rust-cache@v2
 
@@ -28,12 +32,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      - run: rustup toolchain install
 
       - uses: Swatinem/rust-cache@v2
 
-      - run: cargo clippy --locked -- -D warnings
+      # Same gate as local: clippy over all targets (incl. tests) and both
+      # feature sets, plus rustfmt.
+      - run: make lint
 
-      - run: cargo fmt --check
+  audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - run: cargo audit

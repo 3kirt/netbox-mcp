@@ -29,9 +29,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+      # Toolchain pinned in rust-toolchain.toml; add the matrix target to it.
+      - run: rustup toolchain install && rustup target add ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
 
