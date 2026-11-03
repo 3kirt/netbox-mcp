@@ -65,7 +65,7 @@ async fn main() -> anyhow::Result<()> {
     info!(mode = "stdio", netbox_url = %url, "starting netbox-mcp");
     let server = tools::NetboxMcpServer::new(url, token)?;
     server
-        .serve(rmcp::transport::io::stdio())
+        .serve(rmcp::transport::io::stdio_pipes())
         .await?
         .waiting()
         .await?;

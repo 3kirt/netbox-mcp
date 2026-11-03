@@ -59,6 +59,6 @@ async fn lookup_with_no_match_is_empty() {
 
     assert_eq!(v["total_matches"], 0);
     assert_eq!(v["has_more"], false);
-    assert!(v["devices"].as_array().unwrap().is_empty());
-    assert!(v["virtual_machines"].as_array().unwrap().is_empty());
+    assert_eq!(v["devices"], json!([]));
+    assert_eq!(v["virtual_machines"], json!([]));
 }

@@ -2776,8 +2776,8 @@ fn supports_cache_hints(context: &RequestContext<RoleServer>) -> bool {
 
 #[tool_handler]
 impl ServerHandler for NetboxMcpServer {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(
+    fn get_info(&self) -> ServerConfig {
+        ServerConfig::new(
             ServerCapabilities::builder()
                 .enable_prompts()
                 .enable_tools()
@@ -2786,16 +2786,16 @@ impl ServerHandler for NetboxMcpServer {
         .with_server_info(Implementation::new("netbox-mcp", env!("CARGO_PKG_VERSION")))
     }
 
-    async fn list_tools(
+    fn list_tools(
         &self,
         _request: Option<PaginatedRequestParams>,
         context: RequestContext<RoleServer>,
-    ) -> Result<ListToolsResult, McpError> {
+    ) -> impl Future<Output = Result<ListToolsResult, McpError>> {
         let result = ListToolsResult::with_all_items(self.tool_router.list_all());
-        Ok(with_static_cache_hint(
+        std::future::ready(Ok(with_static_cache_hint(
             result,
             supports_cache_hints(&context),
-        ))
+        )))
     }
 
     async fn get_prompt(
@@ -2807,16 +2807,16 @@ impl ServerHandler for NetboxMcpServer {
         self.prompt_router.get_prompt(prompt_context).await
     }
 
-    async fn list_prompts(
+    fn list_prompts(
         &self,
         _request: Option<PaginatedRequestParams>,
         context: RequestContext<RoleServer>,
-    ) -> Result<ListPromptsResult, McpError> {
+    ) -> impl Future<Output = Result<ListPromptsResult, McpError>> {
         let result = ListPromptsResult::with_all_items(self.prompt_router.list_all());
-        Ok(with_static_cache_hint(
+        std::future::ready(Ok(with_static_cache_hint(
             result,
             supports_cache_hints(&context),
-        ))
+        )))
     }
 }
 
@@ -3571,7 +3571,7 @@ mod tests {
     #[test]
     fn querybuilder_new_is_empty() {
         let params = QueryBuilder::new().into_params();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [(&str, String); 0]);
     }
 
     #[test]
@@ -3585,7 +3585,7 @@ mod tests {
     #[test]
     fn querybuilder_opt_none_skips() {
         let params = QueryBuilder::new().opt("name", None::<&str>).into_params();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [(&str, String); 0]);
     }
 
     #[test]
@@ -3603,13 +3603,13 @@ mod tests {
     #[test]
     fn querybuilder_many_none_skips() {
         let params = QueryBuilder::new().many("tag", None).into_params();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [(&str, String); 0]);
     }
 
     #[test]
     fn querybuilder_many_empty_skips() {
         let params = QueryBuilder::new().many("tag", Some(vec![])).into_params();
-        assert!(params.is_empty());
+        assert_eq!(params, [] as [(&str, String); 0]);
     }
 
     #[test]
