@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.1] - 2026-11-09
+
+### Fixed
+
+- **Security: RUSTSEC-2026-0462 cleared** — `rmcp` 3.9.0 fixes unbounded response-body buffering in its Streamable HTTP client (rated 6.5, medium). netbox-mcp doesn't enable that client, so released binaries were not exposed, but `cargo audit` flagged the lockfile and failed the weekly CI audit. The `rmcp` floor is raised to `3.9` so the vulnerable version can't be resolved again; routine in-range patch updates (`cc`, `itoa`, `smallvec`, `syn`, `uuid`) ride along.
+
 ## [0.13.0] - 2026-11-02
 
 ### Fixed
