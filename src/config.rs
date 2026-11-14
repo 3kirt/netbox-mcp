@@ -23,11 +23,12 @@ struct RawConfig {
 
 /// Resolved NetBox connection settings.
 #[derive(Clone)]
-#[expect(
-    clippy::struct_field_names,
-    reason = "`file_` marks values read from the config file, as opposed to the env vars that override them"
-)]
 pub struct Config {
+    /// The `--config` path, when one was given (not the default). Passed to
+    /// the store so advice like "run `netbox-mcp unlock`" names it.
+    explicit_path: Option<PathBuf>,
+    // `file_*`: values read from the config file, as opposed to the env vars
+    // that override them.
     file_url: Option<String>,
     file_token: Option<String>,
     file_pass_entry: Option<String>,
@@ -40,6 +41,7 @@ pub struct Config {
 impl std::fmt::Debug for Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Config")
+            .field("explicit_path", &self.explicit_path)
             .field("file_url", &self.file_url)
             .field(
                 "file_token",
@@ -93,7 +95,7 @@ impl Config {
             if explicit {
                 bail!("config file {} does not exist", resolved.display());
             }
-            return Ok(Self::from_raw(RawConfig::default()));
+            return Ok(Self::from_raw(RawConfig::default(), None));
         }
 
         check_file_permissions(&resolved)?;
@@ -103,7 +105,7 @@ impl Config {
         let raw: RawConfig = serde_json::from_str(&contents)
             .with_context(|| format!("parsing config file {}", resolved.display()))?;
 
-        Ok(Self::from_raw(raw))
+        Ok(Self::from_raw(raw, path.map(Path::to_path_buf)))
     }
 
     /// Like [`Self::load`], but a missing file — even an explicit `--config`
@@ -114,14 +116,20 @@ impl Config {
             .try_exists()
             .with_context(|| format!("checking config file {}", resolved.display()))?
         {
-            Self::load(Some(&resolved))
+            let mut cfg = Self::load(Some(&resolved))?;
+            cfg.explicit_path = path.map(Path::to_path_buf);
+            Ok(cfg)
         } else {
-            Ok(Self::from_raw(RawConfig::default()))
+            Ok(Self::from_raw(
+                RawConfig::default(),
+                path.map(Path::to_path_buf),
+            ))
         }
     }
 
-    fn from_raw(raw: RawConfig) -> Self {
+    fn from_raw(raw: RawConfig, explicit_path: Option<PathBuf>) -> Self {
         Self {
+            explicit_path,
             file_url: raw.url,
             file_token: raw.token,
             file_pass_entry: non_blank(raw.pass_entry),
@@ -185,11 +193,12 @@ impl Config {
     /// The password store, honoring the config's `gpg`, `password_store_dir`
     /// and `gnupg_home` over the process environment.
     pub fn pass_store(&self) -> anyhow::Result<PassStore> {
-        PassStore::resolve(&StoreLocation {
+        Ok(PassStore::resolve(&StoreLocation {
             gpg: self.file_gpg.as_deref(),
             store_dir: self.file_password_store_dir.as_deref(),
             gnupg_home: self.file_gnupg_home.as_deref(),
-        })
+        })?
+        .with_config_path(self.explicit_path.clone()))
     }
 }
 
@@ -227,14 +236,20 @@ pub fn update_file(
     tmp_name.push(format!(".tmp{}", std::process::id()));
     let tmp = PathBuf::from(tmp_name);
     let mut opts = std::fs::OpenOptions::new();
-    opts.write(true).create(true).truncate(true);
+    // `create_new`: never follow or truncate whatever already sits at the
+    // (predictable) temp path, such as a planted symlink.
+    opts.write(true).create_new(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
         opts.mode(0o600);
     }
+    // Not created yet: an `open` failure (e.g. something already at the
+    // temp path) must not delete a file this call doesn't own.
+    let mut file = opts
+        .open(&tmp)
+        .with_context(|| format!("creating temp file {}", tmp.display()))?;
     let write = || -> anyhow::Result<()> {
-        let mut file = opts.open(&tmp)?;
         let mut body = serde_json::to_string_pretty(&serde_json::Value::Object(obj))?;
         body.push('\n');
         std::io::Write::write_all(&mut file, body.as_bytes())?;
@@ -247,6 +262,33 @@ pub fn update_file(
             let _ = std::fs::remove_file(&tmp);
         })
         .with_context(|| format!("writing config file {}", target.display()))
+}
+
+/// Fail early, before `login` changes the password store, if the config at
+/// `path` couldn't be written: its directory must exist, and an existing file
+/// must pass the permission check `update_file` applies.
+pub fn check_writable(path: &Path) -> anyhow::Result<()> {
+    let dir = match path.parent() {
+        Some(d) if !d.as_os_str().is_empty() => d,
+        _ => Path::new("."),
+    };
+    if !dir
+        .try_exists()
+        .with_context(|| format!("checking {}", dir.display()))?
+    {
+        bail!(
+            "cannot write config file {}: directory {} does not exist",
+            path.display(),
+            dir.display()
+        );
+    }
+    if path
+        .try_exists()
+        .with_context(|| format!("checking config file {}", path.display()))?
+    {
+        check_file_permissions(path)?;
+    }
+    Ok(())
 }
 
 /// The first value that is actually set wins (see [`non_blank`]).
@@ -372,12 +414,15 @@ mod tests {
     }
 
     fn raw(token: Option<&str>, pass_entry: Option<&str>) -> Config {
-        Config::from_raw(RawConfig {
-            url: Some("https://nb.example.com".into()),
-            token: token.map(Into::into),
-            pass_entry: pass_entry.map(Into::into),
-            ..RawConfig::default()
-        })
+        Config::from_raw(
+            RawConfig {
+                url: Some("https://nb.example.com".into()),
+                token: token.map(Into::into),
+                pass_entry: pass_entry.map(Into::into),
+                ..RawConfig::default()
+            },
+            None,
+        )
     }
 
     /// Run `f` with NETBOX_TOKEN removed, restoring it afterwards. Callers
@@ -681,6 +726,44 @@ mod tests {
         }
         // Only the config file remains: no stray temp file.
         assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn update_file_refuses_a_planted_temp_symlink() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_config(dir.path(), r#"{"url":"https://a"}"#);
+        let victim = dir.path().join("victim");
+        std::fs::write(&victim, "precious").unwrap();
+        let tmp = dir
+            .path()
+            .join(format!("config.json.tmp{}", std::process::id()));
+        std::os::unix::fs::symlink(&victim, &tmp).unwrap();
+        assert!(
+            update_file(&path, |o| {
+                o.insert("x".into(), 1.into());
+            })
+            .is_err()
+        );
+        assert_eq!(std::fs::read_to_string(&victim).unwrap(), "precious");
+        assert!(tmp.symlink_metadata().is_ok(), "planted link was removed");
+        assert!(!std::fs::read_to_string(&path).unwrap().contains("\"x\""));
+    }
+
+    #[test]
+    fn check_writable_needs_an_existing_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(check_writable(&dir.path().join("new.json")).is_ok());
+        let err = check_writable(&dir.path().join("missing/new.json")).unwrap_err();
+        assert!(err.to_string().contains("does not exist"), "{err}");
+    }
+
+    #[test]
+    fn explicit_config_path_reaches_the_store_advice() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = write_config(dir.path(), r#"{"url":"https://a","pass_entry":"e"}"#);
+        let store = Config::load(Some(&path)).unwrap().pass_store().unwrap();
+        assert!(store.cli().contains("--config"), "{}", store.cli());
     }
 
     #[test]

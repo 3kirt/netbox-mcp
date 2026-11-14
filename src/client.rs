@@ -121,11 +121,16 @@ impl PassToken {
             // The re-read after a rejection failed (typically: gpg-agent's
             // cache has expired since the first decrypt). Keep sending the
             // rejected token so the caller sees NetBox's real auth error
-            // rather than a misleading "locked"; the re-read is retried on
-            // the next request.
+            // rather than a misleading "locked". Clear `stale`, so a failed
+            // re-read costs one gpg run per *rejection*, not one per request:
+            // a read-only token's 403 on a write would otherwise leave every
+            // later call (each page of a fetch_all) re-running gpg behind
+            // this mutex. The next rejection marks it stale again.
             (Err(e), Some(old)) => {
                 tracing::debug!(error = %e, "re-reading rejected token failed; reusing it");
-                Ok(old.clone())
+                let old = old.clone();
+                state.stale = false;
+                Ok(old)
             }
             (Err(e), None) => Err(NetboxError::Credentials(e.to_string())),
         };
@@ -147,8 +152,8 @@ impl PassToken {
 /// Whether `status` means NetBox refused the token itself. NetBox answers an
 /// invalid, expired, or revoked token with 403 ("Invalid token"), not 401, so
 /// both count. A 403 can also be a plain permission denial for a valid token;
-/// re-reading the entry then just decrypts the same token again, which is
-/// harmless (and cached by gpg-agent).
+/// re-reading the entry then decrypts the same token again (one gpg run per
+/// such 403, and the request isn't retried since the token didn't change).
 fn is_auth_rejection(status: StatusCode) -> bool {
     status == StatusCode::UNAUTHORIZED || status == StatusCode::FORBIDDEN
 }
@@ -212,25 +217,47 @@ impl NetboxClient {
     /// Send a request, attaching a pass-backed token when there is one. The
     /// single choke point for every verb, so the lazy-auth rules (decrypt on
     /// first use, re-read after a rejection) apply uniformly.
+    ///
+    /// When NetBox rejects the pass token, the entry is re-read at once and,
+    /// if it now holds a *different* token (rotated with `netbox-mcp login`),
+    /// the request is retried once with it — so the first call after a
+    /// rotation succeeds instead of failing. Retrying is safe even for writes:
+    /// NetBox rejected the original before acting on it.
     async fn send(
         &self,
         builder: reqwest::RequestBuilder,
     ) -> Result<reqwest::Response, NetboxError> {
-        let (builder, sent_token) = match &self.auth {
-            Auth::Static => (builder, None),
-            Auth::Pass(token) => {
-                let value = token.header().await?;
-                (
-                    builder.header(header::AUTHORIZATION, value.clone()),
-                    Some(value),
-                )
-            }
+        let Auth::Pass(token) = &self.auth else {
+            return Ok(builder.send().await?);
         };
-        let resp = builder.send().await?;
-        if is_auth_rejection(resp.status())
-            && let (Auth::Pass(token), Some(sent)) = (&self.auth, &sent_token)
-        {
-            token.mark_rejected(sent).await;
+        let sent = token.header().await?;
+        // Our bodies are in-memory JSON, so this is `Some`; without a clone
+        // there's simply no retry.
+        let retry = builder.try_clone();
+        let resp = builder
+            .header(header::AUTHORIZATION, sent.clone())
+            .send()
+            .await?;
+        if !is_auth_rejection(resp.status()) {
+            return Ok(resp);
+        }
+        token.mark_rejected(&sent).await;
+        let Some(retry) = retry else {
+            return Ok(resp);
+        };
+        let fresh = token.header().await?;
+        if fresh == sent {
+            // Same token (a plain permission denial, or the re-read failed):
+            // NetBox's answer stands.
+            return Ok(resp);
+        }
+        tracing::debug!("NetBox rejected the token; retrying with the re-read one");
+        let resp = retry
+            .header(header::AUTHORIZATION, fresh.clone())
+            .send()
+            .await?;
+        if is_auth_rejection(resp.status()) {
+            token.mark_rejected(&fresh).await;
         }
         Ok(resp)
     }
@@ -588,6 +615,90 @@ mod tests {
                 matches!(err, NetboxError::Api { status, .. } if status == StatusCode::FORBIDDEN),
                 "{err}"
             );
+        }
+
+        /// A snippet that logs each decrypt to `counter`, then runs `inner`.
+        fn counted(counter: &std::path::Path, inner: &str) -> String {
+            format!("echo x >> '{}'\n{inner}", counter.display())
+        }
+
+        fn decrypts(counter: &std::path::Path) -> usize {
+            std::fs::read_to_string(counter).map_or(0, |s| s.lines().count())
+        }
+
+        #[tokio::test]
+        async fn permission_denial_with_expired_cache_does_not_rerun_gpg_per_request() {
+            let server = MockServer::start().await;
+            // A read-only token: reads work, the write is refused with 403.
+            Mock::given(method("GET"))
+                .and(path(STATUS))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({"ok": true})))
+                .mount(&server)
+                .await;
+            Mock::given(method("POST"))
+                .and(path(STATUS))
+                .respond_with(ResponseTemplate::new(403).set_body_json(
+                    json!({"detail": "You do not have permission to perform this action."}),
+                ))
+                .mount(&server)
+                .await;
+            let (dir, file, client) = pass_client(&server);
+            let counter = dir.path().join("decrypts");
+
+            std::fs::write(&file, counted(&counter, &ok_snippet("tok-ro"))).unwrap();
+            client.list(STATUS, &[]).await.unwrap();
+            assert_eq!(decrypts(&counter), 1);
+
+            // gpg-agent's cache expires, then the write is denied: one re-read
+            // (which fails), and the real 403 is reported.
+            std::fs::write(&file, counted(&counter, LOCKED_SNIPPET)).unwrap();
+            let err = client.post(STATUS, &json!({})).await.unwrap_err();
+            assert!(
+                matches!(err, NetboxError::Api { status, .. } if status == StatusCode::FORBIDDEN),
+                "{err}"
+            );
+            assert_eq!(decrypts(&counter), 2);
+
+            // Later reads reuse the in-memory token: no gpg per request.
+            for _ in 0..5 {
+                client.list(STATUS, &[]).await.unwrap();
+            }
+            assert_eq!(decrypts(&counter), 2, "gpg re-ran on every request");
+        }
+
+        #[tokio::test]
+        async fn first_call_after_rotation_succeeds_by_retrying() {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path(STATUS))
+                .and(header("authorization", "Token tok-old"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({"ok": true})))
+                .up_to_n_times(1)
+                .with_priority(1)
+                .mount(&server)
+                .await;
+            Mock::given(method("GET"))
+                .and(path(STATUS))
+                .and(header("authorization", "Token tok-new"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(json!({"ok": true})))
+                .mount(&server)
+                .await;
+            // tok-old is revoked after its first use.
+            Mock::given(method("GET"))
+                .respond_with(
+                    ResponseTemplate::new(403).set_body_json(json!({"detail": "Invalid v1 token"})),
+                )
+                .with_priority(5)
+                .mount(&server)
+                .await;
+            let (_dir, file, client) = pass_client(&server);
+
+            std::fs::write(&file, ok_snippet("tok-old")).unwrap();
+            client.list(STATUS, &[]).await.unwrap();
+            // `netbox-mcp login` rotates the token in the store.
+            std::fs::write(&file, ok_snippet("tok-new")).unwrap();
+            // The very next call: rejected with tok-old, re-read, retried.
+            client.list(STATUS, &[]).await.unwrap();
         }
 
         #[tokio::test]

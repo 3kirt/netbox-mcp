@@ -56,7 +56,11 @@ pub async fn login(config_path: Option<&Path>, args: LoginArgs) -> anyhow::Resul
     let entry = store.entry(&entry_name)?;
 
     // Settle every local precondition before prompting for the secret or
-    // calling NetBox, so a missing .gpg-id doesn't waste a token entry.
+    // calling NetBox, so a missing .gpg-id doesn't waste a token entry — and
+    // so an unwritable config can't leave the store changed (entry and
+    // .gpg-id written) with nothing pointing at it.
+    let path = config::config_path(config_path)?;
+    config::check_writable(&path)?;
     let (recipients, init_id) = match (entry.recipients()?, args.gpg_id) {
         (Some(_), Some(_)) => bail!(
             "the password store at {} already has a .gpg-id; drop --gpg-id",
@@ -92,7 +96,6 @@ pub async fn login(config_path: Option<&Path>, args: LoginArgs) -> anyhow::Resul
         );
     }
 
-    let path = config::config_path(config_path)?;
     let previous_url = cfg.file_url().map(str::to_owned);
     let mut removed_plaintext = false;
     config::update_file(&path, |obj| {
