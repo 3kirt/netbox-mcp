@@ -73,9 +73,10 @@ fmt-check:
 deny:
 	cargo deny --locked check
 
-# Build and test on the declared rust-version (needs that toolchain installed:
-# rustup toolchain install $(MSRV)). `+toolchain` overrides rust-toolchain.toml.
+# Build and test on the declared rust-version, installing that toolchain first
+# (a no-op when present). `+toolchain` overrides rust-toolchain.toml.
 msrv:
+	rustup toolchain install $(MSRV) --profile minimal
 	cargo +$(MSRV) test --all --locked
 
 # Run the binary with a dummy config and no network: --version, then an MCP
