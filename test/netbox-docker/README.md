@@ -1,7 +1,7 @@
 # Test NetBox stack (Podman on macOS)
 
 A self-contained NetBox stack for exercising netbox-mcp against a real instance —
-used by the live test suite (`make test-live`, see [`docs/testing.md`](../../docs/testing.md))
+used by the live test suite (`make live-test`, see [`docs/testing.md`](../../docs/testing.md))
 and for manual checks via [`docs/testing-protocol.md`](../../docs/testing-protocol.md).
 
 It's a trimmed copy of [netbox-community/netbox-docker](https://github.com/netbox-community/netbox-docker),
@@ -32,7 +32,9 @@ healthy:
 ## Prerequisites
 
 - Podman with a running machine (`podman machine init && podman machine start`)
-- `podman compose` (Podman 4+) or `podman-compose`
+  and `podman compose` (Podman 4+) or `podman-compose` — the local default
+- or Docker with `docker compose` (what CI uses). `up.sh` picks whichever is
+  available; `ENGINE=docker ./up.sh` or `ENGINE=podman ./up.sh` forces one
 
 Seeding runs inside a container, so no host Python/pynetbox is required.
 
@@ -61,7 +63,7 @@ From the repo root, once the stack is seeded:
 ```sh
 NETBOX_URL=http://localhost:8000 \
 NETBOX_TOKEN=0123456789abcdef0123456789abcdef01234567 \
-  make test-live
+  make live-test
 ```
 
 ## Managing the stack

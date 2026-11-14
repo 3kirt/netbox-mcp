@@ -5,15 +5,44 @@ on:
     tags:
       - "v*"
 
+# Least privilege: only the publish job can write.
 permissions:
-  contents: write
-  packages: write
+  contents: read
+
+# A release run is never cancelled by a later one.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  # The full CI suite (tests, lint, security audit) must pass before anything
-  # is built or published, so a tag on a broken commit can't ship a release.
+  verify:
+    name: Verify tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - name: Tag matches Cargo.toml, is on main, and has CHANGELOG notes
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          cargo_version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          if [ "$tag" != "$cargo_version" ]; then
+            echo "::error::tag v$tag does not match Cargo.toml version $cargo_version"; exit 1
+          fi
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::tagged commit $GITHUB_SHA is not on main"; exit 1
+          fi
+          scripts/changelog-section.sh "$tag" >/dev/null
+
+  # The full CI suite (lint, both-OS tests, real gpg, deny, msrv, docker) must
+  # pass before anything is built.
   checks:
     name: Checks
+    needs: verify
     uses: ./.github/workflows/ci.yml
 
   build:
@@ -21,63 +50,75 @@ jobs:
     needs: checks
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # ubuntu-22.04 sets the glibc floor at 2.35.
+          - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             artifact: netbox-mcp-linux-amd64
-          - os: ubuntu-latest
+          - os: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
             artifact: netbox-mcp-linux-arm64
-            linker: gcc-aarch64-linux-gnu
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: netbox-mcp-darwin-arm64
+          # Cross-built on Apple silicon; smoke-tested under Rosetta.
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: netbox-mcp-darwin-amd64
+            rosetta: true
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
-      - uses: actions/checkout@v4
-
-      # Toolchain pinned in rust-toolchain.toml; add the matrix target to it.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      # The pinned toolchain from rust-toolchain.toml, plus the matrix target.
       - run: rustup toolchain install && rustup target add ${{ matrix.target }}
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install cross-linker (Linux arm64)
-        if: matrix.linker != ''
-        run: sudo apt-get install -y ${{ matrix.linker }}
-
-      - name: Build
-        run: cargo build --release --locked --target ${{ matrix.target }}
-        env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-
-      - name: Stage binary
-        run: cp target/${{ matrix.target }}/release/netbox-mcp ${{ matrix.artifact }}
-
-      - uses: actions/upload-artifact@v4
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: ${{ matrix.target }}
+      - run: make release TARGET=${{ matrix.target }}
+      - if: matrix.rosetta
+        run: softwareupdate --install-rosetta --agree-to-license
+      # macOS runs the x86_64 binary under Rosetta automatically once installed.
+      - run: make smoke BIN=target/${{ matrix.target }}/release/netbox-mcp
+      - run: cp target/${{ matrix.target }}/release/netbox-mcp ${{ matrix.artifact }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
+          if-no-files-found: error
 
-  release:
-    name: GitHub Release
-    needs: build
+  docker:
+    name: Docker image
+    needs: checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: make docker-smoke ENGINE=docker
 
-      - uses: actions/download-artifact@v4
+  publish:
+    name: GitHub Release
+    needs: [build, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: artifacts
           merge-multiple: true
-
       - name: Checksums
-        run: cd artifacts && sha256sum * > checksums.txt
-
-      - uses: softprops/action-gh-release@v2
+        run: cd artifacts && sha256sum netbox-mcp-* > checksums.txt && cat checksums.txt
+      - uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
         with:
+          subject-path: artifacts/netbox-mcp-*
+      - name: Release notes from CHANGELOG.md
+        run: scripts/changelog-section.sh "${GITHUB_REF_NAME#v}" > release-notes.md
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          body_path: release-notes.md
           files: artifacts/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

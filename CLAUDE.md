@@ -5,24 +5,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```sh
-make build       # cargo build --release
-make test        # cargo test --all
-make lint        # secrets-scan + cargo clippy --all-targets -- -D warnings (both feature sets) && cargo fmt --check
-make check       # full offline gate: lint + test + build
-make install     # cargo install --path . (installs to ~/.cargo/bin)
-make clean       # remove build artifacts
+make build          # cargo build --locked (debug)
+make release        # cargo build --release --locked (TARGET=<triple> to cross-build)
+make test           # cargo test --all --locked (unit + tests/launch_path.rs)
+make test-real-gpg  # #[ignore]d credentials tests against the real gpg (REAL_GPG=1)
+make live-test      # live suite against a seeded NetBox (LIVE_REQUIRED=1: fail instead of skip)
+make lint           # secrets-scan + clippy --all-targets -D warnings (every feature set) + fmt --check
+make deny           # cargo-deny: advisories, bans (aws-lc), sources, licenses (deny.toml)
+make msrv           # cargo +<rust-version> test --all --locked
+make smoke          # scripts/smoke.py on BIN (default target/release/netbox-mcp)
+make check          # full offline gate: fmt-check lint test deny release smoke
+make docker-smoke   # build the image, check its builder = rust-toolchain.toml, run --version
+make install        # cargo install --locked --path . (installs to ~/.cargo/bin)
+make clean          # remove build artifacts
 
 # Run a single test
 cargo test <test_name>               # e.g. cargo test parses_valid_json
 cargo test -p netbox-mcp <test_name> # same, scoped to the crate
 
-# Docker
-NETBOX_URL=https://netbox.example.com make docker-build
+# Docker (docker if present, else podman; override with ENGINE=)
+make docker-build
 ```
 
 Formatting and lint must be clean before every commit. Run `cargo fmt` to fix formatting; `cargo clippy --all-targets -- -D warnings` to check for warnings treated as errors (the `--all-targets` flag lints test code too).
 
-Clippy runs at pedantic strictness: the `pedantic`, `nursery`, and `cargo` lint groups are enabled in `Cargo.toml` under `[lints.clippy]` (with a curated set of per-lint `allow`s documented there), so *every* `cargo clippy` invocation — CI, rust-analyzer, and the release gate — enforces them with no extra flags. `make lint` runs `secrets-scan` (fails on a NetBox v2 `nbt_<key>.<secret>` token in any tracked or untracked file — test fixtures must not use that prefix), then clippy over all targets and both feature sets; `make check` runs the full offline gate (`lint` + `test` + `build`).
+Clippy runs at pedantic strictness: the `pedantic`, `nursery`, and `cargo` lint groups are enabled in `Cargo.toml` under `[lints.clippy]` (with a curated set of per-lint `allow`s documented there), so *every* `cargo clippy` invocation — CI, rust-analyzer, and the release gate — enforces them with no extra flags. `make lint` runs `secrets-scan` (fails on a NetBox v2 `nbt_<key>.<secret>` token in any tracked or untracked file — test fixtures must not use that prefix), then clippy over all targets and both feature sets; `make check` runs the full offline gate (`fmt-check lint test deny release smoke`). It never includes the live suite.
+
+**The Makefile is the single source of truth for CI.** Every workflow job calls a `make` target, so add or change a check in the Makefile, not in YAML. The workflows (all actions pinned by commit SHA, bumped by Dependabot):
+- `.github/workflows/ci.yml` — push/PR to main, dispatch, and `workflow_call` (release reuses it): lint, test on ubuntu + macOS, real-gpg, deny, msrv (not on PRs), docker-smoke.
+- `.github/workflows/scheduled.yml` — weekly: deny, msrv, lint+test on stable and beta, real-gpg on both OSes, and the live suite against `ENGINE=docker test/netbox-docker/up.sh` with `LIVE_REQUIRED=1`. A failure opens or comments on a `scheduled-failure` issue.
+- `.github/workflows/release.yml` — on a `v*` tag: verify (tag = Cargo.toml version, commit on main, non-empty CHANGELOG section via `scripts/changelog-section.sh`), the whole CI suite, a 4-target build (linux amd64/arm64 on ubuntu-22.04 for a glibc 2.35 floor, darwin arm64/amd64) with `make smoke` on each artifact, docker-smoke, then checksums, provenance attestation, and a release body from the CHANGELOG.
+
+**Toolchain and MSRV.** `rust-toolchain.toml` pins an exact Rust version (bump it deliberately, together with the Dockerfile's `rust:<ver>-slim-bookworm` builder — `make docker-smoke` fails if they differ, and fix any new lints in the same change). `rust-version` in Cargo.toml is the measured MSRV (1.89: 1.88 fails on `uuid`); `make msrv` checks it. TLS is rustls with the **ring** provider, installed in `client::http_client()` (reqwest uses `rustls-no-provider` and panics without one); `deny.toml` bans aws-lc-sys/aws-lc-rs.
+
+**`scripts/smoke.py`** asserts the binary's `--version` and that MCP `tools/list` returns exactly `EXPECTED_TOOLS` (178). Adding or removing a tool means updating that constant **and** `EXPECTED_TOOLS` in `src/tools/mod.rs` (`tool_router_exposes_every_tool`) together.
 
 ## Architecture
 
@@ -91,7 +107,9 @@ Two layers verify different risks; see `docs/testing.md` for the full rationale.
 - `src/client.rs` — lazy pass auth: locked → unlocked without restart, rotation after a rejection, the real 403 surviving a failed re-read, single decrypt under concurrency.
 - `src/tools/mod.rs` — `slim_value()`, `clean_page_response()`, `PaginationParams`, and wiremock-based pipeline integration tests that fire requests through the full `paginate()` path against a mock server.
 
-**Live integration tests** (`src/tools/live/`, gated behind the `live-tests` cargo feature) run the real domain functions against a seeded NetBox, apply the same `slim_value` transform as the rmcp boundary, and assert behavior (filters honored) plus the universal invariants — the contract fidelity unit tests structurally cannot reach. They're shape-only (no exact counts) so they survive seed drift, and `skip_unless_live!` returns early when `NETBOX_URL`/`NETBOX_TOKEN` are absent. Run with `make test-live` against a seeded instance — the self-contained, auto-seeding stack in `test/netbox-docker/` (`./up.sh`) is the easiest way to get one.
+**Live integration tests** (`src/tools/live/`, gated behind the `live-tests` cargo feature) run the real domain functions against a seeded NetBox, apply the same `slim_value` transform as the rmcp boundary, and assert behavior (filters honored) plus the universal invariants — the contract fidelity unit tests structurally cannot reach. They're shape-only (no exact counts) so they survive seed drift, and `skip_unless_live!` returns early when `NETBOX_URL`/`NETBOX_TOKEN` are absent — unless `LIVE_REQUIRED=1`, which turns that into a failure (the scheduled CI job and the release process set it, so a misconfigured run can't pass with zero tests). Run with `make live-test` against a seeded instance — the self-contained, auto-seeding stack in `test/netbox-docker/` (`./up.sh`) is the easiest way to get one.
+
+**Real-gpg tests** (`credentials::tests::real_gpg`, `#[ignore]`d; `make test-real-gpg` sets `REAL_GPG=1`) run against the real `gpg` on PATH with throwaway keyrings under a short `/tmp` path (macOS caps gpg-agent socket paths at 104 bytes): an unprotected key decrypts, a locked key is `Locked` (code 85), a foreign-key ciphertext is `NoSecretKey` (code 17). They catch GnuPG status-code drift that the fake `gpg` can't.
 
 **Launch-path tests** (`tests/launch_path.rs`, part of `cargo test --all`) spawn the *built binary* over MCP stdio, configured only through its environment and a pass-entry config, with a fake `gpg` and wiremock. They check NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal `${NETBOX_TOKEN}` placeholder, and that a locked key still starts the server and returns the unlock message. This is the only layer that sees the environment an MCP client builds; add to it when a bug could live between the client config and the server.
 

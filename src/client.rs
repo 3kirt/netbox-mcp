@@ -168,7 +168,16 @@ fn auth_header(token: &str) -> anyhow::Result<header::HeaderValue> {
     Ok(value)
 }
 
+/// Make ring the process-wide rustls crypto provider. reqwest is built with
+/// `rustls-no-provider` (so aws-lc-rs never enters the build) and panics on
+/// `Client::build()` without one. Idempotent: a second install (another
+/// client, or a test that already ran) just returns `Err`, which is fine.
+fn install_crypto_provider() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+}
+
 fn http_client(headers: header::HeaderMap) -> anyhow::Result<Client> {
+    install_crypto_provider();
     Ok(Client::builder()
         .connect_timeout(CONNECT_TIMEOUT)
         .timeout(REQUEST_TIMEOUT)

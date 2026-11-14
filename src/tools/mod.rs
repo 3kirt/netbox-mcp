@@ -2908,6 +2908,18 @@ mod tests {
     // tool behavior annotations
     // ------------------------------------------------------------------
 
+    /// Must change together with EXPECTED_TOOLS in scripts/smoke.py, which
+    /// asserts the same count against every built release artifact.
+    const EXPECTED_TOOLS: usize = 178;
+
+    #[test]
+    fn tool_router_exposes_every_tool() {
+        assert_eq!(
+            NetboxMcpServer::tool_router().list_all().len(),
+            EXPECTED_TOOLS
+        );
+    }
+
     #[test]
     fn every_tool_carries_behavior_annotations() {
         // Each tool shim must declare read/write hints (readOnlyHint etc.) so
