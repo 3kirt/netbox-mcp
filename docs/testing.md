@@ -1,14 +1,15 @@
 # Testing
 
-This project tests at two layers that verify **different risks**. Neither
-replaces the other; together they cover the whole surface.
+This project tests at three layers that verify **different risks**. None
+replaces the others; together they cover the whole surface.
 
 | Layer | Lives in | Hits network? | Verifies |
 |---|---|---|---|
-| **Unit tests** | `#[cfg(test)] mod tests` in `src/config.rs` and `src/tools/mod.rs` | No (wiremock or pure logic) | Our code against *our* assumptions — slimming, pagination math, request construction, config parsing |
+| **Unit tests** | `#[cfg(test)] mod tests` in `src/` (config, client, credentials, commands, tools) | No (wiremock, a fake `gpg`, or pure logic) | Our code against *our* assumptions — slimming, pagination math, request construction, config parsing, token handling |
+| **Launch-path tests** | `tests/launch_path.rs` | No (wiremock + a fake `gpg`) | The *built binary* as an MCP client launches it — environment and config file handling that unit tests can't see |
 | **Live integration tests** | `src/tools/live/` (feature-gated) | Yes — a real, seeded NetBox | Fidelity to the *actual* NetBox API — filter param names, response shapes, which fields really need stripping |
 
-## Why two layers
+## Why these layers
 
 A unit test mocks NetBox, so **the mock is our assumption**. It can prove "given
 params X we build request Y and transform response Z correctly," which is
@@ -27,17 +28,52 @@ against the real shape. A wiremock test structurally cannot establish that.
 
 ## Layer 1 — Unit tests
 
-Run by default with `cargo test --all`. Two flavors:
+Run by default with `cargo test --all`. Three flavors:
 
 **Pure-logic tests** — no HTTP. `src/tools/mod.rs` covers `slim_value()`,
 `clean_page_response()`, and `clamp_limit`/`PaginationParams`; `src/config.rs`
-covers config loading, the env override, and HTTPS enforcement.
+covers config loading, the env override, HTTPS enforcement, token-source
+resolution, unexpanded `${VAR}` placeholders, and the atomic config rewrite.
+It also lints every MCP config example in the README, so each `${VAR}` has a
+`:-` default.
+
+**Fake-gpg tests** — `src/credentials/` and the pass-auth tests in
+`src/client.rs` use `credentials::test_support::fake_gpg()`: one shared fake
+`gpg` script, written once (so no test executes a file another thread is still
+writing — the ETXTBSY race). In decrypt mode it *sources* the entry file, so
+each test's "ciphertext" is a shell snippet that emits the canned
+`[GNUPG:]` status lines it needs: success, locked, no secret key, a hang (for
+the timeout), or garbage. The locked and no-key lines were captured from real
+GnuPG 2.4. `src/credentials/agent.rs` tests the Assuan exchange against an
+in-memory duplex. Tests that read or change process environment variables
+(`NETBOX_*`, `HOME`, …) hold `test_support::lock_env()` for their whole body.
 
 **Wiremock pipeline tests** — stand up an in-process mock server and fire a
 request through the full `paginate()` path, asserting the request we send and
 how the response is slimmed. See the `pipeline_*` tests in `src/tools/mod.rs`.
 
-## Layer 2 — Live integration tests
+## Layer 2 — Launch-path tests
+
+[`tests/launch_path.rs`](../tests/launch_path.rs) runs with `cargo test --all`
+(it needs no NetBox). It spawns the **built binary**, speaks MCP to it over
+stdio, and configures it only through its environment and a config file — the
+way an MCP client launches it. A fake `gpg` and a wiremock NetBox complete the
+picture.
+
+Unit tests call functions directly, so they never see the environment a client
+builds. gitlab-mcp v0.39.0 shipped a bug that lived exactly there: for
+`"GITLAB_TOKEN": "${GITLAB_TOKEN}"` with the variable unset, Claude Code passes
+the placeholder through literally, and the server used it as the token instead
+of the configured `pass_entry`. These tests assert NetBox receives the
+pass-entry token whether `NETBOX_TOKEN` is unset, empty, or a literal
+`${NETBOX_TOKEN}`, and that a locked key still lets the server start and
+returns the "run `netbox-mcp unlock`" message.
+
+Add a test here when a bug could live between the client's config and the
+server: environment variables, argument handling, startup, or anything else a
+direct function call skips.
+
+## Layer 3 — Live integration tests
 
 A suite that runs the real domain functions against a live NetBox seeded by
 [`scripts/seed_data.py`](../scripts/seed_data.py), then applies the same
@@ -162,7 +198,8 @@ not reached yet.
 ## Command reference
 
 ```sh
-cargo test --all                                          # unit tests (live excluded)
+cargo test --all                                          # unit + launch-path tests (live excluded)
+cargo test --test launch_path                             # launch-path tests only
 cargo test --features live-tests -- --test-threads=1      # + live tests (needs a seeded instance)
 cargo clippy --features live-tests --tests -- -D warnings # lint including the live suite
 ```
