@@ -2,8 +2,11 @@
 name = "netbox-mcp"
 version = "0.13.1"
 edition = "2024"
+# Verified: builds and passes `cargo test --all` on 1.89.0; 1.88 fails (uuid
+# needs 1.89). `make msrv` / the msrv CI job keep it honest.
+rust-version = "1.89"
 description = "An MCP server that exposes NetBox infrastructure data as tools for Claude and other MCP clients, with read plus limited write support"
-license = "GPL-3.0"
+license = "GPL-3.0-or-later"
 repository = "https://github.com/3kirt/netbox-mcp"
 keywords = ["netbox", "mcp", "claude", "api", "llm"]
 categories = ["command-line-utilities", "api-bindings"]
@@ -24,7 +27,12 @@ rmcp = { version = "3.9", features = [
     "transport-io",
 ] }
 tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls"] }
+# TLS via rustls with the ring provider, not reqwest's default aws-lc-rs:
+# aws-lc-sys needs cmake + a C toolchain and complicates cross builds. The
+# provider is installed in `client::http_client()` (reqwest panics without one
+# under `rustls-no-provider`); deny.toml bans aws-lc-sys / aws-lc-rs.
+reqwest = { version = "0.13", default-features = false, features = ["json", "query", "rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 schemars = "1.0"

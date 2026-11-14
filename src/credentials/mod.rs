@@ -685,7 +685,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let store = PassStore::new(dir.path(), fake_gpg()).with_timeout(Duration::from_millis(200));
         let entry = store.entry("t").unwrap();
-        std::fs::write(entry.path(), "sleep 10\n").unwrap();
+        // `exec`, so the kill on timeout ends the sleep itself. A plain `sleep`
+        // child would outlive its killed shell and, on macOS (where spawning
+        // isn't atomic with CLOEXEC), can inherit another concurrently
+        // spawned test's pipe and stall that test until the sleep ends.
+        std::fs::write(entry.path(), "exec sleep 10\n").unwrap();
         let err = entry.read_token().await.unwrap_err();
         assert!(matches!(err, PassError::Timeout { .. }), "{err}");
     }
@@ -859,5 +863,182 @@ mod tests {
             PassStore::new("/s", "gpg").gpgconf(),
             PathBuf::from("gpgconf")
         );
+    }
+
+    /// Tests against the real `gpg` on PATH (`make test-real-gpg`). Ignored
+    /// by default and skipped unless `REAL_GPG=1`, so `cargo test` never
+    /// needs GnuPG. They pin the numeric status codes the classifier relies
+    /// on, so a GnuPG release that changes them fails here, not in the field.
+    mod real_gpg {
+        use std::path::{Path, PathBuf};
+        use std::process::Command;
+
+        use super::super::{PassError, PassStore};
+
+        const TOKEN: &str = "real-gpg-test-token";
+
+        fn enabled() -> bool {
+            if std::env::var_os("REAL_GPG").is_some_and(|v| v == "1") {
+                return true;
+            }
+            eprintln!("skipping real-gpg test: set REAL_GPG=1 (make test-real-gpg)");
+            false
+        }
+
+        /// A throwaway GnuPG home under /tmp: gpg-agent's socket lives in it,
+        /// and macOS caps socket paths at 104 bytes, which a default temp
+        /// dir there can exceed. The agent is stopped on drop.
+        struct Keyring {
+            dir: tempfile::TempDir,
+        }
+
+        impl Keyring {
+            fn new() -> Self {
+                let dir = tempfile::Builder::new()
+                    .prefix("nbg")
+                    .tempdir_in("/tmp")
+                    .expect("create GnuPG home");
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o700))
+                        .unwrap();
+                }
+                Self { dir }
+            }
+
+            fn home(&self) -> &Path {
+                self.dir.path()
+            }
+
+            fn gpg(&self, args: &[&str]) -> std::process::Output {
+                Command::new("gpg")
+                    .arg("--homedir")
+                    .arg(self.home())
+                    .args(["--batch", "--quiet", "--pinentry-mode", "loopback"])
+                    .args(args)
+                    .output()
+                    .expect("run gpg")
+            }
+
+            /// Generate an encryption-capable key (passphrase "" = none) and
+            /// return its fingerprint.
+            fn gen_key(&self, uid: &str, passphrase: &str) -> String {
+                let out = self.gpg(&[
+                    "--passphrase",
+                    passphrase,
+                    "--quick-gen-key",
+                    uid,
+                    "default",
+                    "default",
+                    "never",
+                ]);
+                assert!(
+                    out.status.success(),
+                    "keygen: {}",
+                    String::from_utf8_lossy(&out.stderr)
+                );
+                let list = self.gpg(&["--with-colons", "--list-secret-keys", uid]);
+                String::from_utf8_lossy(&list.stdout)
+                    .lines()
+                    .find_map(|l| {
+                        l.strip_prefix("fpr:")
+                            .map(|r| r.trim_matches(':').to_string())
+                    })
+                    .expect("fingerprint")
+            }
+
+            /// Forget cached passphrases (stop the agent; it restarts on demand).
+            fn lock(&self) {
+                let _ = Command::new("gpgconf")
+                    .arg("--homedir")
+                    .arg(self.home())
+                    .args(["--kill", "gpg-agent"])
+                    .status();
+            }
+
+            fn store(&self, root: &Path) -> PassStore {
+                PassStore::new(root, "gpg").with_homedir(Some(self.home().to_path_buf()))
+            }
+        }
+
+        impl Drop for Keyring {
+            fn drop(&mut self) {
+                self.lock();
+            }
+        }
+
+        fn entry_path(store: &PassStore, name: &str) -> PathBuf {
+            store.entry(name).unwrap().path()
+        }
+
+        #[tokio::test]
+        #[ignore = "needs GnuPG: make test-real-gpg"]
+        async fn real_gpg_unprotected_key_decrypts() {
+            if !enabled() {
+                return;
+            }
+            let ring = Keyring::new();
+            let fpr = ring.gen_key("Free <free@example.invalid>", "");
+            let root = tempfile::tempdir().unwrap();
+            let entry = ring.store(root.path()).entry("netbox-mcp/free").unwrap();
+            entry.write_token(TOKEN, &[fpr]).await.unwrap();
+            ring.lock();
+            assert_eq!(entry.read_token().await.unwrap(), TOKEN);
+        }
+
+        #[tokio::test]
+        #[ignore = "needs GnuPG: make test-real-gpg"]
+        async fn real_gpg_locked_key_is_classified_as_locked() {
+            if !enabled() {
+                return;
+            }
+            let ring = Keyring::new();
+            let fpr = ring.gen_key("Locked <locked@example.invalid>", "correct horse");
+            let root = tempfile::tempdir().unwrap();
+            let entry = ring.store(root.path()).entry("netbox-mcp/locked").unwrap();
+            entry.write_token(TOKEN, &[fpr]).await.unwrap();
+            // Key generation cached the passphrase; drop it so the
+            // non-interactive decrypt finds the key locked (gpg code 85).
+            ring.lock();
+            let err = entry.read_token().await.unwrap_err();
+            assert!(matches!(err, PassError::Locked { .. }), "{err}");
+        }
+
+        #[tokio::test]
+        #[ignore = "needs GnuPG: make test-real-gpg"]
+        async fn real_gpg_foreign_key_is_no_secret_key() {
+            if !enabled() {
+                return;
+            }
+            // Encrypt in one keyring, decrypt in another that lacks the key.
+            let theirs = Keyring::new();
+            let their_fpr = theirs.gen_key("Theirs <theirs@example.invalid>", "");
+            let ours = Keyring::new();
+            ours.gen_key("Ours <ours@example.invalid>", "");
+
+            let their_root = tempfile::tempdir().unwrap();
+            let their_store = theirs.store(their_root.path());
+            their_store
+                .entry("netbox-mcp/foreign")
+                .unwrap()
+                .write_token(TOKEN, &[their_fpr])
+                .await
+                .unwrap();
+
+            let our_root = tempfile::tempdir().unwrap();
+            let our_store = ours.store(our_root.path());
+            let target = entry_path(&our_store, "netbox-mcp/foreign");
+            std::fs::create_dir_all(target.parent().unwrap()).unwrap();
+            std::fs::copy(entry_path(&their_store, "netbox-mcp/foreign"), &target).unwrap();
+
+            let err = our_store
+                .entry("netbox-mcp/foreign")
+                .unwrap()
+                .read_token()
+                .await
+                .unwrap_err();
+            assert!(matches!(err, PassError::NoSecretKey { .. }), "{err}");
+        }
     }
 }

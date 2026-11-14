@@ -33,13 +33,24 @@ pub fn live_env() -> Option<LiveEnv> {
     Some(LiveEnv { client })
 }
 
+/// True when `LIVE_REQUIRED=1`: the scheduled CI live job and the release
+/// process set it, so an unconfigured run fails instead of passing vacuously.
+pub fn live_required() -> bool {
+    std::env::var_os("LIVE_REQUIRED").is_some_and(|v| v == "1")
+}
+
 /// Bind a `LiveEnv` or return early (with a notice) when credentials are
 /// absent — so the feature is safe to compile/run in CI without secrets.
+/// With `LIVE_REQUIRED=1`, missing credentials are a failure, not a skip.
 macro_rules! skip_unless_live {
     () => {
         match $crate::tools::live::harness::live_env() {
             Some(env) => env,
             None => {
+                assert!(
+                    !$crate::tools::live::harness::live_required(),
+                    "LIVE_REQUIRED=1 but NETBOX_URL / NETBOX_TOKEN are not set"
+                );
                 eprintln!(
                     "skipping live test: set NETBOX_URL and NETBOX_TOKEN to run \
                      (seed the instance first with scripts/seed_data.py)"

@@ -10,20 +10,35 @@ All notable changes to this project will be documented in this file.
 - **Unattended operation with a locked key** — the server decrypts the token on first use and never prompts (`--pinentry-mode error`, 10s timeout), so it starts while the key is locked. Tool calls fail with an actionable "locked, ask the user to run `netbox-mcp unlock`, then retry" error until gpg-agent has the passphrase cached, then succeed without a restart; concurrent first calls run gpg once. Locked/no-key states come from gpg's numeric status codes, never its localized messages.
 - **`netbox-mcp login` / `logout` / `unlock` / `status` subcommands** — `login` verifies the token against NetBox (`/api/authentication-check/`, falling back to `/api/status/` on older releases), encrypts it, updates the config at 0600, and removes any plaintext token. Each NetBox instance gets its own entry (`netbox-mcp/<host>`), so logging in to a second instance never overwrites the first one's token, and `--gpg-id` is written to `.gpg-id` only after encryption to that key succeeds. `status` reports the token source and whether the key is unlocked by asking gpg-agent over its Assuan socket, without decrypting anything.
 - **Rotated tokens are picked up without a restart** — after NetBox rejects the token (401, or the 403 NetBox uses for an invalid token) the server re-reads the pass entry on the next call. If that re-read fails (e.g. the agent cache has expired), it keeps reporting NetBox's real auth error rather than a misleading "locked".
+- **Intel Mac binaries** — releases now include `netbox-mcp-darwin-amd64` alongside linux amd64/arm64 and darwin arm64, and every binary ships with a build-provenance attestation (`gh attestation verify`).
 - `"gpg"`, `"password_store_dir"` and `"gnupg_home"` config keys — the gpg binary, store root and keyring, for MCP clients that launch servers with a minimal `PATH` or without shell-only `PASSWORD_STORE_DIR` / `GNUPGHOME` exports. `login` records the store and keyring it used.
 
 ### Changed
 
+- **License identifier is now `GPL-3.0-or-later`** — Cargo.toml used the deprecated SPDX id `GPL-3.0`, which cargo-deny flags; the README says the same.
 - A config file that sets both `"token"` and `"pass_entry"` is rejected rather than one silently shadowing the other.
 - An unexpanded `${NAME}` / `${NAME:-…}` value in an env var or config value now counts as unset, like a blank one, with a warning naming the variable. Claude Code passes a bare `${NETBOX_TOKEN}` through literally when the variable is unset, which would otherwise shadow a `pass_entry` with a bogus token.
 - `--config` is accepted after a subcommand as well as before it, and `--version` is available.
+- **TLS uses rustls' ring provider instead of aws-lc-rs** — drops `aws-lc-sys` (and with it cmake and a C toolchain for aws-lc, plus quinn and rand) from the build; `deny.toml` bans it from coming back.
+- **Toolchain pinned to Rust 1.100.0** (from 1.99.0), with the Docker builder image to match. The minimum supported Rust version is now declared: `rust-version = "1.89"` (measured; 1.88 fails on `uuid`).
+- **Linux release binaries are built on ubuntu-22.04** (glibc 2.35 floor, down from the `ubuntu-latest` glibc), and arm64 builds natively instead of through a cross linker.
+- Release notes now come from the matching CHANGELOG section instead of being auto-generated.
 
 ### Internals
 
 - **Launch-path tests** — `tests/launch_path.rs` spawns the built binary over MCP stdio with a pass-entry config, a fake `gpg`, and wiremock, and checks that NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal placeholder, and that a locked key still starts the server and returns the unlock message. A unit test lints the README's MCP config examples so every `${VAR}` has a `:-` default.
 - `make lint` now runs a `secrets-scan` for NetBox v2 (`nbt_…`) tokens in tracked and untracked files.
 - All requests go through one `NetboxClient::send()` choke point, so the lazy-auth rules apply to every verb.
-- **Releases are gated on CI** — `release.yml` now runs the full CI suite (tests, lint, security audit) as a reusable workflow before building, so a tag on a broken commit can't publish a release.
+- **CI/CD harmonized with gitlab-mcp and proxmox-mcp** — CI only calls `make` targets (`lint`, `test`, `test-real-gpg`, `deny`, `msrv`, `smoke`, `docker-smoke`); `make check` (`fmt-check lint test deny release smoke`) is the pre-release gate. `test-live` is renamed `live-test`.
+  - `ci.yml`: least-privilege permissions, PR-only cancellation of superseded runs, tests on Linux **and macOS**, a real-GnuPG job, cargo-deny, MSRV (outside PRs), and a Docker image build that also checks the builder matches `rust-toolchain.toml`.
+  - `scheduled.yml` (weekly): cargo-deny, MSRV, lint+test on current stable and beta, real GnuPG on both OSes, and the **live suite against the netbox-docker stack** (`ENGINE=docker test/netbox-docker/up.sh`). A failure opens or comments on a `scheduled-failure` issue. The weekly cron moved here from `ci.yml`.
+  - `release.yml`: a verify job (tag = Cargo.toml version, tagged commit on main, non-empty CHANGELOG section), then the full CI suite, then a 4-target build where each binary is smoke-tested before upload (`scripts/smoke.py`: `--version` plus an MCP initialize + `tools/list` returning all 178 tools), a Docker check, checksums, and provenance attestation. Only the publish job can write.
+  - Every action is pinned by commit SHA; Dependabot bumps actions and cargo weekly, grouped.
+- **cargo-deny replaces cargo-audit** (`deny.toml`): advisories, banned crates, crates.io-only sources, and an explicit license allow-list.
+- **Real-GnuPG tests** (`make test-real-gpg`) pin the status codes the classifier relies on: an unprotected key decrypts, a locked key is `Locked` (code 85), a foreign-key ciphertext is `NoSecretKey` (code 17).
+- `LIVE_REQUIRED=1` makes missing live-test credentials a failure instead of a silent skip.
+- Fixed an intermittent 10s stall in the gpg timeout unit test on macOS (the hung fake `gpg` now `exec`s its sleep, so the kill ends it).
+- `scripts/changelog-section.sh` extracts a version's notes; `test/netbox-docker/up.sh` runs under docker as well as podman. The CHANGELOG drops its `---` separators.
 
 ### Documentation
 
@@ -161,8 +176,6 @@ All notable changes to this project will be documented in this file.
 
 - **Seed script for NetBox 4.x scope fields** — `scripts/seed_data.py` set the deprecated `site` field on prefixes and clusters, which NetBox 4.x ignores in favor of the generic `scope` (`scope_type`/`scope_id`). Objects had no site association, so `site=` filters returned nothing. Now sets `scope_type: dcim.site` / `scope_id`, which also restores VM-by-site filtering (a VM's site derives from its cluster's scope).
 
----
-
 ## [0.5.0] - 2026-06-07
 
 ### Internals
@@ -171,8 +184,6 @@ All notable changes to this project will be documented in this file.
 - **`QueryBuilder::run()`** — new method that issues the paginated GET directly, collapsing the identical 8-line `paginate(...)` tail that every `*_list` function repeated into a single call. Net −608 lines across all domain modules.
 - **`resolve_named_id` shared core** — `resolve_device_id` and `resolve_vm_id` now delegate to a single private helper, eliminating the duplicated count/ambiguous/not-found logic that existed in both resolver pairs.
 - **`lookup_host` extract closure** — replaced the two copy-pasted `match` arms (total/results extraction) with a shared `extract` closure.
-
----
 
 ## [0.4.0] - 2026-05-28
 
@@ -184,8 +195,6 @@ All notable changes to this project will be documented in this file.
 
 - **rmcp 1.5 → 1.7** — upgraded the MCP server crate to its current minor release. No behavioural changes in the tool surface; the bump pulls in upstream protocol fixes and macro improvements.
 - **CI: Helm chart job removed** from the release workflow, completing the deploy/ cleanup that began in v0.3.0.
-
----
 
 ## [0.2.0] - 2026-05-16
 
@@ -226,8 +235,6 @@ All notable changes to this project will be documented in this file.
 - `finalize_params` and `clean_page_response` split out of `paginate()` to be unit-testable without an HTTP client.
 - 82 tests (up from 34) including wiremock-based pipeline tests covering the full `client.list()` → `paginate()` → `slim_value()` chain, `apply_change_diff` branches, `to_tool_message` UTF-8 boundary safety, `enforce_https` edge cases, `resolve_device_id`/`resolve_vm_id` ambiguous/not-found paths, and the `list_all` MAX_PAGES guard.
 
----
-
 ## [0.1.2] - 2026-05-14
 
 ### Fixed
@@ -236,8 +243,6 @@ All notable changes to this project will be documented in this file.
 - `netbox_lookup_host` now reports the true NetBox total counts in `total_matches` and correctly sets `has_more` when results are truncated.
 - `list_all` response now always includes `has_more: false` and `next_offset` equal to the total count, matching the shape of regular paginated responses.
 - `next_offset` is always present in paginated responses (previously absent on the last page).
-
----
 
 ## [0.1.1] - 2026-05-13
 
@@ -258,8 +263,6 @@ All notable changes to this project will be documented in this file.
 
 - Env-mutating config tests serialized via a module-level `Mutex` to prevent `NETBOX_URL`/`NETBOX_TOKEN` leakage across parallel test threads.
 
----
-
 ## [0.1.0] - 2026-05-13
 
 Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation.
@@ -272,16 +275,12 @@ Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation
 - **Config**: `~/.netbox_mcp.json` with `NETBOX_URL` / `NETBOX_TOKEN` env var overrides; HTTP (non-localhost) URLs rejected.
 - All tools from the Go era re-implemented across ten domain modules: `dcim`, `ipam`, `virtualization`, `circuits`, `vpn`, `wireless`, `tenancy`, `extras`, `core`, `users`.
 
----
-
 ## [0.0.11] - 2026-03-16
 
 ### Added
 
 - Helm chart published to GHCR (`oci://ghcr.io/3kirt/charts`) on every release tag.
 - Helm values for toggling ingress, metrics service, and Prometheus `ServiceMonitor`.
-
----
 
 ## [0.0.10] - 2026-03-15
 
@@ -291,15 +290,11 @@ Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation
 - Cluster-internal metrics `Service` exposing the `/metrics` endpoint.
 - Documentation for health endpoints, structured logging, and graceful shutdown behavior.
 
----
-
 ## [0.0.9] - 2026-03-15
 
 ### Fixed
 
 - NetBox response body now explicitly closed in the token verifier, resolving a potential resource leak flagged by the linter.
-
----
 
 ## [0.0.8] - 2026-03-15
 
@@ -308,8 +303,6 @@ Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation
 - Dockerfile and `docker-build` / `docker-run` Makefile targets.
 - HTTP transport with Bearer-token authentication for remote MCP deployments.
 - Example Kubernetes manifests for remote MCP deployment.
-
----
 
 ## [0.0.7] - 2026-03-15
 
@@ -322,15 +315,11 @@ Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation
 
 - Server test updated to account for all registered tools.
 
----
-
 ## [0.0.6] - 2026-03-15
 
 ### Changed
 
 - ~62 individual GET handlers consolidated into a shared `addGetTool` helper, removing significant repetition.
-
----
 
 ## [0.0.5] - 2026-03-13
 
@@ -344,15 +333,11 @@ Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation
 
 - Two code-quality issues identified in review.
 
----
-
 ## [0.0.4] - 2026-03-13
 
 ### Added
 
 - GET tools for interfaces and cables.
-
----
 
 ## [0.0.3] - 2026-03-13
 
@@ -361,15 +346,11 @@ Complete rewrite of netbox-mcp in Rust, replacing the previous Go implementation
 - Security hardening: HTTPS enforcement, config file permission check, pagination limit cap.
 - Pinned GitHub Actions versions.
 
----
-
 ## [0.0.2] - 2026-03-13
 
 ### Added
 
 - GitHub Actions CI workflow and GoReleaser-based release workflow.
-
----
 
 ## [0.0.1] - 2026-03-12
 

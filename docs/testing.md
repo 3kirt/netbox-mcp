@@ -143,7 +143,7 @@ cd test/netbox-docker && ./up.sh          # boot + mint token + seed
 # then, from the repo root:
 NETBOX_URL=http://localhost:8000 \
 NETBOX_TOKEN=0123456789abcdef0123456789abcdef01234567 \
-  make test-live
+  make live-test
 ```
 
 Against any other seeded instance, run the suite directly:
@@ -151,19 +151,24 @@ Against any other seeded instance, run the suite directly:
 ```sh
 NETBOX_URL=https://netbox.example.com \
 NETBOX_TOKEN=<token> \
-  cargo test --features live-tests -- --test-threads=1
+  cargo test --locked --features live-tests live:: -- --test-threads=1
 ```
 
 - Seed the target first with `scripts/seed_data.py` (the test stack does this for
   you); see [`testing-protocol.md`](testing-protocol.md) for the seed reference.
-- netbox-mcp authenticates with NetBox's **v1** token scheme (`Token <key>`), not
-  v2 (`Bearer`). On NetBox 4.x the test stack mints a v1 token explicitly because
-  the built-in superuser bootstrap only creates v2 tokens.
+- netbox-mcp sends `Authorization: Token <token>`. NetBox 4.5+ accepts both v1
+  tokens and v2 `nbt_…` tokens under that scheme (verified on 4.6). The test
+  stack mints a fixed v1 token explicitly because the built-in superuser
+  bootstrap only creates v2 tokens.
 - The URL must be HTTPS or localhost — the client rejects other plain-HTTP URLs
   to avoid token exposure.
 - `--test-threads=1` keeps output and rate-limiting predictable; the tests are
   read-only and independent, so parallel runs are also safe.
-- `make test-live` wraps the same command.
+- `make live-test` wraps the same command. Set `LIVE_REQUIRED=1` to make missing
+  credentials a failure rather than a skip; the scheduled CI live job and the
+  release process do, so a misconfigured run can't pass with zero tests.
+- In CI, `.github/workflows/scheduled.yml` brings the same stack up with
+  `ENGINE=docker test/netbox-docker/up.sh` every week and runs the suite.
 
 ## Coverage
 
@@ -198,10 +203,11 @@ not reached yet.
 ## Command reference
 
 ```sh
-cargo test --all                                          # unit + launch-path tests (live excluded)
-cargo test --test launch_path                             # launch-path tests only
-cargo test --features live-tests -- --test-threads=1      # + live tests (needs a seeded instance)
-cargo clippy --features live-tests --tests -- -D warnings # lint including the live suite
+make test            # unit + launch-path tests (live excluded)
+make test-real-gpg   # credentials tests against the real gpg (REAL_GPG=1)
+make live-test       # live suite (needs a seeded instance; LIVE_REQUIRED=1 to fail on skip)
+make lint            # clippy over every target and feature set, incl. the live suite
+make check           # full offline gate: fmt-check lint test deny release smoke
 ```
 
 ## Adding a new domain to the live layer

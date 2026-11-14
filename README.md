@@ -27,7 +27,7 @@ Ask questions like *"Which devices in the NYC site are currently in maintenance?
 ## Requirements
 
 - A running NetBox instance with a valid API token
-- To build from source: Rust stable toolchain (`rustup install stable`)
+- To build from source: Rust 1.89 or later (`rustup install stable`); the repo pins its development toolchain in `rust-toolchain.toml`
 - To use a pre-built binary: nothing — grab it from the [releases page](https://github.com/3kirt/netbox-mcp/releases)
 - Optional: GnuPG, to keep the token encrypted instead of in plaintext ([GPG-encrypted token](#gpg-encrypted-token-pass))
 
@@ -307,12 +307,18 @@ Each area provides `list` (with filters) and `get` (by ID) tools. Virtual machin
 ## Development
 
 ```sh
-make build         # cargo build
-make test          # cargo test --all  (unit tests, offline)
-make test-live     # live integration tests against a seeded NetBox
-make lint          # secrets scan + cargo clippy -- -D warnings && cargo fmt --check
-make clean         # remove build artifacts
-make docker-build  # build Docker image
+make build          # cargo build
+make release        # cargo build --release
+make test           # unit + launch-path tests (offline)
+make test-real-gpg  # credentials tests against the real gpg on PATH
+make live-test      # live integration tests against a seeded NetBox
+make lint           # secrets scan + clippy (every feature set) + fmt --check
+make deny           # cargo-deny: advisories, banned crates, sources, licenses
+make msrv           # build + test on the declared rust-version
+make smoke          # run the release binary: --version + MCP tools/list
+make check          # full offline gate: fmt-check lint test deny release smoke
+make clean          # remove build artifacts
+make docker-build   # build Docker image (docker or podman)
 ```
 
 ### Testing
@@ -325,7 +331,7 @@ auto-seeding NetBox stack for the live suite lives in
 ```sh
 cd test/netbox-docker && ./up.sh          # boot + seed a local NetBox
 NETBOX_URL=http://localhost:8000 \
-NETBOX_TOKEN=0123456789abcdef0123456789abcdef01234567 make test-live
+NETBOX_TOKEN=0123456789abcdef0123456789abcdef01234567 make live-test
 ```
 
 See [`docs/testing.md`](docs/testing.md) for the full rationale and how to add
@@ -335,4 +341,4 @@ coverage.
 
 ## License
 
-[GPL-3.0](LICENSE)
+[GPL-3.0-or-later](LICENSE)

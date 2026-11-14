@@ -9,15 +9,27 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-# podman compose (v4+) or the standalone podman-compose, whichever is present.
-if podman compose version >/dev/null 2>&1; then
-  COMPOSE=(podman compose)
-elif command -v podman-compose >/dev/null 2>&1; then
-  COMPOSE=(podman-compose)
-else
-  echo "error: need 'podman compose' or 'podman-compose' on PATH" >&2
-  exit 1
-fi
+# Container engine: podman (the local default on macOS) or docker (GitHub
+# Actions runners). ENGINE=docker|podman forces one. The compose project and
+# container names are the same under both, so the rest of the script is shared.
+pick_engine() {
+  if podman compose version >/dev/null 2>&1; then
+    ENGINE=podman; COMPOSE=(podman compose)
+  elif command -v podman-compose >/dev/null 2>&1; then
+    ENGINE=podman; COMPOSE=(podman-compose)
+  elif docker compose version >/dev/null 2>&1; then
+    ENGINE=docker; COMPOSE=(docker compose)
+  else
+    echo "error: need 'podman compose', 'podman-compose', or 'docker compose' on PATH" >&2
+    exit 1
+  fi
+}
+case "${ENGINE:-}" in
+  docker) COMPOSE=(docker compose) ;;
+  podman) COMPOSE=(podman compose) ;;
+  "") pick_engine ;;
+  *) echo "error: ENGINE must be docker or podman, got '$ENGINE'" >&2; exit 1 ;;
+esac
 
 URL="http://localhost:8000"
 TOKEN="0123456789abcdef0123456789abcdef01234567"
@@ -29,7 +41,7 @@ echo ">> (first boot runs DB migrations + seeding; this can take a few minutes)"
 echo ">> waiting for the seeder to finish"
 seed="netbox-docker-netbox-seed-1"
 for _ in $(seq 1 90); do
-  state="$(podman inspect "$seed" --format '{{.State.Status}}:{{.State.ExitCode}}' 2>/dev/null || echo pending)"
+  state="$("$ENGINE" inspect "$seed" --format '{{.State.Status}}:{{.State.ExitCode}}' 2>/dev/null || echo pending)"
   case "$state" in
     exited:0) echo ">> seeding complete"; break ;;
     exited:*) echo "error: seeder failed ($state); see '${COMPOSE[*]} logs netbox-seed'" >&2; exit 1 ;;
@@ -50,5 +62,5 @@ Done. NetBox is up and seeded.
   TOKEN: $TOKEN
 
 Run the live suite from the repo root:
-  NETBOX_URL=$URL NETBOX_TOKEN=$TOKEN make test-live
+  NETBOX_URL=$URL NETBOX_TOKEN=$TOKEN make live-test
 EOF

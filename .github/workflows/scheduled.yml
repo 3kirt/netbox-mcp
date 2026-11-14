@@ -1,0 +1,118 @@
+name: Scheduled
+
+# Weekly checks for things that break without a code change: new advisories,
+# a new stable/beta toolchain, a GnuPG release, and drift against a real NetBox.
+# A failure opens (or comments on) a `scheduled-failure` tracking issue.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deny:
+    name: Deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: rustup toolchain install
+      - uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21 # v2.90.4
+        with:
+          tool: cargo-deny
+      - run: make deny
+
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Install the declared rust-version
+        run: rustup toolchain install "$(sed -n 's/^rust-version = "\(.*\)"/\1/p' Cargo.toml)" --profile minimal
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: make msrv
+
+  toolchain-drift:
+    name: Toolchain drift (${{ matrix.toolchain }})
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, beta]
+    runs-on: ubuntu-latest
+    env:
+      # Overrides rust-toolchain.toml: early warning before the pin is bumped.
+      RUSTUP_TOOLCHAIN: ${{ matrix.toolchain }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: rustup toolchain install ${{ matrix.toolchain }} --profile minimal --component clippy,rustfmt
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: ${{ matrix.toolchain }}
+      - run: make lint
+      - run: make test
+
+  real-gpg:
+    name: Real gpg (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - if: runner.os == 'macOS'
+        run: brew install gnupg
+      - run: gpg --version | head -1
+      - run: make test-real-gpg
+
+  live:
+    name: Live suite (netbox-docker)
+    runs-on: ubuntu-latest
+    env:
+      NETBOX_URL: http://localhost:8000
+      # The test stack's fixed, local-only token (test/netbox-docker/up.sh).
+      NETBOX_TOKEN: "0123456789abcdef0123456789abcdef01234567"
+      # Missing credentials fail instead of skipping every test.
+      LIVE_REQUIRED: "1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # Boots NetBox, mints the token, seeds, and waits for the seeder.
+      - run: ENGINE=docker test/netbox-docker/up.sh
+      - run: make live-test
+      - name: NetBox logs on failure
+        if: failure()
+        working-directory: test/netbox-docker
+        run: docker compose logs --tail 200 netbox netbox-seed
+
+  notify:
+    name: Report failure
+    needs: [deny, msrv, toolchain-drift, real-gpg, live]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create scheduled-failure --color B60205 \
+            --description "The weekly scheduled workflow is failing" 2>/dev/null || true
+          issue=$(gh issue list --label scheduled-failure --state open --limit 1 --json number -q '.[0].number')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "Still failing: $RUN_URL"
+          else
+            gh issue create --title "Scheduled CI failing" --label scheduled-failure \
+              --body "The weekly scheduled workflow failed: $RUN_URL"
+          fi
