@@ -239,5 +239,10 @@ async fn locked_key_still_starts_and_asks_for_unlock() {
     let result = call_through_binary(&netbox, TokenEnv::Unset, Gpg::Locked).await;
     assert_eq!(result["isError"], json!(true), "{result}");
     let text = result.to_string();
-    assert!(text.contains("netbox-mcp unlock"), "{text}");
+    // The advice targets the server's own `--config`, so the user unlocks
+    // the entry this server is actually reading.
+    assert!(
+        text.contains("`netbox-mcp --config ") && text.contains(" unlock`"),
+        "{text}"
+    );
 }
