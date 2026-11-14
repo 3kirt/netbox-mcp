@@ -36,9 +36,14 @@ services:
       - "8000:8080"
     healthcheck:
       test: curl -f http://localhost:8080/login/ || exit 1
-      start_period: 120s
+      # First boot runs every migration, which takes well over 2 minutes on a
+      # CI runner (it timed out at 120s in the scheduled workflow). Failures
+      # inside start_period don't count and the first success marks it
+      # healthy, so a long window costs nothing when the boot is quick.
+      start_period: 600s
       timeout: 3s
       interval: 15s
+      retries: 5
   netbox-worker:
     <<: *netbox
     depends_on:
