@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - **Launch-path tests** — `tests/launch_path.rs` spawns the built binary over MCP stdio with a pass-entry config, a fake `gpg`, and wiremock, and checks that NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal placeholder, and that a locked key still starts the server and returns the unlock message. A unit test lints the README's MCP config examples so every `${VAR}` has a `:-` default.
 - `make lint` now runs a `secrets-scan` for NetBox v2 (`nbt_…`) tokens in tracked and untracked files.
 - All requests go through one `NetboxClient::send()` choke point, so the lazy-auth rules apply to every verb.
+- **Releases are gated on CI** — `release.yml` now runs the full CI suite (tests, lint, security audit) as a reusable workflow before building, so a tag on a broken commit can't publish a release.
 
 ### Documentation
 

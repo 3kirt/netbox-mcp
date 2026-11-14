@@ -10,8 +10,15 @@ permissions:
   packages: write
 
 jobs:
+  # The full CI suite (tests, lint, security audit) must pass before anything
+  # is built or published, so a tag on a broken commit can't ship a release.
+  checks:
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+
   build:
     name: Build ${{ matrix.artifact }}
+    needs: checks
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
