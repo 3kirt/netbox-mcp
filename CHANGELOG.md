@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-14
+
 ### Added
 
 - **GPG-encrypted token storage (pass-compatible)** — set `"pass_entry"` in the config instead of a plaintext `"token"`. The token is GPG-encrypted in a `pass`-compatible store (`~/.password-store` / `$PASSWORD_STORE_DIR`, encrypted to the nearest `.gpg-id`); only `gpg` is required, and `pass show` reads the entry too. Modeled on gitlab-mcp v0.39.0/v0.39.1.
@@ -23,11 +25,11 @@ All notable changes to this project will be documented in this file.
 - **Toolchain pinned to Rust 1.100.0** (from 1.99.0), with the Docker builder image to match. The minimum supported Rust version is now declared: `rust-version = "1.89"` (measured; 1.88 fails on `uuid`).
 - **Linux release binaries are built on ubuntu-22.04** (glibc 2.35 floor, down from the `ubuntu-latest` glibc), and arm64 builds natively instead of through a cross linker.
 - Release notes now come from the matching CHANGELOG section instead of being auto-generated.
+- **rmcp upgraded to 3.10.0** (floor raised to `3.10`) — fixes tools whose schemas use dependency property-name maps; no breaking changes.
 
 ### Internals
 
 - **Review fixes in the pass/GPG code** (from `/code-review`): a read-only token's 403 with an expired agent cache no longer makes every later request re-run gpg; the "locked" / "not found" advice names the server's own `--config` and `--homedir`, shell-quoted; config and token writes claim their temp file with `create_new`, so a planted symlink is refused rather than followed; `login` checks the config is writable before changing the store; `status` ignores expired, revoked, and invalid subkeys; and a gpg that exits early during `login` reports its own error ("No public key") instead of a broken pipe, with the whole exchange under the timeout.
-
 - **Launch-path tests** — `tests/launch_path.rs` spawns the built binary over MCP stdio with a pass-entry config, a fake `gpg`, and wiremock, and checks that NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal placeholder, and that a locked key still starts the server and returns the unlock message. A unit test lints the README's MCP config examples so every `${VAR}` has a `:-` default.
 - `make lint` now runs a `secrets-scan` for NetBox v2 (`nbt_…`) tokens in tracked and untracked files.
 - All requests go through one `NetboxClient::send()` choke point, so the lazy-auth rules apply to every verb.
@@ -40,6 +42,7 @@ All notable changes to this project will be documented in this file.
 - **Real-GnuPG tests** (`make test-real-gpg`) pin the status codes the classifier relies on: an unprotected key decrypts, a locked key is `Locked` (code 85), a foreign-key ciphertext is `NoSecretKey` (code 17).
 - `LIVE_REQUIRED=1` makes missing live-test credentials a failure instead of a silent skip.
 - Fixed an intermittent 10s stall in the gpg timeout unit test on macOS (the hung fake `gpg` now `exec`s its sleep, so the kill ends it).
+- **First scheduled run fixed** — the netbox-docker healthcheck allows 600s for first-boot migrations on CI runners (120s timed out), and the test-only `test_support` module moved to its own file so Rust 1.101's extended `items_after_test_module` lint stays clean.
 - `scripts/changelog-section.sh` extracts a version's notes; `test/netbox-docker/up.sh` runs under docker as well as podman. The CHANGELOG drops its `---` separators.
 
 ### Documentation

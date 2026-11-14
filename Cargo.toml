@@ -1,6 +1,6 @@
 [package]
 name = "netbox-mcp"
-version = "0.13.1"
+version = "0.14.0"
 edition = "2024"
 # Verified: builds and passes `cargo test --all` on 1.89.0; 1.88 fails (uuid
 # needs 1.89). `make msrv` / the msrv CI job keep it honest.
@@ -21,7 +21,7 @@ path = "src/main.rs"
 live-tests = []
 
 [dependencies]
-rmcp = { version = "3.9", features = [
+rmcp = { version = "3.10", features = [
     "server",
     "macros",
     "transport-io",
