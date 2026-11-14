@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **GPG-encrypted token storage (pass-compatible)** — set `"pass_entry"` in the config instead of a plaintext `"token"`. The token is GPG-encrypted in a `pass`-compatible store (`~/.password-store` / `$PASSWORD_STORE_DIR`, encrypted to the nearest `.gpg-id`); only `gpg` is required, and `pass show` reads the entry too. Modeled on gitlab-mcp v0.39.0/v0.39.1.
+- **Unattended operation with a locked key** — the server decrypts the token on first use and never prompts (`--pinentry-mode error`, 10s timeout), so it starts while the key is locked. Tool calls fail with an actionable "locked, ask the user to run `netbox-mcp unlock`, then retry" error until gpg-agent has the passphrase cached, then succeed without a restart; concurrent first calls run gpg once. Locked/no-key states come from gpg's numeric status codes, never its localized messages.
+- **`netbox-mcp login` / `logout` / `unlock` / `status` subcommands** — `login` verifies the token against NetBox (`/api/authentication-check/`, falling back to `/api/status/` on older releases), encrypts it, updates the config at 0600, and removes any plaintext token. Each NetBox instance gets its own entry (`netbox-mcp/<host>`), so logging in to a second instance never overwrites the first one's token, and `--gpg-id` is written to `.gpg-id` only after encryption to that key succeeds. `status` reports the token source and whether the key is unlocked by asking gpg-agent over its Assuan socket, without decrypting anything.
+- **Rotated tokens are picked up without a restart** — after NetBox rejects the token (401, or the 403 NetBox uses for an invalid token) the server re-reads the pass entry on the next call. If that re-read fails (e.g. the agent cache has expired), it keeps reporting NetBox's real auth error rather than a misleading "locked".
+- `"gpg"`, `"password_store_dir"` and `"gnupg_home"` config keys — the gpg binary, store root and keyring, for MCP clients that launch servers with a minimal `PATH` or without shell-only `PASSWORD_STORE_DIR` / `GNUPGHOME` exports. `login` records the store and keyring it used.
+
+### Changed
+
+- A config file that sets both `"token"` and `"pass_entry"` is rejected rather than one silently shadowing the other.
+- An unexpanded `${NAME}` / `${NAME:-…}` value in an env var or config value now counts as unset, like a blank one, with a warning naming the variable. Claude Code passes a bare `${NETBOX_TOKEN}` through literally when the variable is unset, which would otherwise shadow a `pass_entry` with a bogus token.
+- `--config` is accepted after a subcommand as well as before it, and `--version` is available.
+
+### Internals
+
+- **Launch-path tests** — `tests/launch_path.rs` spawns the built binary over MCP stdio with a pass-entry config, a fake `gpg`, and wiremock, and checks that NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal placeholder, and that a locked key still starts the server and returns the unlock message. A unit test lints the README's MCP config examples so every `${VAR}` has a `:-` default.
+- `make lint` now runs a `secrets-scan` for NetBox v2 (`nbt_…`) tokens in tracked and untracked files.
+- All requests go through one `NetboxClient::send()` choke point, so the lazy-auth rules apply to every verb.
+
+### Documentation
+
+- **Setup guide for GPG-encrypted tokens** — the README walks through creating an encryption key, configuring gpg-agent (cache lifetimes, and when a graphical pinentry is needed), storing the token, and keeping `NETBOX_TOKEN` out of the MCP client config so it doesn't override the encrypted token. It also adds a shared `.mcp.json` example using `${VAR:-}` defaults.
+- **README no longer calls the server read-only** — it described "169 read-only tools" that "make no changes", which predated the write tools. It now lists all 178 tools, including create/update/delete for VMs, IP addresses, and tags, and explains that a read-only token keeps the server read-only.
+- `docs/testing.md` describes the new launch-path layer and the fake-gpg unit tests; `CLAUDE.md` documents the credentials module, lazy pass auth, the subcommands, and the `${VAR}` rule.
+
 ## [0.13.1] - 2026-11-09
 
 ### Fixed

@@ -455,12 +455,14 @@ pub struct NetboxMcpServer {
 }
 
 impl NetboxMcpServer {
-    pub fn new(base_url: String, token: String) -> anyhow::Result<Self> {
-        Ok(Self {
-            client: NetboxClient::new(base_url, token)?,
+    /// A server over `client`, which `main` builds from the resolved token
+    /// source (static, or pass-backed and decrypted lazily).
+    pub fn new(client: NetboxClient) -> Self {
+        Self {
+            client,
             tool_router: Self::tool_router(),
             prompt_router: Self::prompt_router(),
-        })
+        }
     }
 
     const fn get_client(&self) -> &NetboxClient {

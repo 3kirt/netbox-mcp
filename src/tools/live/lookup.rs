@@ -9,7 +9,7 @@ use super::harness::{assert_clean, call_result_json, params, skip_unless_live};
 use crate::tools::{LookupHostParams, NetboxMcpServer};
 
 fn server(env: &super::harness::LiveEnv) -> NetboxMcpServer {
-    NetboxMcpServer::new(env.url.clone(), env.token.clone()).expect("build server")
+    NetboxMcpServer::new(env.client.clone())
 }
 
 #[tokio::test]

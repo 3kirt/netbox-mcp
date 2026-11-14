@@ -16,10 +16,8 @@ fn is_stripped_key(k: &str) -> bool {
     STRIP_KEYS.contains(&k) || k == "next" || k == "previous"
 }
 
-/// Live credentials plus a ready client, sourced from the environment.
+/// A ready client for the live instance, built from the environment.
 pub struct LiveEnv {
-    pub url: String,
-    pub token: String,
     pub client: NetboxClient,
 }
 
@@ -31,8 +29,8 @@ pub fn live_env() -> Option<LiveEnv> {
     if url.trim().is_empty() || token.trim().is_empty() {
         return None;
     }
-    let client = NetboxClient::new(url.clone(), &token).expect("build live client");
-    Some(LiveEnv { url, token, client })
+    let client = NetboxClient::new(url, &token).expect("build live client");
+    Some(LiveEnv { client })
 }
 
 /// Bind a `LiveEnv` or return early (with a notice) when credentials are

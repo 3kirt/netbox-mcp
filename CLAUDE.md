@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```sh
 make build       # cargo build --release
 make test        # cargo test --all
-make lint        # cargo clippy --all-targets -- -D warnings (both feature sets) && cargo fmt --check
+make lint        # secrets-scan + cargo clippy --all-targets -- -D warnings (both feature sets) && cargo fmt --check
 make check       # full offline gate: lint + test + build
 make install     # cargo install --path . (installs to ~/.cargo/bin)
 make clean       # remove build artifacts
@@ -22,17 +22,21 @@ NETBOX_URL=https://netbox.example.com make docker-build
 
 Formatting and lint must be clean before every commit. Run `cargo fmt` to fix formatting; `cargo clippy --all-targets -- -D warnings` to check for warnings treated as errors (the `--all-targets` flag lints test code too).
 
-Clippy runs at pedantic strictness: the `pedantic`, `nursery`, and `cargo` lint groups are enabled in `Cargo.toml` under `[lints.clippy]` (with a curated set of per-lint `allow`s documented there), so *every* `cargo clippy` invocation — CI, rust-analyzer, and the release gate — enforces them with no extra flags. `make lint` runs clippy over all targets and both feature sets; `make check` runs the full offline gate (`lint` + `test` + `build`).
+Clippy runs at pedantic strictness: the `pedantic`, `nursery`, and `cargo` lint groups are enabled in `Cargo.toml` under `[lints.clippy]` (with a curated set of per-lint `allow`s documented there), so *every* `cargo clippy` invocation — CI, rust-analyzer, and the release gate — enforces them with no extra flags. `make lint` runs `secrets-scan` (fails on a NetBox v2 `nbt_<key>.<secret>` token in any tracked or untracked file — test fixtures must not use that prefix), then clippy over all targets and both feature sets; `make check` runs the full offline gate (`lint` + `test` + `build`).
 
 ## Architecture
 
-The codebase is a single Rust binary with four modules:
+The codebase is a single Rust binary:
 
 ```
 src/
-  main.rs         — CLI (clap), startup logging
-  config.rs       — Config loading: ~/.netbox_mcp.json + env var override
-  client.rs       — Thin reqwest wrapper: list(), get(), list_all() (reads); post(), patch(), delete() (writes)
+  main.rs         — CLI (clap): subcommand dispatch (no subcommand = serve stdio), startup logging
+  commands.rs     — login / logout / unlock / status subcommands (GPG-encrypted token management)
+  config.rs       — Config loading: ~/.netbox_mcp.json + env var override; TokenSource; ${VAR} placeholder handling
+  credentials/
+    mod.rs        — PassStore / PassEntry / PassError: pass-compatible store, gpg invocation, status-fd classification
+    agent.rs      — minimal Assuan client for gpg-agent (KEYINFO), used only by `status` (Unix)
+  client.rs       — Thin reqwest wrapper: list(), get(), list_all() (reads); post(), patch(), delete() (writes); lazy pass-token auth
   tools/
     mod.rs        — NetboxMcpServer struct, paginate(), clean_page_response(), all tool shims, unit + integration tests
     slim.rs       — slim_value(), STRIP_KEYS, TAG_KEEP_KEYS (response slimming logic)
@@ -42,7 +46,7 @@ src/
     tenancy.rs / extras.rs / core.rs / users.rs
 ```
 
-**Transport:** stdio only. The binary runs as a subprocess managed by the MCP client; credentials are read from config at startup via `NetboxMcpServer::new(url, token)`.
+**Transport:** stdio only. The binary runs as a subprocess managed by the MCP client; `main.rs` resolves the token *source* at startup (`Config::resolve_token()` → `TokenSource::{Env, File, Pass}`) and builds the `NetboxClient` from it, which `NetboxMcpServer::new(client)` stores. A static token (`NETBOX_TOKEN` or the config's plaintext `token`) goes into the client's default headers. A `pass_entry` token is decrypted lazily on the first request (see "Lazy pass auth" below), so the server starts even while the GPG key is locked. Don't add startup-time token checks that would undo that.
 
 **Tool registration flow:**
 The `#[tool_router]` macro on `impl NetboxMcpServer` in `tools/mod.rs` generates the MCP tool registry. Each shim is a thin `#[tool]`-annotated async method that calls a domain function (e.g. `dcim::devices_list`) via a `delegate_*!` macro: `delegate_list!`/`delegate_get!` for reads, `delegate_write!` (create/update) and `delegate_delete!` for writes.
@@ -67,7 +71,13 @@ All list tools share `paginate()` in `tools/mod.rs`. It calls `client.list()` (s
 
 This cuts typical NetBox payloads by 50–70%.
 
-**Config resolution order:** `NETBOX_URL`/`NETBOX_TOKEN` env vars → `~/.netbox_mcp.json` → error. HTTP (non-localhost) URLs are rejected to prevent token exposure.
+**Config resolution order:** `NETBOX_URL`/`NETBOX_TOKEN` env vars → `~/.netbox_mcp.json` (`url`, plus either a plaintext `token` or a `pass_entry` — setting both is an error) → error. HTTP (non-loopback) URLs are rejected to prevent token exposure. Every env var and config value goes through one "is this set?" rule (`non_blank` / `config::env_var`): blank **and** an unexpanded `${NAME}` / `${NAME:-…}` placeholder count as unset (with a warning naming the variable), because Claude Code passes a bare `${NETBOX_TOKEN}` through literally when the variable is unset. Every MCP config example in the README must use `"${VAR:-}"`; a unit test lints them.
+
+**`src/credentials/`** — GPG-encrypted token storage in a `pass`-compatible store (config `password_store_dir`, else `$PASSWORD_STORE_DIR`, else `~/.password-store`; GnuPG home likewise from config `gnupg_home`, else `$GNUPGHOME`, passed to gpg/gpgconf as `--homedir`; `gpg` config key for a full binary path, with `gpgconf` looked up next to it. `login` records the store and keyring, because GUI-launched MCP clients don't inherit shell-only exports). Layout: `<entry>.gpg` files plus `.gpg-id` recipient lists, nearest-ancestor lookup like `pass`. Only the `gpg` binary is required, not `pass`. `PassEntry::read_token()` decrypts with `--batch --pinentry-mode error --status-fd 2` under a 10s timeout, so **it never prompts**: a passphrase gpg-agent hasn't cached fails immediately as `PassError::Locked`, whose message tells the MCP client to ask the user to run `netbox-mcp unlock` and retry. Outcomes are classified from the **numeric gpg-error codes** in `[GNUPG:] ERROR` status lines (low 16 bits: 85 `NO_PIN_ENTRY` / 99 `CANCELED` → locked, 17 `NO_SECKEY`), never from gpg's localized human text, and success requires `DECRYPTION_OKAY` as well as exit 0 (verified against real GnuPG 2.4 and 2.5). `agent.rs` (Unix only) is a minimal Assuan client for gpg-agent's socket (`KEYINFO <keygrip>` → cached / protection / disk-vs-card), used **only** by `netbox-mcp status`. It is deliberately not a gate on reads, because "not cached" ≠ "can't decrypt" (passphrase-less and smartcard keys report uncached yet decrypt fine). Tests use `credentials::test_support::fake_gpg()`: one shared fake `gpg` script, written once to avoid ETXTBSY races, that *sources* the entry file in decrypt mode, so each test's "ciphertext" is a shell snippet emitting the canned status lines it needs.
+
+**Lazy pass auth in `client.rs`** — `NetboxClient::with_pass_entry()` builds a client whose `Authorization: Token …` header is added per request by `send()` (the single choke point every verb goes through) from a `PassToken`: decrypted on first use under a mutex (concurrent requests run gpg once), cached in memory on success, **never cached on failure** (so the first call after the user unlocks succeeds with no restart). A 401 **or 403** (NetBox answers an invalid/revoked token with 403 `"Invalid v1 token"`, not 401) marks the token stale (only if it is still the current one), and the next request re-reads the entry to pick up a token rotated via `login`. If that re-read fails, e.g. because the agent cache has expired since, the old token is reused so the caller sees NetBox's real auth error rather than a misleading "locked". Decrypt failures surface as `NetboxError::Credentials`. Static-token clients (`NetboxClient::new`) are unchanged. NetBox 4.5+ v2 `nbt_…` tokens work under the `Token` scheme, so the header format is the same for both token versions.
+
+**`src/commands.rs`** — the `login` / `logout` / `unlock` / `status` subcommands (`--config` is global, so it works before or after the subcommand). `login` checks local preconditions (`.gpg-id` or `--gpg-id`) **before** prompting for the token (no-echo via `rpassword`, or `--token-stdin`). It then verifies the token with `GET /api/authentication-check/` (falling back to `/api/status/` on a 404 from an older NetBox) and encrypts it, and writes `--gpg-id` to the store's `.gpg-id` only *after* encryption to that key has succeeded, so a typo can't leave a blocking `.gpg-id` behind. It reuses the config's `pass_entry` only when the target URL matches the config's own `url` (otherwise `netbox-mcp/<host>`, so a second instance never overwrites the first one's token). Finally it atomically rewrites the config at 0600, setting `url`, `pass_entry` and `password_store_dir` (plus `gnupg_home` when one is in effect) and removing any plaintext `token`. `logout` deletes the `.gpg` entry but leaves `pass_entry` in the config. `unlock`/`status` use the config's `pass_entry` directly (`Config::configured_pass_entry`), not `resolve_token()`, so a `NETBOX_TOKEN` exported in the shell can't hide the entry a server started without it is trying to decrypt. User-facing output goes to stderr.
 
 **`QueryBuilder`** is the canonical way to build filter params: `.opt(key, Option<T>)` for scalar filters, `.many(key, Option<Vec<String>>)` for multi-value filters. Never push to the params vec directly. List-params structs flatten `CommonListParams` (the near-universal `q` + `ordering` + pagination) instead of re-declaring those fields, and finish with `qb.run_common(client, path, p.common)`. The handful of endpoints without a `q` filter (e.g. cable terminations, FHRP group assignments) keep `ordering` + `PaginationParams` inline and call `qb.run(...)` instead.
 
@@ -76,10 +86,14 @@ This cuts typical NetBox payloads by 50–70%.
 Two layers verify different risks; see `docs/testing.md` for the full rationale.
 
 **Unit tests** (default `cargo test --all`, offline):
-- `src/config.rs` — config loading, env override, HTTPS enforcement.
+- `src/config.rs` — config loading, env override, HTTPS enforcement, `${VAR}` placeholder handling, token-source resolution, atomic config rewrite, and a lint of the README's MCP config examples.
+- `src/credentials/` — store layout, gpg status classification, timeouts, Assuan exchange (via the shared fake `gpg`).
+- `src/client.rs` — lazy pass auth: locked → unlocked without restart, rotation after a rejection, the real 403 surviving a failed re-read, single decrypt under concurrency.
 - `src/tools/mod.rs` — `slim_value()`, `clean_page_response()`, `PaginationParams`, and wiremock-based pipeline integration tests that fire requests through the full `paginate()` path against a mock server.
 
 **Live integration tests** (`src/tools/live/`, gated behind the `live-tests` cargo feature) run the real domain functions against a seeded NetBox, apply the same `slim_value` transform as the rmcp boundary, and assert behavior (filters honored) plus the universal invariants — the contract fidelity unit tests structurally cannot reach. They're shape-only (no exact counts) so they survive seed drift, and `skip_unless_live!` returns early when `NETBOX_URL`/`NETBOX_TOKEN` are absent. Run with `make test-live` against a seeded instance — the self-contained, auto-seeding stack in `test/netbox-docker/` (`./up.sh`) is the easiest way to get one.
+
+**Launch-path tests** (`tests/launch_path.rs`, part of `cargo test --all`) spawn the *built binary* over MCP stdio, configured only through its environment and a pass-entry config, with a fake `gpg` and wiremock. They check NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal `${NETBOX_TOKEN}` placeholder, and that a locked key still starts the server and returns the unlock message. This is the only layer that sees the environment an MCP client builds; add to it when a bug could live between the client config and the server.
 
 `docs/testing-protocol.md` is the seed-data reference and the manual checklist for areas the live suite has not reached yet.
 
