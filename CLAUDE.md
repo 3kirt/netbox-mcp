@@ -40,6 +40,11 @@ Clippy runs at pedantic strictness: the `pedantic`, `nursery`, and `cargo` lint 
 
 **`scripts/smoke.py`** asserts the binary's `--version` and that MCP `tools/list` returns exactly `EXPECTED_TOOLS` (178). Adding or removing a tool means updating that constant **and** `EXPECTED_TOOLS` in `src/tools/mod.rs` (`tool_router_exposes_every_tool`) together.
 
+**Claude Code plugin.** The repo is its own plugin marketplace: `.claude-plugin/marketplace.json` lists one plugin with `"source": "./plugin"` (install: `/plugin marketplace add 3kirt/netbox-mcp`, then `/plugin install netbox-mcp@netbox-mcp`). Invariants, all enforced by tests or the release workflow:
+- `plugin/.claude-plugin/plugin.json`'s `version` must equal `Cargo.toml`'s (`tests/plugin.rs`) and the tag (release.yml's verify job). Bump both together on every release: the launcher downloads the release matching plugin.json's version, so a lagging one serves plugin users the previous release.
+- `plugin/bin/netbox-mcp.sh` (the bootstrap launcher) maps `uname` onto `netbox-mcp-{darwin,linux}-{arm64,amd64}`; that set must equal release.yml's `artifact:` names (`tests/plugin.rs`). It downloads the asset plus `checksums.txt` for `v<plugin version>`, verifies the sha256 (a mismatch is a hard failure), stages the binary inside `~/.cache/netbox-mcp/v<version>/` (or `$XDG_CACHE_HOME`) and `mv`s it into place, then execs it with its own arguments. A failed download or unsupported platform falls back to a `netbox-mcp` on `PATH`. **All its output goes to stderr**, because stdout is the MCP transport. The script runs under macOS's bash 3.2, so expand arrays with `${ARGS[@]+"${ARGS[@]}"}` under `set -u`, and keep it `shellcheck`-clean.
+- `plugin/.mcp.json` passes `NETBOX_URL` / `NETBOX_TOKEN` as `"${VAR:-}"`, with **empty** defaults. A bare `${VAR}` reaches the server as literal text when unset, and a non-empty default (e.g. `${NETBOX_URL:-https://…}`) is a real value that overrides the config file's `url`. `shipped_mcp_configs_default_every_placeholder` lints the plugin config and the README examples for both.
+
 ## Architecture
 
 The codebase is a single Rust binary:
