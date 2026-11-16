@@ -11,11 +11,19 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **The README's shared `.mcp.json` example could send the token to the wrong host** — it used `"NETBOX_URL": "${NETBOX_URL:-https://netbox.example.com}"`, and a non-empty default is a real value that overrides the config file's `url`. It's now `${NETBOX_URL:-}`, like the plugin config.
+- **The README's token-provisioning example returned an unusable token on NetBox 4.5+** — `/api/users/tokens/provision/` now creates v2 tokens, and `jq '.key'` printed only the key half, which NetBox rejects with 403. The example now builds `nbt_<key>.<token>` for v2 and keeps `.key` for older releases, and notes that provisioned tokens are write-enabled.
 
 ### Internals
 
 - The release workflow's verify job also requires `plugin/.claude-plugin/plugin.json`'s version to equal the tag, so plugin users always get the matching release.
 - `tests/plugin.rs` checks that the plugin version matches `Cargo.toml` and that the marketplace entry points at `./plugin`. It also checks that the launcher is executable and that its platforms match the release matrix's artifacts. The config lint now also covers `plugin/.mcp.json` and requires `NETBOX_URL` to default to empty, and a launch-path test checks that an empty or literal-placeholder `NETBOX_URL` falls through to the config file's `url`.
+- `.gitignore`'s local `.mcp.json` rules are anchored to the repo root (`/.mcp.json`), so they no longer swallow the shipped `plugin/.mcp.json`.
+
+### Documentation
+
+- `docs/testing.md`: the live suite is no longer described as read-only, since it also runs self-cleaning create/update/delete lifecycles for VMs, IP addresses and tags. It also no longer calls parallel runs safe. It now covers the real-gpg tests, the `NETBOX_URL` launch-path case, `tests/plugin.rs`, `LIVE_REQUIRED=1` and the weekly CI live job, and Docker as well as Podman for the test stack.
+- README: three test layers (was two), the v0.14.0 requirement for GPG-encrypted tokens, and immediate retry after a token rotation. Also adds `make docker-smoke` and a License link in the table of contents.
+- CLAUDE.md: every write-tool domain is now listed (VMs, IP addresses, tags), along with `test_support.rs` and the `tests/` files, the current test layers, and the post-review client behaviour.
 
 ## [0.14.0] - 2026-11-14
 

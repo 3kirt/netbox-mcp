@@ -58,6 +58,7 @@ src/
     mod.rs        — PassStore / PassEntry / PassError: pass-compatible store, gpg invocation, status-fd classification
     agent.rs      — minimal Assuan client for gpg-agent (KEYINFO), used only by `status` (Unix)
   client.rs       — Thin reqwest wrapper: list(), get(), list_all() (reads); post(), patch(), delete() (writes); lazy pass-token auth
+  test_support.rs — #[cfg(test)] shared helpers: mock_client(), sent_body(), lock_env() (declared last in main.rs)
   tools/
     mod.rs        — NetboxMcpServer struct, paginate(), clean_page_response(), all tool shims, unit + integration tests
     slim.rs       — slim_value(), STRIP_KEYS, TAG_KEEP_KEYS (response slimming logic)
@@ -65,6 +66,9 @@ src/
     ipam.rs       — IPAM domain functions + param structs
     virtualization.rs / circuits.rs / vpn.rs / wireless.rs
     tenancy.rs / extras.rs / core.rs / users.rs
+tests/
+  launch_path.rs  — the built binary over MCP stdio (env and config handling)
+  plugin.rs       — Claude Code plugin invariants (versions, launcher platforms)
 ```
 
 **Transport:** stdio only. The binary runs as a subprocess managed by the MCP client; `main.rs` resolves the token *source* at startup (`Config::resolve_token()` → `TokenSource::{Env, File, Pass}`) and builds the `NetboxClient` from it, which `NetboxMcpServer::new(client)` stores. A static token (`NETBOX_TOKEN` or the config's plaintext `token`) goes into the client's default headers. A `pass_entry` token is decrypted lazily on the first request (see "Lazy pass auth" below), so the server starts even while the GPG key is locked. Don't add startup-time token checks that would undo that.
@@ -78,7 +82,7 @@ The `#[tool_router]` macro on `impl NetboxMcpServer` in `tools/mod.rs` generates
 3. No routing table to update — the `#[tool_router]` macro handles registration.
 
 **Write tools (create/update/delete):**
-A limited set of mutating tools exists (virtualization VMs are the first — see `tools/virtualization.rs`). Writes are always registered; there is **no read-only gate** — safety relies on the NetBox API token's permissions (a read-only token simply gets `403`). Conventions: foreign-key fields are taken as numeric NetBox IDs (callers use the `*_list` tools to resolve names first); bodies are built with `BodyBuilder` (`.req` for required fields, `.opt` for optional ones — unset options are omitted, so PATCH stays a partial update; the write-side counterpart to `QueryBuilder`); create/update return the object through `json_result` (so writes are slimmed like reads), delete returns a text confirmation. Write shims carry `read_only_hint = false` and, for delete, `destructive_hint = true`.
+A limited set of mutating tools exists: create/update/delete for virtualization VMs, IP addresses, and tags (see `tools/virtualization.rs`, `tools/ipam.rs`, `tools/extras.rs`). Writes are always registered; there is **no read-only gate** — safety relies on the NetBox API token's permissions (a read-only token simply gets `403`). Conventions: foreign-key fields are taken as numeric NetBox IDs (callers use the `*_list` tools to resolve names first); bodies are built with `BodyBuilder` (`.req` for required fields, `.opt` for optional ones — unset options are omitted, so PATCH stays a partial update; the write-side counterpart to `QueryBuilder`); create/update return the object through `json_result` (so writes are slimmed like reads), delete returns a text confirmation. Write shims carry `read_only_hint = false` and, for delete, `destructive_hint = true`.
 
 **Pagination pattern:**
 All list tools share `paginate()` in `tools/mod.rs`. It calls `client.list()` (single page) or `client.list_all()` (all pages) based on `fetch_all`. Responses go through `clean_page_response()` which strips `next`/`previous` URLs and injects `{ has_more, next_offset }`. Default page size is 50; max is 1000.
@@ -104,19 +108,20 @@ This cuts typical NetBox payloads by 50–70%.
 
 ## Testing
 
-Two layers verify different risks; see `docs/testing.md` for the full rationale.
+Three layers verify different risks (unit, launch-path, live), plus opt-in real-gpg tests; see `docs/testing.md` for the full rationale.
 
 **Unit tests** (default `cargo test --all`, offline):
 - `src/config.rs` — config loading, env override, HTTPS enforcement, `${VAR}` placeholder handling, token-source resolution, atomic config rewrite, and a lint of the README's MCP config examples.
-- `src/credentials/` — store layout, gpg status classification, timeouts, Assuan exchange (via the shared fake `gpg`).
-- `src/client.rs` — lazy pass auth: locked → unlocked without restart, rotation after a rejection, the real 403 surviving a failed re-read, single decrypt under concurrency.
+- `src/credentials/` — store layout, gpg status classification, timeouts, `--config`/`--homedir`-aware advice, temp-file safety, Assuan exchange (via the shared fake `gpg`).
+- `src/client.rs` — lazy pass auth: locked → unlocked without restart, retry once after a rotation, the real 403 surviving a failed re-read without re-running gpg per request, single decrypt under concurrency.
+- `src/commands.rs` — token verification (`authentication-check`, the `/api/status/` fallback, rejection) and entry naming.
 - `src/tools/mod.rs` — `slim_value()`, `clean_page_response()`, `PaginationParams`, and wiremock-based pipeline integration tests that fire requests through the full `paginate()` path against a mock server.
 
 **Live integration tests** (`src/tools/live/`, gated behind the `live-tests` cargo feature) run the real domain functions against a seeded NetBox, apply the same `slim_value` transform as the rmcp boundary, and assert behavior (filters honored) plus the universal invariants — the contract fidelity unit tests structurally cannot reach. They're shape-only (no exact counts) so they survive seed drift, and `skip_unless_live!` returns early when `NETBOX_URL`/`NETBOX_TOKEN` are absent — unless `LIVE_REQUIRED=1`, which turns that into a failure (the scheduled CI job and the release process set it, so a misconfigured run can't pass with zero tests). Run with `make live-test` against a seeded instance — the self-contained, auto-seeding stack in `test/netbox-docker/` (`./up.sh`) is the easiest way to get one.
 
 **Real-gpg tests** (`credentials::tests::real_gpg`, `#[ignore]`d; `make test-real-gpg` sets `REAL_GPG=1`) run against the real `gpg` on PATH with throwaway keyrings under a short `/tmp` path (macOS caps gpg-agent socket paths at 104 bytes): an unprotected key decrypts, a locked key is `Locked` (code 85), a foreign-key ciphertext is `NoSecretKey` (code 17). They catch GnuPG status-code drift that the fake `gpg` can't.
 
-**Launch-path tests** (`tests/launch_path.rs`, part of `cargo test --all`) spawn the *built binary* over MCP stdio, configured only through its environment and a pass-entry config, with a fake `gpg` and wiremock. They check NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal `${NETBOX_TOKEN}` placeholder, and that a locked key still starts the server and returns the unlock message. This is the only layer that sees the environment an MCP client builds; add to it when a bug could live between the client config and the server.
+**Launch-path tests** (`tests/launch_path.rs`, part of `cargo test --all`) spawn the *built binary* over MCP stdio, configured only through its environment and a pass-entry config, with a fake `gpg` and wiremock. They check NetBox receives the pass token whether `NETBOX_TOKEN` is unset, empty, or a literal `${NETBOX_TOKEN}` placeholder, that an empty or placeholder `NETBOX_URL` falls through to the config file's `url`, and that a locked key still starts the server and returns the `--config`-aware unlock advice. This is the only layer that sees the environment an MCP client builds; add to it when a bug could live between the client config and the server. `tests/plugin.rs` (also in `cargo test --all`) checks the plugin invariants listed under "Claude Code plugin" above.
 
 `docs/testing-protocol.md` is the seed-data reference and the manual checklist for areas the live suite has not reached yet.
 
