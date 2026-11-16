@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "netbox": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/netbox-mcp.sh",
+      "args": [],
+      "env": {
+        "NETBOX_URL": "${NETBOX_URL:-}",
+        "NETBOX_TOKEN": "${NETBOX_TOKEN:-}"
+      }
+    }
+  }
+}

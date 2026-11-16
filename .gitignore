@@ -1,7 +1,9 @@
 /netbox-mcp
 .claude/
-.mcp.json
-.mcp.*.json
+# Local MCP client configs at the repo root only (anchored, so the shipped
+# plugin/.mcp.json is still tracked).
+/.mcp.json
+/.mcp.*.json
 /todo.md
 
 # Added by cargo
