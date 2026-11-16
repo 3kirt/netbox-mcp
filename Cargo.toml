@@ -1,6 +1,6 @@
 [package]
 name = "netbox-mcp"
-version = "0.14.0"
+version = "0.15.0"
 edition = "2024"
 # Verified: builds and passes `cargo test --all` on 1.89.0; 1.88 fails (uuid
 # needs 1.89). `make msrv` / the msrv CI job keep it honest.

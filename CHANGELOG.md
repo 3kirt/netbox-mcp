@@ -4,12 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-15
+
 ### Added
 
 - **Claude Code plugin with its own marketplace** — `/plugin marketplace add 3kirt/netbox-mcp`, then `/plugin install netbox-mcp@netbox-mcp`. The plugin's launcher (`plugin/bin/netbox-mcp.sh`) downloads the release binary matching the plugin's version for this platform, verifies it against `checksums.txt`, caches it under `~/.cache/netbox-mcp/v<version>/`, and runs it; a plugin update rolls the binary forward. Unsupported platforms or a failed download fall back to a `netbox-mcp` on `PATH`; a checksum mismatch is a hard failure. Its arguments pass through, so `netbox-mcp.sh status` works too. Modeled on gitlab-mcp's plugin.
 
 ### Fixed
 
+- **`netbox-mcp status` named the wrong command with a custom `--config`** — its "run `netbox-mcp unlock`" / "run `netbox-mcp login`" hints left out the `--config` you used, so following them read a different config. They now name it, like the server's locked-key advice.
 - **The README's shared `.mcp.json` example could send the token to the wrong host** — it used `"NETBOX_URL": "${NETBOX_URL:-https://netbox.example.com}"`, and a non-empty default is a real value that overrides the config file's `url`. It's now `${NETBOX_URL:-}`, like the plugin config.
 - **The README's token-provisioning example returned an unusable token on NetBox 4.5+** — `/api/users/tokens/provision/` now creates v2 tokens, and `jq '.key'` printed only the key half, which NetBox rejects with 403. The example now builds `nbt_<key>.<token>` for v2 and keeps `.key` for older releases, and notes that provisioned tokens are write-enabled.
 
