@@ -25,12 +25,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Tag matches Cargo.toml, is on main, and has CHANGELOG notes
+      # The Claude Code plugin's launcher downloads the release binary that
+      # matches plugin.json's version, so a plugin.json that lags the tag
+      # would silently serve plugin users the previous release.
+      - name: Tag matches Cargo.toml and plugin.json, is on main, and has CHANGELOG notes
         run: |
           tag="${GITHUB_REF_NAME#v}"
           cargo_version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          plugin_version="$(jq -r .version plugin/.claude-plugin/plugin.json)"
+          echo "tag=$tag cargo=$cargo_version plugin=$plugin_version"
           if [ "$tag" != "$cargo_version" ]; then
             echo "::error::tag v$tag does not match Cargo.toml version $cargo_version"; exit 1
+          fi
+          if [ "$tag" != "$plugin_version" ]; then
+            echo "::error::tag v$tag does not match plugin.json version $plugin_version"; exit 1
           fi
           git fetch origin main
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then

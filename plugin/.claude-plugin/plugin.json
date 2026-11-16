@@ -1,0 +1,12 @@
+{
+  "name": "netbox-mcp",
+  "version": "0.14.0",
+  "description": "NetBox MCP server: 178 tools across DCIM, IPAM, virtualization, circuits, VPN, wireless, tenancy, extras, core, and users (create/update/delete for VMs, IP addresses, and tags), with slimmed responses and an optional GPG-encrypted token.",
+  "author": {
+    "name": "Kirtis Bakalarczyk"
+  },
+  "homepage": "https://github.com/3kirt/netbox-mcp",
+  "repository": "https://github.com/3kirt/netbox-mcp",
+  "license": "GPL-3.0-or-later",
+  "keywords": ["netbox", "mcp", "dcim", "ipam", "infrastructure"]
+}

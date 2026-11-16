@@ -18,7 +18,7 @@ Ask questions like *"Which devices in the NYC site are currently in maintenance?
   - [GPG-encrypted token (pass)](#gpg-encrypted-token-pass)
 - [Client setup](#client-setup)
   - [Claude Desktop](#claude-desktop)
-  - [Claude Code](#claude-code)
+  - [Claude Code](#claude-code) (plugin or manual)
 - [Available tools](#available-tools)
 - [Development](#development)
 
@@ -241,6 +241,32 @@ Config file location:
 
 ### Claude Code
 
+#### Plugin install (recommended)
+
+The repository is its own plugin marketplace. In Claude Code:
+
+```
+/plugin marketplace add 3kirt/netbox-mcp
+/plugin install netbox-mcp@netbox-mcp
+```
+
+On first start the plugin downloads the release binary for your platform
+(macOS arm64/x86_64, Linux amd64/arm64) from the GitHub release matching the
+plugin version, verifies it against the release's `checksums.txt`, and caches
+it under `~/.cache/netbox-mcp/v<version>/` (or `$XDG_CACHE_HOME`). A plugin
+update rolls the binary forward. On other platforms, or when the download
+fails, a `netbox-mcp` already on `PATH` is used instead.
+
+Supply credentials with `NETBOX_URL` / `NETBOX_TOKEN` in your environment, or
+in `~/.netbox_mcp.json` (optionally with the token
+[GPG-encrypted](#gpg-encrypted-token-pass)). The plugin passes both variables
+through only when they're set, so an unset one never shadows the config file.
+Run `login` / `unlock` / `status` from the cached binary
+(`~/.cache/netbox-mcp/v<version>/netbox-mcp`) if `netbox-mcp` isn't on your
+`PATH`.
+
+#### Manual setup
+
 Register via the CLI:
 
 ```sh
@@ -263,8 +289,11 @@ claude mcp add --transport stdio --scope project \
 
 Or commit a `.mcp.json` by hand. Claude Code expands `${VAR}` (and
 `${VAR:-default}`) in `env` values from each user's environment, so the token
-never lands in the file. Always give a `:-` default: with a bare `${VAR}` and
-the variable unset, Claude Code passes the placeholder text through literally.
+never lands in the file. Always give an **empty** `:-` default: with a bare
+`${VAR}` and the variable unset, Claude Code passes the placeholder text
+through literally, and a non-empty default such as
+`${NETBOX_URL:-https://netbox.example.com}` is a real value that overrides the
+`url` in `~/.netbox_mcp.json`.
 
 ```json
 {
@@ -273,7 +302,7 @@ the variable unset, Claude Code passes the placeholder text through literally.
       "command": "netbox-mcp",
       "args": [],
       "env": {
-        "NETBOX_URL": "${NETBOX_URL:-https://netbox.example.com}",
+        "NETBOX_URL": "${NETBOX_URL:-}",
         "NETBOX_TOKEN": "${NETBOX_TOKEN:-}"
       }
     }

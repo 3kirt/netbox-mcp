@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Claude Code plugin with its own marketplace** — `/plugin marketplace add 3kirt/netbox-mcp`, then `/plugin install netbox-mcp@netbox-mcp`. The plugin's launcher (`plugin/bin/netbox-mcp.sh`) downloads the release binary matching the plugin's version for this platform, verifies it against `checksums.txt`, caches it under `~/.cache/netbox-mcp/v<version>/`, and runs it; a plugin update rolls the binary forward. Unsupported platforms or a failed download fall back to a `netbox-mcp` on `PATH`; a checksum mismatch is a hard failure. Its arguments pass through, so `netbox-mcp.sh status` works too. Modeled on gitlab-mcp's plugin.
+
+### Fixed
+
+- **The README's shared `.mcp.json` example could send the token to the wrong host** — it used `"NETBOX_URL": "${NETBOX_URL:-https://netbox.example.com}"`, and a non-empty default is a real value that overrides the config file's `url`. It's now `${NETBOX_URL:-}`, like the plugin config.
+
+### Internals
+
+- The release workflow's verify job also requires `plugin/.claude-plugin/plugin.json`'s version to equal the tag, so plugin users always get the matching release.
+- `tests/plugin.rs` checks that the plugin version matches `Cargo.toml` and that the marketplace entry points at `./plugin`. It also checks that the launcher is executable and that its platforms match the release matrix's artifacts. The config lint now also covers `plugin/.mcp.json` and requires `NETBOX_URL` to default to empty, and a launch-path test checks that an empty or literal-placeholder `NETBOX_URL` falls through to the config file's `url`.
+
 ## [0.14.0] - 2026-11-14
 
 ### Added

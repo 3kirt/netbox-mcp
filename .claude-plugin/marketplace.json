@@ -1,0 +1,16 @@
+{
+  "name": "netbox-mcp",
+  "metadata": {
+    "description": "Marketplace for the netbox-mcp Claude Code plugin: the NetBox MCP server for querying (and, with a write-enabled token, editing) live NetBox infrastructure data."
+  },
+  "owner": {
+    "name": "Kirtis Bakalarczyk"
+  },
+  "plugins": [
+    {
+      "name": "netbox-mcp",
+      "source": "./plugin",
+      "description": "NetBox MCP server: 178 tools across DCIM, IPAM, virtualization, circuits, VPN, wireless, tenancy, extras, core, and users, with slimmed responses and an optional GPG-encrypted token."
+    }
+  ]
+}
