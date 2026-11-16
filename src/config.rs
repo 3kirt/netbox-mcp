@@ -781,33 +781,37 @@ mod tests {
         );
     }
 
-    /// Every MCP client config the README documents must give each `${VAR}`
-    /// in `env` a `:-` default. Claude Code passes a bare `${VAR}` through
-    /// *literally* when the variable is unset, which would shadow a
-    /// `pass_entry` with a bogus token (gitlab-mcp shipped exactly that bug in
-    /// v0.39.0). The server ignores such values too, but the documented
-    /// configs shouldn't depend on that.
+    /// Every MCP client config we ship (`plugin/.mcp.json`) or document (the
+    /// README) must give each `${VAR}` in `env` a `:-` default, and
+    /// `NETBOX_URL`'s default must be *empty*:
+    /// - Claude Code passes a bare `${VAR}` through literally when the
+    ///   variable is unset, which would shadow a `pass_entry` with a bogus
+    ///   token (gitlab-mcp shipped that bug in v0.39.0). The server ignores
+    ///   such values too, but the configs shouldn't depend on that.
+    /// - A non-empty default is a real value that overrides the config
+    ///   file's `url`, sending the token to the default host instead of the
+    ///   user's NetBox (gitlab-mcp's `${GITLAB_URL:-https://gitlab.com}` bug).
     #[test]
-    fn documented_mcp_configs_default_every_placeholder() {
+    fn shipped_mcp_configs_default_every_placeholder() {
         let root = env!("CARGO_MANIFEST_DIR");
+        let plugin = std::fs::read_to_string(format!("{root}/plugin/.mcp.json")).unwrap();
+        let mut configs: Vec<(String, serde_json::Value)> = vec![(
+            "plugin/.mcp.json".into(),
+            serde_json::from_str(&plugin).unwrap(),
+        )];
         let readme = std::fs::read_to_string(format!("{root}/README.md")).unwrap();
-        let configs: Vec<(String, serde_json::Value)> = readme
-            .split("```json\n")
-            .skip(1)
-            .enumerate()
-            .filter_map(|(i, block)| {
-                let body = block.split("```").next().unwrap();
-                body.contains("mcpServers").then(|| {
-                    (
-                        format!("README.md json block {i}"),
-                        serde_json::from_str(body).unwrap(),
-                    )
-                })
-            })
-            .collect();
+        for (i, block) in readme.split("```json\n").skip(1).enumerate() {
+            let body = block.split("```").next().unwrap();
+            if body.contains("mcpServers") {
+                configs.push((
+                    format!("README.md json block {i}"),
+                    serde_json::from_str(body).unwrap(),
+                ));
+            }
+        }
         assert!(
-            configs.len() >= 2,
-            "expected the Claude Desktop and shared .mcp.json examples"
+            configs.len() >= 3,
+            "expected the plugin config plus the README's Claude Desktop and .mcp.json examples"
         );
 
         let mut placeholders = 0;
@@ -819,6 +823,13 @@ mod tests {
                 };
                 for (key, value) in env {
                     let value = value.as_str().unwrap_or_default();
+                    if key == "NETBOX_URL" && value.contains("${") {
+                        assert_eq!(
+                            value, "${NETBOX_URL:-}",
+                            "{source}: {server}.env.NETBOX_URL must default to empty, or it \
+                             overrides the config file's url"
+                        );
+                    }
                     for placeholder in value.split("${").skip(1) {
                         placeholders += 1;
                         let inner = placeholder.split('}').next().unwrap_or_default();

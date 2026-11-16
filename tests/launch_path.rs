@@ -80,6 +80,17 @@ enum TokenEnv {
 /// Spawn the server against `netbox` with a pass-entry config, call one tool
 /// over MCP stdio, and return the `tools/call` result.
 async fn call_through_binary(netbox: &MockServer, token_env: TokenEnv, gpg_mode: Gpg) -> Value {
+    call_with_url_env(netbox, token_env, gpg_mode, None).await
+}
+
+/// As [`call_through_binary`], optionally also handing the server a
+/// `NETBOX_URL` value the way a client config would.
+async fn call_with_url_env(
+    netbox: &MockServer,
+    token_env: TokenEnv,
+    gpg_mode: Gpg,
+    url_env: Option<&str>,
+) -> Value {
     let dir = tempfile::tempdir().unwrap();
     let gpg = write_fake_gpg(dir.path(), gpg_mode);
     let store = dir.path().join("store");
@@ -114,6 +125,9 @@ async fn call_through_binary(netbox: &MockServer, token_env: TokenEnv, gpg_mode:
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .kill_on_drop(true);
+    if let Some(url) = url_env {
+        cmd.env("NETBOX_URL", url);
+    }
     match token_env {
         TokenEnv::Unset => {}
         TokenEnv::Empty => {
@@ -245,4 +259,26 @@ async fn locked_key_still_starts_and_asks_for_unlock() {
         text.contains("`netbox-mcp --config ") && text.contains(" unlock`"),
         "{text}"
     );
+}
+
+/// The plugin config passes `"NETBOX_URL": "${NETBOX_URL:-}"`. Whether the
+/// client expands that to empty or (without the `:-`) passes the placeholder
+/// through literally, the server must use the config file's `url`, not treat
+/// the value as a host. The mock NetBox only answers at the config's URL.
+#[tokio::test]
+async fn config_url_is_used_when_url_env_is_empty_or_a_placeholder() {
+    for url_env in ["", "${NETBOX_URL}"] {
+        let netbox = netbox_accepting_pass_token().await;
+        let result =
+            call_with_url_env(&netbox, TokenEnv::Unset, Gpg::Unlocked, Some(url_env)).await;
+        assert_ne!(
+            result["isError"],
+            json!(true),
+            "NETBOX_URL={url_env:?}: tool call failed: {result}"
+        );
+        assert!(
+            result.to_string().contains("site-from-pass"),
+            "NETBOX_URL={url_env:?}: unexpected result: {result}"
+        );
+    }
 }
