@@ -242,7 +242,10 @@ pub async fn status(config_path: Option<&Path>) -> anyhow::Result<()> {
         );
     }
     if !entry.path().exists() {
-        eprintln!("Entry:        missing (run `netbox-mcp login`)");
+        eprintln!(
+            "Entry:        missing (run `{} login`)",
+            entry.store().cli()
+        );
         return Ok(());
     }
     let recipients = match entry.recipients() {
@@ -264,6 +267,8 @@ pub async fn status(config_path: Option<&Path>) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// The gpg-agent state line for `status`, with the unlock command (for this
+/// store's config) appended when the key is locked.
 #[cfg(unix)]
 async fn agent_state(store: &crate::credentials::PassStore, recipients: &[String]) -> String {
     use crate::credentials::agent;
@@ -282,7 +287,16 @@ async fn agent_state(store: &crate::credentials::PassStore, recipients: &[String
         )
     }
     .await;
-    result.map_or_else(|e| format!("unknown ({e})"), |s| s.to_string())
+    result.map_or_else(
+        |e| format!("unknown ({e})"),
+        |state| {
+            if state.is_locked() {
+                format!("{state}; run `{} unlock`", store.cli())
+            } else {
+                state.to_string()
+            }
+        },
+    )
 }
 
 #[cfg(not(unix))]
@@ -326,6 +340,8 @@ fn read_token_input(from_stdin: bool) -> anyhow::Result<String> {
 /// without it (404), `/api/status/` still rejects a bad token with 403.
 async fn verify_token(url: &str, token: &str) -> anyhow::Result<String> {
     let client = NetboxClient::new(url, token)?;
+    // `list()` is the client's plain GET-with-query; neither endpoint is a
+    // paginated list, but that's all it does with the body.
     let rejected = |e: &NetboxError| anyhow!("NetBox rejected the token: {}", e.to_tool_message());
     match client.list("/api/authentication-check/", &[]).await {
         Ok(user) => Ok(user["username"].as_str().unwrap_or("<unknown>").to_string()),

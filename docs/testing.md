@@ -28,7 +28,8 @@ against the real shape. A wiremock test structurally cannot establish that.
 
 ## Layer 1 — Unit tests
 
-Run by default with `cargo test --all`. Three flavors:
+Run by default with `cargo test --all` (`make test`). Three flavors, plus an
+opt-in fourth:
 
 **Pure-logic tests** — no HTTP. `src/tools/mod.rs` covers `slim_value()`,
 `clean_page_response()`, and `clamp_limit`/`PaginationParams`; `src/config.rs`
@@ -52,6 +53,14 @@ in-memory duplex. Tests that read or change process environment variables
 request through the full `paginate()` path, asserting the request we send and
 how the response is slimmed. See the `pipeline_*` tests in `src/tools/mod.rs`.
 
+**Real-gpg tests** (`make test-real-gpg`) — `#[ignore]`d by default and enabled
+by `REAL_GPG=1`. They run the credentials code against the real `gpg` on PATH,
+with throwaway keyrings under a short `/tmp` path (macOS caps gpg-agent socket
+paths at 104 bytes): an unprotected key decrypts, a locked key is classified
+`Locked` (gpg code 85), and a foreign-key ciphertext is `NoSecretKey` (code
+17). They catch GnuPG status-code drift that the fake `gpg` can't; CI runs them
+on every push and weekly on both Linux and macOS.
+
 ## Layer 2 — Launch-path tests
 
 [`tests/launch_path.rs`](../tests/launch_path.rs) runs with `cargo test --all`
@@ -66,12 +75,19 @@ builds. gitlab-mcp v0.39.0 shipped a bug that lived exactly there: for
 the placeholder through literally, and the server used it as the token instead
 of the configured `pass_entry`. These tests assert NetBox receives the
 pass-entry token whether `NETBOX_TOKEN` is unset, empty, or a literal
-`${NETBOX_TOKEN}`, and that a locked key still lets the server start and
-returns the "run `netbox-mcp unlock`" message.
+`${NETBOX_TOKEN}`; that an empty or literal-placeholder `NETBOX_URL` falls
+through to the config file's `url`; and that a locked key still lets the
+server start and returns the "run `netbox-mcp --config … unlock`" advice.
 
 Add a test here when a bug could live between the client's config and the
 server: environment variables, argument handling, startup, or anything else a
 direct function call skips.
+
+Alongside it, [`tests/plugin.rs`](../tests/plugin.rs) checks the Claude Code
+plugin's invariants without running anything: `plugin.json`'s version equals
+`Cargo.toml`'s, the marketplace entry points at `./plugin`, the launcher is
+executable, and the launcher's platform table matches the release workflow's
+artifacts.
 
 ## Layer 3 — Live integration tests
 
@@ -82,12 +98,10 @@ what an MCP client receives. The suite lives under
 [`src/tools/live/`](../src/tools/live/), one module per domain plus a shared
 `harness`.
 
-### The read-only adaptation
+### Seed data for reads, self-cleaning lifecycles for writes
 
-A write-capable server (e.g. gitlab-mcp) self-seeds and self-cleans by creating
-and deleting resources through its own write tools. **netbox-mcp is read-only**,
-so it can't. Instead the deterministic fixture is `scripts/seed_data.py`, and
-the tests assert **behavior, not exact counts**:
+Read tests run against a deterministic fixture, `scripts/seed_data.py`, and
+assert **behavior, not exact counts**:
 
 - *Filter correctness* — `site=lon-dc` returns only London devices, `parent=
   10.0.1.0/24` returns only addresses inside that prefix, `mgmt_only=true`
@@ -99,6 +113,11 @@ the tests assert **behavior, not exact counts**:
 Because nothing asserts "exactly 12 devices," the suite survives edits to the
 seed script. An empty result where rows are expected fails with a pointer to
 re-run the seed, since that is the usual cause.
+
+The write tools (VMs, IP addresses, tags) are covered by **lifecycle tests**
+that create an object, update it, and delete it within one test, so they leave
+the seeded instance as they found it. They need a write-enabled token; with a
+read-only one NetBox answers 403 and the create step fails.
 
 ### How it's wired
 
@@ -127,16 +146,17 @@ re-run the seed, since that is the usual cause.
 - **Invariants-as-code.** `assert_clean` and `assert_page_shape` encode the
   universal invariants from [`testing-protocol.md`](testing-protocol.md) as
   reusable assertions instead of prose a human eyeballs.
-- **Skips without credentials.** `skip_unless_live!` returns early (printing a
-  notice) when `NETBOX_URL`/`NETBOX_TOKEN` are absent, so the feature is safe to
-  enable in CI without secrets — supply credentials in a dedicated job to
-  actually exercise it.
+- **Skips without credentials, unless required.** `skip_unless_live!` returns
+  early (printing a notice) when `NETBOX_URL`/`NETBOX_TOKEN` are absent, so the
+  feature is safe to compile and run anywhere. With `LIVE_REQUIRED=1` a missing
+  credential is a failure instead; the weekly CI job (`scheduled.yml`) and the
+  release process set it, so a misconfigured run can't pass with zero tests.
 
 ### Running the live tests
 
 The quickest path is the bundled test stack in
-[`test/netbox-docker/`](../test/netbox-docker/), which boots NetBox under Podman
-and seeds it automatically (see its [README](../test/netbox-docker/README.md)):
+[`test/netbox-docker/`](../test/netbox-docker/), which boots NetBox under Podman or
+Docker and seeds it automatically (see its [README](../test/netbox-docker/README.md)):
 
 ```sh
 cd test/netbox-docker && ./up.sh          # boot + mint token + seed
@@ -162,8 +182,10 @@ NETBOX_TOKEN=<token> \
   bootstrap only creates v2 tokens.
 - The URL must be HTTPS or localhost — the client rejects other plain-HTTP URLs
   to avoid token exposure.
-- `--test-threads=1` keeps output and rate-limiting predictable; the tests are
-  read-only and independent, so parallel runs are also safe.
+- `--test-threads=1` keeps output and NetBox load predictable, and keeps the
+  write lifecycle tests (which create and delete objects) from overlapping with
+  reads that might see their objects. Keep the suite serial against a shared
+  instance.
 - `make live-test` wraps the same command. Set `LIVE_REQUIRED=1` to make missing
   credentials a failure rather than a skip; the scheduled CI live job and the
   release process do, so a misconfigured run can't pass with zero tests.
@@ -176,11 +198,12 @@ The live suite is grown domain-by-domain. Covered today:
 
 - **DCIM** — devices, interfaces, sites, regions, racks, manufacturers, device
   types, device roles, platforms, locations
-- **IPAM** — IP addresses, prefixes, VRFs, services, aggregates, ASNs, RIRs,
-  VLANs, VLAN groups
-- **Virtualization** — VMs, clusters, cluster types, VM interfaces
+- **IPAM** — IP addresses (including the create/update/delete lifecycle),
+  prefixes, VRFs, services, aggregates, ASNs, RIRs, VLANs, VLAN groups
+- **Virtualization** — VMs (including the create/update/delete lifecycle),
+  clusters, cluster types, VM interfaces
 - **Tenancy** — tenants, contacts, contact roles
-- **Extras** — tags
+- **Extras** — tags, including the tag create/update/delete lifecycle
 - **Core** — object changes (list, get, type filter, `diff_only`)
 - **Users** — users, tokens
 - **Circuits** — providers, provider accounts/networks, circuit types, circuits,

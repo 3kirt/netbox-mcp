@@ -33,7 +33,9 @@ pub struct KeyInfo {
     pub protection: char,
 }
 
-/// Summary of whether the token's key can decrypt without a prompt.
+/// Summary of whether the token's key can decrypt without a prompt. The
+/// `Display` text is the bare state; `netbox-mcp status` appends the unlock
+/// command, built for the config in use, when [`Self::is_locked`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AgentState {
     Unlocked,
@@ -44,14 +46,21 @@ pub enum AgentState {
     NoSecretKey,
 }
 
+impl AgentState {
+    /// Whether `netbox-mcp unlock` would help.
+    pub const fn is_locked(&self) -> bool {
+        matches!(self, Self::Locked | Self::NotRunning)
+    }
+}
+
 impl std::fmt::Display for AgentState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::Unlocked => "unlocked (passphrase cached in gpg-agent)",
             Self::Unprotected => "unlocked (key has no passphrase)",
-            Self::Locked => "locked (run `netbox-mcp unlock`)",
+            Self::Locked => "locked",
             Self::Smartcard => "smartcard key (gpg-agent does not report PIN state)",
-            Self::NotRunning => "locked (gpg-agent is not running; run `netbox-mcp unlock`)",
+            Self::NotRunning => "locked (gpg-agent is not running)",
             Self::NoSecretKey => "no secret key for the store's recipients in this keyring",
         })
     }
@@ -408,6 +417,20 @@ ERR 67108891 Not found <GPG Agent>
             .await
             .unwrap();
         assert_eq!(got, None);
+    }
+
+    #[test]
+    fn only_locked_states_ask_for_unlock() {
+        assert!(AgentState::Locked.is_locked());
+        assert!(AgentState::NotRunning.is_locked());
+        for usable in [
+            AgentState::Unlocked,
+            AgentState::Unprotected,
+            AgentState::Smartcard,
+            AgentState::NoSecretKey,
+        ] {
+            assert!(!usable.is_locked(), "{usable}");
+        }
     }
 
     #[test]

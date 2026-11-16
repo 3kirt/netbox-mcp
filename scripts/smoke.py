@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import threading
 from pathlib import Path
 
@@ -112,8 +113,6 @@ def main() -> None:
     if not os.access(binary, os.X_OK):
         fail(f"{binary} is not an executable file")
     want_version = cargo_version()
-
-    import tempfile
 
     with tempfile.TemporaryDirectory() as home:
         env = isolated_env(home)

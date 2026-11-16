@@ -21,6 +21,7 @@ Ask questions like *"Which devices in the NYC site are currently in maintenance?
   - [Claude Code](#claude-code) (plugin or manual)
 - [Available tools](#available-tools)
 - [Development](#development)
+- [License](#license)
 
 ---
 
@@ -84,14 +85,19 @@ Tokens can be created in NetBox under **Admin → API Tokens**, or provisioned v
 curl -s -X POST https://netbox.example.com/api/users/tokens/provision/ \
   -H "Content-Type: application/json" \
   -d '{"username": "you", "password": "yourpassword"}' \
-  | jq '.key'
+  | jq -r 'if .version == 2 then "nbt_\(.key).\(.token)" else .key end'
 ```
+
+NetBox 4.5+ provisions v2 tokens. The usable token is `nbt_<key>.<token>`,
+and `.key` alone is rejected, which is what the `jq` filter handles. Older
+releases return a v1 token whose `key` is the whole token. Provisioned tokens
+are write-enabled.
 
 netbox-mcp has a few write tools (VMs, IP addresses, tags), but it relies on the token's permissions to authorize them. If you only want reads, create a **read-only token** (deselect "Write enabled" in the token settings); write tools then fail with 403. If the server starts returning 403 errors, check whether the token has expired.
 
 ### GPG-encrypted token (pass)
 
-*Linux (including WSL) or macOS.*
+*Requires netbox-mcp v0.14.0 or later, on Linux (including WSL) or macOS.*
 
 Instead of a plaintext `token`, netbox-mcp can keep the token GPG-encrypted in a
 [`pass`](https://www.passwordstore.org/)-compatible password store
@@ -155,7 +161,7 @@ the config file. It also removes any plaintext `token` from that file:
 ```
 
 Because the plaintext token is removed, every netbox-mcp the config is used
-with must support `pass_entry`; an older one can't start without a token.
+with must be v0.14.0 or later; an older one can't start without a token.
 
 #### 3. Leave `NETBOX_TOKEN` out of your MCP client config
 
@@ -187,8 +193,9 @@ you to unlock. Your agent relays that, and the next call after you unlock
 succeeds without restarting the server. After that first decrypt the token
 stays in memory for the life of the server process, so the cache only matters
 when a server starts. If NetBox rejects the token, the server re-reads the
-entry on the next call, so a token rotated with `netbox-mcp login` is picked
-up without a restart.
+entry and, when it holds a new token, retries the call with it, so a token
+rotated with `netbox-mcp login` takes effect on the very next call, with no
+restart.
 
 ```sh
 netbox-mcp unlock   # caches the passphrase in gpg-agent (prompts if needed)
@@ -348,14 +355,16 @@ make smoke          # run the release binary: --version + MCP tools/list
 make check          # full offline gate: fmt-check lint test deny release smoke
 make clean          # remove build artifacts
 make docker-build   # build Docker image (docker or podman)
+make docker-smoke   # build it, check its Rust version, and run --version
 ```
 
 ### Testing
 
-Two layers verify different risks — fast offline unit tests, and a feature-gated
-live suite that checks fidelity to the real NetBox API. A self-contained,
+Three layers verify different risks: fast offline unit tests, launch-path
+tests that drive the built binary over MCP stdio, and a feature-gated live
+suite that checks fidelity to the real NetBox API. A self-contained,
 auto-seeding NetBox stack for the live suite lives in
-[`test/netbox-docker/`](test/netbox-docker/) (Podman on macOS):
+[`test/netbox-docker/`](test/netbox-docker/) (Podman or Docker):
 
 ```sh
 cd test/netbox-docker && ./up.sh          # boot + seed a local NetBox
